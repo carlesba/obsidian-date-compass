@@ -6,7 +6,7 @@ export const en = {
 	parserLanguages: "Understand dates in",
 	addLanguage: "Add language",
 	removeLanguage: "Remove {language}",
-	parserLanguagesDesc: "Date phrases are understood in these languages. When a word means different things, such as "mar", the first language wins.",
+	parserLanguagesDesc: "Date phrases are understood in these languages. When a word means different things, such as \"mar\", the first language wins.",
 	weekStart: "Week starts on",
 	weekStartDesc: "The first day of a week, for week notes and phrases such as \"this wed\".",
 	weekStartLocale: "Locale default",

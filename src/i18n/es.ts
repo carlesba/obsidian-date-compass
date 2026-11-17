@@ -8,7 +8,7 @@ export const es: Translation = {
 	parserLanguages: "Entender fechas en",
 	addLanguage: "Añadir idioma",
 	removeLanguage: "Quitar {language}",
-	parserLanguagesDesc: "Las expresiones de fecha se entienden en estos idiomas. Cuando una palabra significa cosas distintas, como "mar", gana el primer idioma.",
+	parserLanguagesDesc: "Las expresiones de fecha se entienden en estos idiomas. Cuando una palabra significa cosas distintas, como \"mar\", gana el primer idioma.",
 	weekStart: "La semana empieza el",
 	weekStartDesc: "El primer día de la semana, para las notas semanales y expresiones como \"este miércoles\".",
 	weekStartLocale: "Según la configuración regional",
