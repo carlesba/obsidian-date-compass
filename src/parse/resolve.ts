@@ -1,14 +1,125 @@
-import { addDays, addUnits, civilOf, daysInMonth, isoDate, isValidDate, weekdayOf, type CivilDate } from "./calendar.ts";
-import type { DateNode, ParseOptions, ParsedNode, PeriodNode, Resolved, Span, Unit, Weekday, WeekdayWhich } from "./types.ts";
+import { addDays, addUnits, civilOf, daysBetween, daysInMonth, isoDate, isValidDate, weekdayOf, type CivilDate } from "./calendar.ts";
+import { isDateNode } from "./shape.ts";
+import type { CountNode, DateNode, EveryNode, Outcome, ParseOptions, ParsedNode, PeriodNode, RangeNode, Span, Unit, Weekday, WeekdayWhich, WithinNode } from "./types.ts";
 
-export function resolve(node: ParsedNode, now: Date, options: ParseOptions): Resolved | undefined {
+export const SEQUENCE_LIMIT = 366;
+
+export function resolve(node: ParsedNode, now: Date, options: ParseOptions): Outcome | undefined {
 	const today = civilOf(now);
-	const span = node.kind === "period" ? resolvePeriod(node, today, options) : daySpan(resolveDate(node, today, options));
-	return span && { kind: "single", span };
+	switch (node.kind) {
+		case "period": {
+			const span = resolvePeriod(node, today, options);
+			return span && { kind: "single", span };
+		}
+		case "range":
+			return resolveRange(node, today, options);
+		case "count":
+			return resolveCount(node, today, options);
+		case "every":
+			return resolveEvery(node, today);
+		case "within":
+			return resolveWithin(node, today, options);
+		case "weekdays":
+			return undefined;
+		default: {
+			const date = resolveDate(node, today, options);
+			return date && { kind: "single", span: daySpan(date) };
+		}
+	}
 }
 
-function daySpan(date: CivilDate | undefined): Span | undefined {
-	return date && { unit: "day", start: isoDate(date), end: isoDate(date) };
+function daySpan(date: CivilDate): Span {
+	return { unit: "day", start: isoDate(date), end: isoDate(date) };
+}
+
+function sequenceOf(items: Span[]): Outcome | undefined {
+	if (items.length === 0) return undefined;
+	if (items.length > SEQUENCE_LIMIT) return { kind: "tooManyItems", limit: SEQUENCE_LIMIT };
+	const first = items[0];
+	const last = items[items.length - 1];
+	return { kind: "sequence", span: { unit: first.unit, start: first.start, end: last.end }, items };
+}
+
+function collect(itemAt: (index: number) => Span | undefined): Span[] {
+	const items: Span[] = [];
+	for (let index = 0; items.length <= SEQUENCE_LIMIT; index++) {
+		const item = itemAt(index);
+		if (!item) break;
+		items.push(item);
+	}
+	return items;
+}
+
+function ordered(from: CivilDate, to: CivilDate): [CivilDate, CivilDate] {
+	return daysBetween(from, to) >= 0 ? [from, to] : [to, from];
+}
+
+function resolveRange(node: RangeNode, today: CivilDate, options: ParseOptions): Outcome | undefined {
+	if (node.from.kind === "period" || node.to.kind === "period") {
+		if (node.from.kind !== "period" || node.to.kind !== "period" || node.from.unit !== node.to.unit) return undefined;
+		const unit = node.from.unit;
+		const from = periodDate(node.from, today, options);
+		const to = periodDate(node.to, today, options);
+		if (!from || !to) return undefined;
+		const [first, last] = ordered(periodStart(unit, from, options), periodStart(unit, to, options));
+		return sequenceOf(collect((index) => {
+			const start = periodStart(unit, addUnits(first, index, unit), options);
+			return daysBetween(start, last) >= 0 ? periodSpan(unit, start, options) : undefined;
+		}));
+	}
+	const from = resolveDate(node.from, today, options);
+	if (!from) return undefined;
+	const to = isDateNode(node.to) && node.to.kind === "weekday" && node.to.which === "bare" ? resolveWeekday(node.to.day, "bare", from, options) : resolveDate(node.to, today, options);
+	if (!to) return undefined;
+	const [first, last] = ordered(from, to);
+	if (daysBetween(first, last) + 1 > SEQUENCE_LIMIT) return { kind: "tooManyItems", limit: SEQUENCE_LIMIT };
+	return sequenceOf(collect((index) => (index <= daysBetween(first, last) ? daySpan(addDays(first, index)) : undefined)));
+}
+
+function resolveCount(node: CountNode, today: CivilDate, options: ParseOptions): Outcome | undefined {
+	if (node.amount < 1) return undefined;
+	if (node.amount > SEQUENCE_LIMIT) return { kind: "tooManyItems", limit: SEQUENCE_LIMIT };
+	const current = periodStart(node.unit, today, options);
+	const firstOffset = node.which === "next" ? 0 : 1 - node.amount;
+	return sequenceOf(collect((index) => (index < node.amount ? periodSpan(node.unit, addUnits(current, firstOffset + index, node.unit), options) : undefined)));
+}
+
+function resolveEvery(node: EveryNode, today: CivilDate): Outcome | undefined {
+	const bound = node.bound;
+	if ("times" in bound) {
+		if (bound.times < 1) return undefined;
+		if (bound.times > SEQUENCE_LIMIT) return { kind: "tooManyItems", limit: SEQUENCE_LIMIT };
+	} else if (bound.for.amount < 1) return undefined;
+	const windowEnd = "for" in bound ? addUnits(today, bound.for.amount, bound.for.unit) : undefined;
+	const accepts = (date: CivilDate, index: number) => ("times" in bound ? index < bound.times : windowEnd !== undefined && daysBetween(date, windowEnd) > 0);
+	const pattern = node.pattern;
+	if ("step" in pattern) {
+		if (pattern.step.amount < 1) return undefined;
+		return sequenceOf(collect((index) => {
+			const date = addUnits(today, index * pattern.step.amount, pattern.step.unit);
+			return accepts(date, index) ? daySpan(date) : undefined;
+		}));
+	}
+	const weekdays = new Set(pattern.weekdays);
+	let day = today;
+	return sequenceOf(collect((index) => {
+		while (!weekdays.has(weekdayOf(day))) day = addDays(day, 1);
+		const date = day;
+		day = addDays(day, 1);
+		return accepts(date, index) ? daySpan(date) : undefined;
+	}));
+}
+
+function resolveWithin(node: WithinNode, today: CivilDate, options: ParseOptions): Outcome | undefined {
+	const anchor = periodDate(node.period, today, options);
+	if (!anchor) return undefined;
+	const containerStart = periodStart(node.period.unit, anchor, options);
+	const containerEnd = periodEnd(node.period.unit, containerStart);
+	const first = periodStart(node.unit, containerStart, options);
+	return sequenceOf(collect((index) => {
+		const start = periodStart(node.unit, addUnits(first, index, node.unit), options);
+		return daysBetween(start, containerEnd) >= 0 ? periodSpan(node.unit, start, options) : undefined;
+	}));
 }
 
 export function resolveDate(node: DateNode, today: CivilDate, options: ParseOptions): CivilDate | undefined {
@@ -55,14 +166,15 @@ function startOfWeek(date: CivilDate, options: ParseOptions): CivilDate {
 }
 
 function resolvePeriod(node: PeriodNode, today: CivilDate, options: ParseOptions): Span | undefined {
+	const date = periodDate(node, today, options);
+	return date && periodSpan(node.unit, date, options);
+}
+
+function periodDate(node: PeriodNode, today: CivilDate, options: ParseOptions): CivilDate | undefined {
 	const anchor = node.anchor;
-	if ("offset" in anchor) return periodSpan(node.unit, addUnits(periodStart(node.unit, today, options), anchor.offset, node.unit), options);
-	if ("containing" in anchor) {
-		const date = resolveDate(anchor.containing, today, options);
-		return date && periodSpan(node.unit, date, options);
-	}
-	const start = explicitStart(node.unit, anchor.explicit.year, anchor.explicit.index, today);
-	return start && periodSpan(node.unit, start, options);
+	if ("offset" in anchor) return addUnits(periodStart(node.unit, today, options), anchor.offset, node.unit);
+	if ("containing" in anchor) return resolveDate(anchor.containing, today, options);
+	return explicitStart(node.unit, anchor.explicit.year, anchor.explicit.index, today);
 }
 
 function explicitStart(unit: Unit, year: number | undefined, index: number, today: CivilDate): CivilDate | undefined {

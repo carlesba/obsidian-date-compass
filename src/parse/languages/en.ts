@@ -1,5 +1,5 @@
-import { dateOf, fourDigitNumber, monthOf, numberOf, phrase, relativeDayOf, symbol, token, unitOf, weekdayOf } from "../shape.ts";
-import type { Language, LexiconEntry, Shape, Weekday } from "../types.ts";
+import { dateOf, fourDigitNumber, monthOf, numberOf, periodOf, phrase, rangeEndOf, relativeDayOf, symbol, token, unitOf, weekdayOf, weekdaysOf } from "../shape.ts";
+import type { Amount, Category, Element, EveryNode, Language, LexiconEntry, Part, Shape, Weekday } from "../types.ts";
 
 const weekdays: Array<[Weekday, string[]]> = [
 	[0, ["sun", "sunday"]],
@@ -60,7 +60,82 @@ const lexicon: LexiconEntry[] = [
 	{ words: ["in"], meaning: { type: "in" } },
 	{ words: ["of"], meaning: { type: "of" } },
 	{ words: ["st", "nd", "rd", "th"], meaning: { type: "ordinal" } },
+	{ words: ["to", "until"], meaning: { type: "rangeJoin" } },
+	{ words: ["from"], meaning: { type: "from" } },
+	{ words: ["every"], meaning: { type: "every" } },
+	{ words: ["for"], meaning: { type: "for" } },
+	{ words: ["times"], meaning: { type: "times" } },
+	{ words: ["and"], meaning: { type: "and" } },
 ];
+
+const rangeJoins: Element[][] = [[token("rangeJoin")], [symbol("-")], [symbol("."), symbol(".")]];
+
+const rangeEnds: Category[] = ["date", "period"];
+
+const rangeShapes: Shape[] = rangeEnds.flatMap((end) =>
+	rangeJoins.flatMap((join): Shape[] => [
+		{
+			produces: "sequence",
+			elements: [phrase(end), ...join, phrase(end)],
+			build: (parts) => ({ kind: "range", from: rangeEndOf(parts[0]), to: rangeEndOf(parts[parts.length - 1]) }),
+		},
+		{
+			produces: "sequence",
+			elements: [token("from"), phrase(end), ...join, phrase(end)],
+			build: (parts) => ({ kind: "range", from: rangeEndOf(parts[1]), to: rangeEndOf(parts[parts.length - 1]) }),
+		},
+	]),
+);
+
+const weekdayListJoins: Element[][] = [[symbol(",")], [token("and")], [symbol(","), token("and")]];
+
+const weekdayListShapes: Shape[] = [
+	{
+		produces: "weekdays",
+		elements: [token("weekday")],
+		build: ([day]) => ({ kind: "weekdays", days: [weekdayOf(day)] }),
+	},
+	...weekdayListJoins.map((join): Shape => ({
+		produces: "weekdays",
+		elements: [token("weekday"), ...join, phrase("weekdays")],
+		build: (parts) => ({ kind: "weekdays", days: [...new Set([weekdayOf(parts[0]), ...weekdaysOf(parts[parts.length - 1])])] }),
+	})),
+];
+
+interface EveryPart<T> {
+	elements: Element[];
+	read: (parts: Part[]) => T;
+}
+
+const everyPatterns: Array<EveryPart<EveryNode["pattern"]>> = [
+	{ elements: [phrase("weekdays")], read: ([days]) => ({ weekdays: weekdaysOf(days) }) },
+	{ elements: [token("unit")], read: ([unit]): { step: Amount } => ({ step: { amount: 1, unit: unitOf(unit) } }) },
+	{ elements: [token("number"), token("unit")], read: ([amount, unit]) => ({ step: { amount: numberOf(amount), unit: unitOf(unit) } }) },
+];
+
+const everyBounds: Array<EveryPart<EveryNode["bound"]>> = [
+	{ elements: [token("for"), token("number"), token("unit")], read: ([, amount, unit]) => ({ for: { amount: numberOf(amount), unit: unitOf(unit) } }) },
+	{ elements: [token("number"), token("times")], read: ([times]) => ({ times: numberOf(times) }) },
+	{ elements: [token("times"), token("number")], read: ([, times]) => ({ times: numberOf(times) }) },
+];
+
+const everyShapes: Shape[] = everyPatterns.flatMap((pattern) =>
+	everyBounds.map((bound): Shape => ({
+		produces: "sequence",
+		elements: [token("every"), ...pattern.elements, ...bound.elements],
+		build: (parts) => {
+			const patternParts = parts.slice(1, 1 + pattern.elements.length);
+			const boundParts = parts.slice(1 + pattern.elements.length);
+			return { kind: "every", pattern: pattern.read(patternParts), bound: bound.read(boundParts) };
+		},
+	})),
+);
+
+const countShapes: Shape[] = (["next", "last"] as const).map((which) => ({
+	produces: "sequence",
+	elements: [token(which), token("number"), token("unit")],
+	build: ([, amount, unit]) => ({ kind: "count", which, amount: numberOf(amount), unit: unitOf(unit) }),
+}));
 
 const relativeWords: Array<{ type: "this" | "next" | "last"; offset: number }> = [
 	{ type: "this", offset: 0 },
@@ -169,6 +244,15 @@ const shapes: Shape[] = [
 		elements: [token("unit"), token("of"), phrase("date")],
 		build: ([unit, , date]) => ({ kind: "period", unit: unitOf(unit), anchor: { containing: dateOf(date) } }),
 	},
+	{
+		produces: "sequence",
+		elements: [token("unit"), token("of"), phrase("period")],
+		build: ([unit, , period]) => ({ kind: "within", unit: unitOf(unit), period: periodOf(period) }),
+	},
+	...rangeShapes,
+	...countShapes,
+	...everyShapes,
+	...weekdayListShapes,
 ];
 
 export const en: Language = { id: "en", lexicon, shapes };

@@ -1,4 +1,4 @@
-import type { Category, DateNode, Element, Meaning, MeaningType, Part, Unit, Weekday } from "./types.ts";
+import type { Category, DateNode, Element, Meaning, MeaningType, ParsedNode, Part, PeriodNode, Unit, Weekday } from "./types.ts";
 
 export function token(type: MeaningType, test?: (meaning: Meaning) => boolean): Element {
 	return test ? { type, test } : { type };
@@ -49,7 +49,27 @@ export function relativeDayOf(part: Part): number {
 	return part.value;
 }
 
+export function isDateNode(node: ParsedNode): node is DateNode {
+	return node.kind === "day" || node.kind === "weekday" || node.kind === "calendar" || node.kind === "numeric";
+}
+
 export function dateOf(part: Part): DateNode {
-	if (part.type !== "node" || part.value.kind === "period") throw new TypeError(`expected a date, got ${part.type}`);
+	if (part.type !== "node" || !isDateNode(part.value)) throw new TypeError(`expected a date, got ${part.type}`);
 	return part.value;
+}
+
+export function periodOf(part: Part): PeriodNode {
+	if (part.type !== "node" || part.value.kind !== "period") throw new TypeError(`expected a period, got ${part.type}`);
+	return part.value;
+}
+
+export function rangeEndOf(part: Part): DateNode | PeriodNode {
+	if (part.type === "node" && part.value.kind === "period") return part.value;
+	return dateOf(part);
+}
+
+export function weekdaysOf(part: Part): Weekday[] {
+	if (part.type === "weekday") return [part.value];
+	if (part.type !== "node" || part.value.kind !== "weekdays") throw new TypeError(`expected weekdays, got ${part.type}`);
+	return part.value.days;
 }

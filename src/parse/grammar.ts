@@ -11,12 +11,55 @@ export interface Grammar {
 	languages: Language[];
 }
 
+function phraseShapes(language: Language): Shape[] {
+	return language.shapes.filter((shape) => shape.produces !== "weekdays");
+}
+
 export function parseTokens(tokens: Token[], grammar: Grammar): Match[] {
 	return [grammar.shared, ...grammar.languages].flatMap((language) =>
-		language.shapes
+		phraseShapes(language)
 			.flatMap((shape) => matchShape(tokens, 0, shape, language, grammar))
 			.filter((match) => match.end === tokens.length),
 	);
+}
+
+export function needsMoreTokens(tokens: Token[], grammar: Grammar): boolean {
+	return [grammar.shared, ...grammar.languages].some((language) =>
+		phraseShapes(language).some((shape) => walkElements(tokens, 0, shape.elements, language, grammar).exhausted),
+	);
+}
+
+interface Walk {
+	ends: number[];
+	exhausted: boolean;
+}
+
+function walkElements(tokens: Token[], position: number, elements: Element[], language: Language, grammar: Grammar): Walk {
+	let positions = [position];
+	let exhausted = false;
+	for (const element of elements) {
+		const reached = new Set<number>();
+		for (const current of positions) {
+			if (current === tokens.length) {
+				exhausted = true;
+				continue;
+			}
+			const step = walkElement(tokens, current, element, language, grammar);
+			exhausted = exhausted || step.exhausted;
+			step.ends.forEach((end) => reached.add(end));
+		}
+		positions = [...reached];
+		if (positions.length === 0) break;
+	}
+	return { ends: positions, exhausted };
+}
+
+function walkElement(tokens: Token[], position: number, element: Element, language: Language, grammar: Grammar): Walk {
+	if (!("node" in element)) return { ends: matchElement(tokens, position, element, language, grammar).map((match) => match.end), exhausted: false };
+	const walks = shapesFor(language, grammar).flatMap((owner) =>
+		owner.shapes.filter((shape) => shape.produces === element.node).map((shape) => walkElements(tokens, position, shape.elements, language, grammar)),
+	);
+	return { ends: [...new Set(walks.flatMap((walk) => walk.ends))], exhausted: walks.some((walk) => walk.exhausted) };
 }
 
 function shapesFor(language: Language, grammar: Grammar): Language[] {

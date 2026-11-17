@@ -1,11 +1,12 @@
-import { parseTokens, type Grammar } from "./grammar.ts";
+import { needsMoreTokens, parseTokens, type Grammar } from "./grammar.ts";
 import { LANGUAGES, shared } from "./languages/index.ts";
 import { resolve } from "./resolve.ts";
 import { indexLexicons, normalize, rawTokens, tokenize, touchesDigits, type LexiconIndex } from "./tokenize.ts";
-import type { Completion, Interpretation, Language, ParseOptions } from "./types.ts";
+import type { Analysis, Completion, Interpretation, Language, ParseOptions, Resolved, Span } from "./types.ts";
 
 export type * from "./types.ts";
 export { LANGUAGES } from "./languages/index.ts";
+export { SEQUENCE_LIMIT } from "./resolve.ts";
 
 export const DEFAULT_PARSE_OPTIONS: ParseOptions = {
 	languages: ["en"],
@@ -25,24 +26,48 @@ function parserFor(options: ParseOptions): Parser {
 }
 
 export function parse(text: string, now: Date, options: ParseOptions = DEFAULT_PARSE_OPTIONS): Interpretation[] {
+	return interpret(text, now, options, parserFor(options)).interpretations;
+}
+
+export function parseWithRefusals(text: string, now: Date, options: ParseOptions = DEFAULT_PARSE_OPTIONS): Analysis {
 	return interpret(text, now, options, parserFor(options));
 }
 
-function interpret(text: string, now: Date, options: ParseOptions, parser: Parser): Interpretation[] {
+export function itemsOf(result: Resolved): Span[] {
+	return result.kind === "sequence" ? result.items : [result.span];
+}
+
+function resultKey(result: Resolved): string {
+	const items = itemsOf(result);
+	return `${result.kind}:${result.span.unit}:${result.span.start}:${result.span.end}:${items.length}`;
+}
+
+function interpret(text: string, now: Date, options: ParseOptions, parser: Parser): Analysis {
 	const seen = new Set<string>();
-	const interpretations: Interpretation[] = [];
+	const analysis: Analysis = { interpretations: [], refusals: [] };
 	for (const tokens of tokenize(text, parser.index)) {
 		if (tokens.length === 0) continue;
 		for (const match of parseTokens(tokens, parser.grammar)) {
-			const result = resolve(match.node, now, options);
-			if (!result) continue;
-			const key = `${result.span.unit}:${result.span.start}:${result.span.end}`;
+			const outcome = resolve(match.node, now, options);
+			if (!outcome) continue;
+			if (outcome.kind === "tooManyItems") {
+				const key = `refused:${JSON.stringify(match.node)}`;
+				if (seen.has(key)) continue;
+				seen.add(key);
+				analysis.refusals.push({ language: match.language, node: match.node, reason: "tooManyItems", limit: outcome.limit });
+				continue;
+			}
+			const key = resultKey(outcome);
 			if (seen.has(key)) continue;
 			seen.add(key);
-			interpretations.push({ language: match.language, node: match.node, result });
+			analysis.interpretations.push({ language: match.language, node: match.node, result: outcome });
 		}
 	}
-	return interpretations;
+	return analysis;
+}
+
+function needsMoreWords(text: string, parser: Parser): boolean {
+	return tokenize(text, parser.index).some((tokens) => tokens.length > 0 && needsMoreTokens(tokens, parser.grammar));
 }
 
 export function complete(text: string, now: Date, options: ParseOptions = DEFAULT_PARSE_OPTIONS): Completion[] {
@@ -53,8 +78,8 @@ export function complete(text: string, now: Date, options: ParseOptions = DEFAUL
 	for (const candidate of completionCandidates(normalized, parser.index)) {
 		if (seen.has(candidate)) continue;
 		seen.add(candidate);
-		const interpretations = interpret(candidate, now, options, parser);
-		if (interpretations.length > 0) completions.push({ text: candidate, interpretations });
+		const { interpretations } = interpret(candidate, now, options, parser);
+		if (interpretations.length > 0 || needsMoreWords(candidate, parser)) completions.push({ text: candidate, interpretations });
 	}
 	return completions;
 }

@@ -9,6 +9,7 @@ export const shared: Language = {
 		{ words: ["m"], meaning: { type: "unit", value: "month" } },
 		{ words: ["q"], meaning: { type: "unit", value: "quarter" } },
 		{ words: ["y"], meaning: { type: "unit", value: "year" } },
+		{ words: ["x"], meaning: { type: "times" } },
 	],
 	shapes: [
 		{

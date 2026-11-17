@@ -11,7 +11,7 @@ export type Meaning =
 	| { type: "relativeDay"; value: number }
 	| { type: "number"; value: number; digits?: number }
 	| { type: "symbol"; value: string }
-	| { type: "next" | "last" | "this" | "ago" | "in" | "of" | "ordinal" | "article" };
+	| { type: "next" | "last" | "this" | "ago" | "in" | "of" | "ordinal" | "article" | "rangeJoin" | "from" | "every" | "for" | "times" | "and" };
 
 export type MeaningType = Meaning["type"];
 
@@ -47,9 +47,46 @@ export interface PeriodNode {
 	anchor: PeriodAnchor;
 }
 
-export type ParsedNode = DateNode | PeriodNode;
+export interface RangeNode {
+	kind: "range";
+	from: DateNode | PeriodNode;
+	to: DateNode | PeriodNode;
+}
 
-export type Category = "date" | "period";
+export interface CountNode {
+	kind: "count";
+	which: "next" | "last";
+	amount: number;
+	unit: Unit;
+}
+
+export interface Amount {
+	amount: number;
+	unit: Unit;
+}
+
+export interface EveryNode {
+	kind: "every";
+	pattern: { weekdays: Weekday[] } | { step: Amount };
+	bound: { for: Amount } | { times: number };
+}
+
+export interface WithinNode {
+	kind: "within";
+	unit: Unit;
+	period: PeriodNode;
+}
+
+export interface WeekdaysNode {
+	kind: "weekdays";
+	days: Weekday[];
+}
+
+export type SequenceNode = RangeNode | CountNode | EveryNode | WithinNode;
+
+export type ParsedNode = DateNode | PeriodNode | SequenceNode | WeekdaysNode;
+
+export type Category = "date" | "period" | "sequence" | "weekdays";
 
 export type Part = Meaning | { type: "node"; value: ParsedNode };
 
@@ -82,12 +119,26 @@ export interface Span {
 	end: string;
 }
 
-export type Resolved = { kind: "single"; span: Span };
+export type Resolved = { kind: "single"; span: Span } | { kind: "sequence"; span: Span; items: Span[] };
+
+export type Outcome = Resolved | { kind: "tooManyItems"; limit: number };
 
 export interface Interpretation {
 	language: string;
 	node: ParsedNode;
 	result: Resolved;
+}
+
+export interface Refusal {
+	language: string;
+	node: ParsedNode;
+	reason: "tooManyItems";
+	limit: number;
+}
+
+export interface Analysis {
+	interpretations: Interpretation[];
+	refusals: Refusal[];
 }
 
 export interface Completion {
