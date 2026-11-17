@@ -100,6 +100,7 @@ export const en = {
 	sequencePlaceholder: "Type a range or sequence, such as every mon for 4 weeks",
 	sequenceTooLong: "This makes more than {limit} dates. Shorten the range or sequence.",
 	sequencePeriodOff: "This phrase points to notes of a period that is turned off in Date notes.",
+	sequenceKeepTyping: "Keep typing, as in {phrase}.",
 	sequenceNotADate: "This text is not a date, a range or a sequence.",
 	sequenceLayout: "Layout",
 	sequenceLayoutDesc: "How the inserted links are laid out.",
@@ -107,7 +108,7 @@ export const en = {
 	layoutBulletList: "Bullet list",
 	layoutLinePerItem: "One per line",
 	itemTemplate: "Item template",
-	itemTemplateDesc: "The text inserted for each date, where {{link}} is its link, such as - [ ] {{link}}.",
+	itemTemplateDesc: "The text inserted for each date, where {{link}} is its link, such as Review {{link}}.",
 	itemTemplateNeedsLink: "Include {{link}} where the link goes.",
 
 	resetAllSettings: "Reset all settings",

@@ -3,7 +3,7 @@ import type { App, Editor, EditorPosition, EditorSuggestContext, EditorSuggestTr
 import { t } from "../i18n/index.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import { localeParseOptions } from "../obsidianParseOptions.ts";
+import { obsidianRowContext } from "../obsidianParseOptions.ts";
 import { markdownLinkTo } from "./obsidianHost.ts";
 import { aliasOf, buildRows, insertionText, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
 import type { DateRow, RowContext } from "./rows.ts";
@@ -75,13 +75,7 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 
 	private rowContext(): RowContext {
 		const settings = this.settings();
-		return {
-			now: obsidianMoment(),
-			moment: obsidianMoment,
-			options: localeParseOptions(settings),
-			periods: settings.dateNotes.periods,
-			allows: mentionAllows(settings.mentions),
-		};
+		return obsidianRowContext(settings, mentionAllows(settings.mentions));
 	}
 
 	private isStillTyped({ editor, file, start }: EditorSuggestContext): boolean {

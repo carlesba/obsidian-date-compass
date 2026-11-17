@@ -2,13 +2,13 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { moment } from "./moment.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
-import type { Interpretation, ParseOptions, Refusal } from "../src/parse/index.ts";
+import type { Analysis, Interpretation, ParseOptions, Refusal } from "../src/parse/index.ts";
 import type { DateParser } from "../src/mentions/rows.ts";
-import { previewSequence, sequenceInsertion } from "../src/sequence/preview.ts";
-import type { SequenceContext } from "../src/sequence/preview.ts";
+import { insertAtCursor, previewSequence, sequenceInsertion } from "../src/sequence/preview.ts";
+import type { CursorEditor, SequenceContext, SequencePreview } from "../src/sequence/preview.ts";
 import { mergeSequence } from "../src/sequence/settings.ts";
 import type { SequenceSettings } from "../src/sequence/settings.ts";
-import { SEQUENCE_ITEM_TEMPLATE_KEY, SEQUENCE_LAYOUT_KEY, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { SEQUENCE_ITEM_TEMPLATE_KEY, SEQUENCE_LAYOUT_KEY, itemTemplateError, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { insertSequenceGroups } from "../src/settings/insertSequencePage.ts";
 import { defaultSettings } from "../src/settings.ts";
 
@@ -21,6 +21,8 @@ function context(overrides: Partial<SequenceContext> = {}): SequenceContext {
 }
 
 const NO_PARSE: DateParser = { parse: () => [], complete: () => [] };
+
+const NO_ANALYSIS = (): Analysis => ({ interpretations: [], refusals: [] });
 
 function previewText(query: string, overrides: Partial<SequenceContext> = {}): string | undefined {
 	const preview = previewSequence(query, context(overrides));
@@ -54,7 +56,7 @@ test("an empty input shows no preview", () => {
 
 test("text that does not parse shows why", () => {
 	assert.deepEqual(previewSequence("hello world", context()), { kind: "invalid", text: "This text is not a date, a range or a sequence." });
-	assert.deepEqual(previewSequence("next week", context({ parser: NO_PARSE })), { kind: "invalid", text: "This text is not a date, a range or a sequence." });
+	assert.deepEqual(previewSequence("next week", context({ parser: NO_PARSE, analyze: NO_ANALYSIS })), { kind: "invalid", text: "This text is not a date, a range or a sequence." });
 	const periods = defaultDateNotes().periods;
 	periods.week.enabled = false;
 	assert.deepEqual(previewSequence("next week", context({ periods })), {
@@ -63,20 +65,35 @@ test("text that does not parse shows why", () => {
 	});
 });
 
+test("an unfinished phrase suggests how to finish it", () => {
+	assert.deepEqual(previewSequence("next we", context()), { kind: "invalid", text: "Keep typing, as in next wed." });
+});
+
 test("a sequence the parser refuses as too long shows the over-limit message", () => {
-	const refusal: Refusal = { language: "en", node: { kind: "day", amount: 0, unit: "day" }, reason: "tooManyItems", limit: 366 };
-	const refusals = (text: string): Refusal[] => (text === "every day for 400 days" ? [refusal] : []);
-	assert.deepEqual(previewSequence("every day for 400 days", context({ parser: NO_PARSE, refusals })), {
+	assert.deepEqual(previewSequence("every day for 400 days", context()), {
+		kind: "invalid",
+		text: "This makes more than 366 dates. Shorten the range or sequence.",
+	});
+	const refusal: Refusal = { language: "es", node: { kind: "day", amount: 0, unit: "day" }, reason: "tooManyItems", limit: 366 };
+	const analyze = (text: string): Analysis => ({ interpretations: [], refusals: text === "cada dia durante 400 dias" ? [refusal] : [] });
+	assert.deepEqual(previewSequence("cada dia durante 400 dias", context({ parser: NO_PARSE, analyze })), {
 		kind: "invalid",
 		text: "This makes more than 366 dates. Shorten the range or sequence.",
 	});
 });
 
+test("the over-limit message wins over a turned-off period", () => {
+	const periods = defaultDateNotes().periods;
+	periods.day.enabled = false;
+	assert.equal(previewText("every day for 400 days", { periods }), "This makes more than 366 dates. Shorten the range or sequence.");
+});
+
 test("a parseable interpretation wins over a refusal", () => {
 	const interpretation: Interpretation = { language: "en", node: { kind: "day", amount: 0, unit: "day" }, result: { kind: "single", span: { unit: "day", start: "2026-11-17", end: "2026-11-17" } } };
 	const parser: DateParser = { parse: () => [interpretation], complete: () => [] };
-	const refusals = (): Refusal[] => [{ language: "en", node: interpretation.node, reason: "tooManyItems", limit: 366 }];
-	assert.equal(previewText("today", { parser, refusals }), "Tue 17 Nov → [[2026-11-17]]");
+	const analyze = (): Analysis => ({ interpretations: [interpretation], refusals: [{ language: "en", node: interpretation.node, reason: "tooManyItems", limit: 366 }] });
+	assert.equal(previewText("today", { parser, analyze }), "Tue 17 Nov → [[2026-11-17]]");
+	assert.equal(previewText("gibberish", { parser: NO_PARSE, analyze: NO_ANALYSIS }), "This text is not a date, a range or a sequence.");
 });
 
 const LINKS = ["[[2026-11-23]]", "[[2026-11-24]]", "[[2026-11-25]]"];
@@ -94,10 +111,14 @@ test("the inline layout joins the links with the Mentions separator", () => {
 test("the bullet list layout puts one bullet per link, whatever the Mentions separator", () => {
 	assert.equal(sequenceInsertion(LINKS, settings({ layout: "bulletList" }), "commaSpace", ""), "- [[2026-11-23]]\n- [[2026-11-24]]\n- [[2026-11-25]]");
 	assert.equal(sequenceInsertion(LINKS, settings({ layout: "bulletList" }), "space", "  - "), "[[2026-11-23]]\n  - [[2026-11-24]]\n  - [[2026-11-25]]");
+	assert.equal(sequenceInsertion(LINKS, settings({ layout: "bulletList" }), "space", "Due "), "\n- [[2026-11-23]]\n- [[2026-11-24]]\n- [[2026-11-25]]");
+	assert.equal(sequenceInsertion(LINKS.slice(0, 1), settings({ layout: "bulletList" }), "commaSpace", ""), "- [[2026-11-23]]");
 });
 
 test("the one-per-line layout puts each link on its own line", () => {
 	assert.equal(sequenceInsertion(LINKS, settings({ layout: "linePerItem" }), "commaSpace", ""), "[[2026-11-23]]\n[[2026-11-24]]\n[[2026-11-25]]");
+	assert.equal(sequenceInsertion(LINKS.slice(0, 2), settings({ layout: "linePerItem" }), "commaSpace", "  "), "[[2026-11-23]]\n  [[2026-11-24]]");
+	assert.equal(sequenceInsertion(LINKS.slice(0, 2), settings({ layout: "linePerItem" }), "commaSpace", "  Due "), "\n  [[2026-11-23]]\n  [[2026-11-24]]");
 });
 
 test("the item template wraps every link", () => {
@@ -129,4 +150,38 @@ test("the Insert sequence subpage reads and writes its two controls through cont
 	assert.deepEqual(stored.insertSequence, { layout: "bulletList", itemTemplate: "- [ ] {{link}}" });
 	assert.equal(readControl(stored, SEQUENCE_LAYOUT_KEY), "bulletList");
 	assert.equal(readControl(stored, SEQUENCE_ITEM_TEMPLATE_KEY), "- [ ] {{link}}");
+});
+
+function fakeEditor(line: string, ch = line.length): CursorEditor & { inserted: string[] } {
+	const inserted: string[] = [];
+	return {
+		inserted,
+		getCursor: () => ({ line: 0, ch }),
+		getLine: () => line,
+		replaceSelection: (text: string) => void inserted.push(text),
+	};
+}
+
+test("Enter inserts the previewed links at the cursor in the chosen layout", () => {
+	const preview = previewSequence("every mon for 4 weeks", context());
+	const editor = fakeEditor("- ");
+	const linkTo = (note: { name: string }) => `[[${note.name}]]`;
+	assert.equal(insertAtCursor(editor, preview, linkTo, settings({ layout: "bulletList", itemTemplate: "Review {{link}}" }), "commaSpace"), true);
+	assert.deepEqual(editor.inserted, ["Review [[2026-11-23]]\n- Review [[2026-11-30]]\n- Review [[2026-12-07]]\n- Review [[2026-12-14]]"]);
+	const inline = fakeEditor("Due on ");
+	assert.equal(insertAtCursor(inline, previewSequence("mon to wed", context()), linkTo, settings({ layout: "inline" }), "space"), true);
+	assert.deepEqual(inline.inserted, ["[[2026-11-23]] [[2026-11-24]] [[2026-11-25]]"]);
+});
+
+test("Enter inserts nothing while the text does not parse", () => {
+	const editor = fakeEditor("");
+	const invalid: SequencePreview = previewSequence("hello world", context());
+	assert.equal(insertAtCursor(editor, invalid, () => "x", settings({}), "commaSpace"), false);
+	assert.equal(insertAtCursor(editor, { kind: "empty" }, () => "x", settings({}), "commaSpace"), false);
+	assert.deepEqual(editor.inserted, []);
+});
+
+test("an item template without {{link}} is refused with a message", () => {
+	assert.equal(itemTemplateError("- [ ] "), "Include {{link}} where the link goes.");
+	assert.equal(itemTemplateError("- [ ] {{link}}"), undefined);
 });

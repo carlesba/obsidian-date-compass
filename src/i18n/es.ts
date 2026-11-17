@@ -102,6 +102,7 @@ export const es: Translation = {
 	sequencePlaceholder: "Escribe un rango o una secuencia, como cada lunes durante 4 semanas",
 	sequenceTooLong: "Salen más de {limit} fechas. Acorta el rango o la secuencia.",
 	sequencePeriodOff: "Esta frase apunta a notas de un periodo desactivado en Notas de fecha.",
+	sequenceKeepTyping: "Sigue escribiendo, como en {phrase}.",
 	sequenceNotADate: "Este texto no es una fecha, ni un rango, ni una secuencia.",
 	sequenceLayout: "Disposición",
 	sequenceLayoutDesc: "Cómo se colocan los enlaces insertados.",
@@ -109,7 +110,7 @@ export const es: Translation = {
 	layoutBulletList: "Lista con viñetas",
 	layoutLinePerItem: "Uno por línea",
 	itemTemplate: "Plantilla de cada elemento",
-	itemTemplateDesc: "El texto que se inserta por cada fecha, donde {{link}} es su enlace, como - [ ] {{link}}.",
+	itemTemplateDesc: "El texto que se inserta por cada fecha, donde {{link}} es su enlace, como Revisar {{link}}.",
 	itemTemplateNeedsLink: "Incluye {{link}} donde va el enlace.",
 
 	resetAllSettings: "Restablecer todos los ajustes",

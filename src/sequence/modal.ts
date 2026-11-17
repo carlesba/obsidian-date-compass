@@ -1,10 +1,11 @@
 import { Modal } from "obsidian";
 import type { App, Editor } from "obsidian";
 import { t } from "../i18n/index.ts";
-import { phraseRowContext } from "../dateNotes/phraseModal.ts";
+import { obsidianRowContext } from "../obsidianParseOptions.ts";
 import { markdownLinkTo } from "../mentions/obsidianHost.ts";
+import type { NoteRef } from "../mentions/rows.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import { previewSequence, sequenceInsertion } from "./preview.ts";
+import { insertAtCursor, previewSequence } from "./preview.ts";
 import type { SequencePreview } from "./preview.ts";
 
 export class InsertDateSequenceModal extends Modal {
@@ -25,7 +26,7 @@ export class InsertDateSequenceModal extends Modal {
 		const input = this.contentEl.createEl("input", { type: "text", attr: { placeholder: t("sequencePlaceholder") } });
 		const previewEl = this.contentEl.createDiv();
 		input.addEventListener("input", () => {
-			this.preview = previewSequence(input.value, phraseRowContext(this.settings()));
+			this.preview = previewSequence(input.value, obsidianRowContext(this.settings()));
 			previewEl.setText(this.preview.kind === "empty" ? "" : this.preview.text);
 		});
 		input.addEventListener("keydown", (event) => {
@@ -41,12 +42,8 @@ export class InsertDateSequenceModal extends Modal {
 	}
 
 	private insertLinks(): void {
-		if (this.preview.kind !== "dates") return;
-		const settings = this.settings();
-		const links = this.preview.notes.map((note) => markdownLinkTo(this.app, note.path, this.sourcePath, undefined));
-		const cursor = this.editor.getCursor("from");
-		const textBeforeCursor = this.editor.getLine(cursor.line).slice(0, cursor.ch);
-		this.editor.replaceSelection(sequenceInsertion(links, settings.insertSequence, settings.mentions.separator, textBeforeCursor));
-		this.close();
+		const { insertSequence, mentions } = this.settings();
+		const linkTo = (note: NoteRef) => markdownLinkTo(this.app, note.path, this.sourcePath, undefined);
+		if (insertAtCursor(this.editor, this.preview, linkTo, insertSequence, mentions.separator)) this.close();
 	}
 }

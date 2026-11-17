@@ -162,9 +162,21 @@ const LIST_MARKER_ONLY = /^\s*([-*+]|\d+[.)])\s+$/;
 
 export function insertionText(links: readonly string[], separator: LinkSeparator, textBeforeMention: string): string {
 	if (links.length < 2 || separator !== "bulletLines") return joinLinks(links, separator);
-	const indent = /^\s*/.exec(textBeforeMention)?.[0] ?? "";
+	return bulletLinesText(links, textBeforeMention);
+}
+
+export function indentOf(line: string): string {
+	return /^\s*/.exec(line)?.[0] ?? "";
+}
+
+export function isListMarkerOnly(line: string): boolean {
+	return LIST_MARKER_ONLY.test(line);
+}
+
+export function bulletLinesText(links: readonly string[], textBeforeMention: string): string {
+	const indent = indentOf(textBeforeMention);
 	const bullets = links.map((link) => `${indent}- ${link}`);
-	if (LIST_MARKER_ONLY.test(textBeforeMention)) return [links[0], ...bullets.slice(1)].join("\n");
+	if (isListMarkerOnly(textBeforeMention)) return [links[0], ...bullets.slice(1)].join("\n");
 	if (textBeforeMention.trim() === "") return [`- ${links[0]}`, ...bullets.slice(1)].join("\n");
 	return `\n${bullets.join("\n")}`;
 }
