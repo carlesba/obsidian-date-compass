@@ -33,7 +33,11 @@ export function destinationInActiveEditor(editor: Editor): DatesDestination {
 export function addDatesToProperty(app: App, editor: Editor, file: TFile, name: string, notes: readonly NoteRef[], range?: InsertionRange): void {
 	if (range) editor.replaceRange("", range.start, range.end);
 	const write = async () => {
-		if (range) await app.workspace.getActiveViewOfType(MarkdownView)?.save();
+		if (range) {
+			const view = app.workspace.getActiveViewOfType(MarkdownView);
+			if (view?.file?.path !== file.path) throw new Error("The note is not open in the active editor");
+			await view.save();
+		}
 		const links = notes.map((note) => propertyLinkTo(app, note, file.path));
 		await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
 			const updated = propertyWithLinks(frontmatter[name], links);
