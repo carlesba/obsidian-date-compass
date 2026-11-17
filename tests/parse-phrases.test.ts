@@ -115,13 +115,13 @@ test("every other counts weeks from the start of the current week", () => {
 });
 
 test("every other counts weeks from the start of the week the settings name", () => {
-	const sundayStart = { ...optionsFor("en"), weekStart: "sunday" };
+	const sundayStart: ParseOptions = { ...optionsFor("en"), weekStart: "sunday" as const };
 	const dates = parse("every other sun, mon for 5 weeks", NOW, sundayStart).map((interpretation) => itemsOf(interpretation.result).map((item) => item.start));
 	assert.deepEqual(dates, [["2026-11-29", "2026-11-30", "2026-12-13", "2026-12-14"]]);
 });
 
 test("a numeric end date already past this year ends next year", () => {
-	const dayFirst = { ...optionsFor("en"), dayMonthOrder: "dayMonth" };
+	const dayFirst: ParseOptions = { ...optionsFor("en"), dayMonthOrder: "dayMonth" as const };
 	const [dates] = parse("every wed until 10/11", NOW, dayFirst).map((interpretation) => itemsOf(interpretation.result).map((item) => item.start));
 	assert.equal(dates[dates.length - 1], "2027-11-10");
 });
