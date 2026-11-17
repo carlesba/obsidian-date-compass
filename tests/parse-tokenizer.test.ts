@@ -42,8 +42,8 @@ test("a letter run glued to digits is segmented into lexicon words", () => {
 });
 
 test("a letter run not touching digits is never segmented", () => {
-	assert.deepEqual(tokenize("and", index).map(texts), [["and"]]);
-	assert.deepEqual(tokenize("and", index)[0][0].alternatives, []);
+	assert.deepEqual(tokenize("aday", index).map(texts), [["aday"]]);
+	assert.deepEqual(tokenize("aday", index)[0][0].alternatives, []);
 });
 
 test("the longest lexicon phrase wins", () => {
