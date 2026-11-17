@@ -2,6 +2,8 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { copyFromSource, dateNoteMismatches, importDateNotes } from "../src/dateNotes/import.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
+import { mismatchDescription } from "../src/settings/dateNotesPage.ts";
+import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 
 const PERIODIC_NOTES = {
 	showGettingStartedBanner: false,
@@ -83,4 +85,29 @@ test("the copy button copies the other plugin's folders and formats in, and noth
 	const source = structuredClone(DAILY_NOTES);
 	copyFromSource(settings, "periodicNotes", { periodicNotes: PERIODIC_NOTES, dailyNotes: source });
 	assert.deepEqual(source, DAILY_NOTES);
+});
+
+test("the Periodic Notes 1.0 calendar sets shape imports its active set", () => {
+	const settings = defaultDateNotes();
+	const data = {
+		activeCalendarSet: "work",
+		calendarSets: [
+			{ id: "default", day: { enabled: true, folder: "home", format: "YYYY-MM-DD" } },
+			{ id: "work", day: { enabled: true, folder: "work/days", format: "", templatePath: "templates/work.md" }, week: { enabled: false, format: "GGGG-[W]WW" } },
+		],
+	};
+	assert.equal(importDateNotes(settings, { periodicNotes: data }), "periodicNotes");
+	assert.deepEqual(settings.periods.day, { enabled: true, folder: "work/days", format: "YYYY-MM-DD", template: "templates/work.md" });
+	assert.deepEqual(settings.periods.week, { enabled: false, folder: "", format: "GGGG-[W]WW", template: "" });
+	assert.deepEqual(settings.periods.month, defaultDateNotes().periods.month);
+});
+
+test("the notice names each difference, showing an empty folder as the vault root", () => {
+	setLanguage(DEFAULT_LANGUAGE);
+	const settings = defaultDateNotes();
+	const [mismatch] = dateNoteMismatches(settings, { dailyNotes: DAILY_NOTES });
+	assert.equal(
+		mismatchDescription(mismatch),
+		'Calendar and other plugins read those settings, so they look for different notes. Daily notes, Folder: "journal" there, vault root here. Daily notes, Name format: "DD-MM-YYYY" there, "YYYY-MM-DD" here.',
+	);
 });

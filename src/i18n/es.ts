@@ -57,6 +57,7 @@ export const es: Translation = {
 	templateNotFound: "No se encontró la plantilla {path}, así que la nota se creó vacía.",
 	templaterNotEnabled: "Templater no está activado, así que Date Compass rellenó la plantilla.",
 	templaterFailed: "Templater no pudo crear {path}.",
+	openDateNoteFailed: "No se pudo abrir la nota de fecha: {error}",
 	noNextDateNote: "No hay ninguna nota posterior de este periodo.",
 	noPreviousDateNote: "No hay ninguna nota anterior de este periodo.",
 	openTodayNote: "Abrir la nota de hoy",

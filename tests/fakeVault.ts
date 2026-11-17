@@ -5,6 +5,7 @@ export interface FakeTemplaterOptions {
 	folderTemplates?: { folder: string; template: string }[];
 	fileTemplates?: { regex: string; template: string }[];
 	parseDelayMs?: number;
+	failsToParse?: boolean;
 }
 
 export interface FakeVaultOptions {
@@ -73,6 +74,11 @@ export function fakeVault(initial: Record<string, string>, options: FakeVaultOpt
 			createFromTemplate: async (template, path) => {
 				create(path, "");
 				pending.add(path);
+				if (rules.failsToParse) {
+					files.delete(path);
+					pending.delete(path);
+					return;
+				}
 				const output = await parse(template, path, "command");
 				files.set(path, output);
 				pending.delete(path);

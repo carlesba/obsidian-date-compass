@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert";
 import { ensureDateNote } from "../src/dateNotes/create.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { DateNotesSettings } from "../src/dateNotes/periods.ts";
-import { chooseRunner, renderTemplate } from "../src/dateNotes/templates.ts";
+import { chooseRunner, coreTemplateFormats, renderTemplate } from "../src/dateNotes/templates.ts";
 import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 import { fakeVault } from "./fakeVault.ts";
 import type { FakeTemplaterOptions } from "./fakeVault.ts";
@@ -110,4 +110,18 @@ test("the built-in renderer takes {{date}} from the note and {{time}} from now",
 		formats: { dateFormat: "YYYY-MM-DD", timeFormat: "HH:mm" },
 	});
 	assert.equal(rendered, "2026-11-17 2026-11-17 2026 W47 18:45 18 {{other}}");
+});
+
+test("when Templater cannot render the template, nothing is opened and the failure is shown", async () => {
+	const vault = fakeVault(TEMPLATES, { templater: { failsToParse: true } });
+	const settings = settingsWith((s) => (s.periods.day.template = "templates/day.md"));
+	assert.equal(await ensureDateNote(vault.host, settings, TODAY, "day"), undefined);
+	assert.equal(vault.content("on/2026-11-17.md"), undefined);
+	assert.deepEqual(vault.notices, ["Templater could not create on/2026-11-17.md."]);
+});
+
+test("core Templates formats fall back to the defaults when they are missing or blank", () => {
+	assert.deepEqual(coreTemplateFormats(undefined), { dateFormat: "YYYY-MM-DD", timeFormat: "HH:mm" });
+	assert.deepEqual(coreTemplateFormats({ dateFormat: " ", timeFormat: "h:mm A" }), { dateFormat: "YYYY-MM-DD", timeFormat: "h:mm A" });
+	assert.deepEqual(chooseRunner("templater", { templater: false, coreTemplates: true }), { runner: "coreTemplates", templaterMissing: true });
 });

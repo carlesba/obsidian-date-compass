@@ -20,9 +20,13 @@ const CURRENT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey
 export function registerDateNoteCommands(plugin: Plugin, settings: () => DateNotesSettings): void {
 	const { app } = plugin;
 	const openNote = async (date: Moment, period: Period) => {
-		const path = await ensureDateNote(createDateNoteHost(app), settings(), date, period);
-		const file = path ? app.vault.getFileByPath(path) : null;
-		if (file) await app.workspace.getLeaf(false).openFile(file);
+		try {
+			const path = await ensureDateNote(createDateNoteHost(app), settings(), date, period);
+			const file = path ? app.vault.getFileByPath(path) : null;
+			if (file) await app.workspace.getLeaf(false).openFile(file);
+		} catch (error) {
+			new Notice(t("openDateNoteFailed", { error: error instanceof Error ? error.message : String(error) }));
+		}
 	};
 	for (const period of PERIODS) {
 		const { id, name } = CURRENT_PERIOD_COMMANDS[period];

@@ -42,18 +42,25 @@ const DAILY_NOTES_DEFAULT_FORMAT = "YYYY-MM-DD";
 
 export function periodicNotesPeriods(data: unknown): ExternalPeriods | undefined {
 	if (!isRecord(data)) return undefined;
+	const calendarSet = activeCalendarSet(data);
 	const periods: ExternalPeriods = {};
 	for (const period of PERIODS) {
-		const entry = data[PERIODIC_NOTES_KEYS[period]];
+		const entry = calendarSet ? calendarSet[period] : data[PERIODIC_NOTES_KEYS[period]];
 		if (!isRecord(entry)) continue;
 		periods[period] = {
 			enabled: entry.enabled === true,
 			folder: normalizeFolder(entry.folder),
 			format: formatOr(entry.format, PERIODIC_NOTES_DEFAULT_FORMATS[period]),
-			template: templatePath(entry.template),
+			template: templatePath(calendarSet ? entry.templatePath : entry.template),
 		};
 	}
 	return Object.keys(periods).length > 0 ? periods : undefined;
+}
+
+function activeCalendarSet(data: Record<string, unknown>): Record<string, unknown> | undefined {
+	if (!Array.isArray(data.calendarSets)) return undefined;
+	const sets = data.calendarSets.filter(isRecord);
+	return sets.find((set) => set.id === data.activeCalendarSet) ?? sets[0];
 }
 
 export function dailyNotesPeriods(options: unknown): ExternalPeriods | undefined {

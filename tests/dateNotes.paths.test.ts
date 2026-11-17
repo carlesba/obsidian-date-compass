@@ -64,3 +64,9 @@ test("next and previous go to the nearest existing note of the same period", () 
 	const week = dateOf("2026-W47.md", settings, moment)!;
 	assert.equal(nearestDateNote(week, 1, paths, settings, moment), "2026-W48.md");
 });
+
+test("a locale week format reads back as the locale's first day of that week", () => {
+	const localeWeeks = periods((settings) => (settings.week.format = "gggg-[W]ww"));
+	assert.equal(notePath(TODAY, "week", localeWeeks), "2026-W47.md");
+	assert.equal(dateOf("2026-W47.md", localeWeeks, moment)?.date.format("ddd YYYY-MM-DD"), "Sun 2026-11-15");
+});

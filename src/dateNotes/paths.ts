@@ -17,14 +17,6 @@ const MOMENT_UNITS: Record<Period, "day" | "isoWeek" | "month" | "quarter" | "ye
 	year: "year",
 };
 
-const STEP_UNITS: Record<Period, "days" | "weeks" | "months" | "quarters" | "years"> = {
-	day: "days",
-	week: "weeks",
-	month: "months",
-	quarter: "quarters",
-	year: "years",
-};
-
 export function noteName(date: Moment, period: Period, periods: PeriodSettingsByPeriod): string {
 	return date.format(periods[period].format);
 }
@@ -47,10 +39,6 @@ export function dateOf(path: string, periods: PeriodSettingsByPeriod, moment: Mo
 		if (date.isValid() && date.format(format) === name) return { date: startOfPeriod(date, period, format), period };
 	}
 	return undefined;
-}
-
-export function shiftPeriod(date: Moment, period: Period, steps: number): Moment {
-	return date.clone().add(steps, STEP_UNITS[period]);
 }
 
 export function nearestDateNote(

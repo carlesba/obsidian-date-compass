@@ -55,6 +55,7 @@ export const en = {
 	templateNotFound: "Template {path} was not found, so the note was created empty.",
 	templaterNotEnabled: "Templater is not enabled, so Date Compass filled in the template.",
 	templaterFailed: "Templater could not create {path}.",
+	openDateNoteFailed: "The date note could not be opened: {error}",
 	noNextDateNote: "There is no later note of this period.",
 	noPreviousDateNote: "There is no earlier note of this period.",
 	openTodayNote: "Open today's note",
