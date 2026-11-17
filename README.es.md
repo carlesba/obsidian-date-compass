@@ -77,9 +77,9 @@ Los rangos y las secuencias dan varias fechas a la vez:
 Con `until`, una fecha sin año es la próxima vez que llega: si el `dec 20` ya pasó este año, se
 entiende el 20 dic del año que viene. `every other wed` cuenta las semanas alternas desde el inicio
 de la semana actual, según **La semana empieza el**, así que un día que ya pasó esta semana
-aparece por primera vez dentro de dos semanas. Mientras escribes una secuencia en la lista de `@` o
-en Insertar fechas, las filas sugieren cómo seguir: `@every` ofrece `every ... N times` y `@every
-wed for 5` ofrece `times`, `days`, `weeks` y `months`.
+aparece por primera vez dentro de dos semanas. Mientras escribes una secuencia, la lista de `@` muestra filas con las fechas que daría cada forma de
+seguir, como con `@every` o `@every wed for 5`, y los resultados iguales comparten fila. Insertar
+fechas dice «Sigue escribiendo, como en every wed for 5 times.» bajo el cuadro.
 
 Un rango o una secuencia de más de 366 fechas se rechaza con un mensaje, y la API no devuelve nada
 para él.
@@ -174,8 +174,7 @@ Ajustes → **Menciones**:
 Teclas de la lista: Intro inserta la fila seleccionada, ⇧↵ abre Insertar fechas con la frase
 escrita y ⌥↵ inserta con el texto del enlace invertido. La última fila, **Más…**, hace lo mismo que
 ⇧↵, así que en el móvil toca **Más…**; en Insertar fechas, el interruptor **Con texto en el
-enlace** es el equivalente táctil de ⌥↵. En una línea de propiedad en modo código, Intro sobre una
-fila también añade las fechas a esa propiedad.
+enlace** es el equivalente táctil de ⌥↵.
 
 La página avisa cuando otro plugin activado (Natural Language Dates, su versión revivida, Date List
 o las menciones de Note Compass) usa el mismo disparador, porque las dos listas competirían.
@@ -195,9 +194,10 @@ los enlaces sustituyen a `@frase`.
 
 **En una propiedad.** Con el cursor en una línea de propiedad en modo código, o con un campo de
 propiedad enfocado en la vista de Propiedades, Insertar fechas añade los enlaces a esa propiedad en
-lugar de al cuerpo. El cuadro dice entonces «Las fechas se añadirán a la propiedad «{nombre}».» y no
-tiene vista previa ni interruptor. Los valores que ya tiene la propiedad conservan su orden, y una
-fecha que ya está como enlace no se añade dos veces. Con el cursor en una línea del frontmatter que
+lugar de al cuerpo. El cuadro dice entonces "Las fechas se añadirán a la propiedad «{name}»." y no
+tiene línea de enlaces ni interruptor. Los valores que ya tiene la propiedad conservan su orden, un
+`2026-11-23` suelto se queda con el enlace añadido a su lado y un enlace que ya está no se añade dos
+veces. Los enlaces escritos en una propiedad son wikilinks sin más. Con el cursor en una línea del frontmatter que
 no es una propiedad aparece «Coloca el cursor en una propiedad para añadirle fechas.»; el texto
 nunca se escribe dentro del YAML.
 
@@ -213,7 +213,8 @@ Insertar fechas:
 - Grupo **Texto del enlace**:
   - **Mostrar un texto en lugar del nombre de la nota**: desactivado por defecto; ⌥↵ y el
     interruptor **Con texto en el enlace** lo invierten en una inserción.
-  - **Qué dice el texto del enlace**: **La frase escrita** o **Un formato de fecha**.
+  - **Qué dice el texto del enlace**: **La frase escrita** o **Un formato de fecha** (por defecto).
+    Con la frase escrita, varias fechas no llevan texto en el enlace.
   - **Formato de fecha del texto del enlace**: solo aparece con **Un formato de fecha**; por
     defecto `ddd D MMM`.
 
@@ -223,7 +224,7 @@ Una acción es un comando que hace una pregunta y rellena una propiedad de la no
 sustituyendo su valor. Cada acción activada aparece en la paleta de comandos como "Date Compass:
 *nombre*". Una acción sin propiedad no se ofrece.
 
-### Los dos predefinidos
+### Las dos acciones predefinidas
 
 Los dos se añaden en la primera instalación y se pueden quitar. Los dos piden **Fechas** y tienen
 activado **Cada fecha como enlace**.
@@ -242,21 +243,20 @@ como comando y un lápiz para editarla. Arrastra una fila para reordenarla, bór
 - **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta. Su valor se
   sustituye.
 - **Qué pide**: **Una fecha** admite una frase de una nota de cualquier periodo activado y muestra
-  en su cuadro «La fecha sustituirá el valor de la propiedad «{nombre}».». **Fechas** abre el
-  cuadro de Insertar fechas para cualquier rango, secuencia o lista, dice «Las fechas sustituirán el
-  valor de la propiedad «{nombre}».» y escribe todas las fechas.
+  en su cuadro "La fecha sustituirá el valor de la propiedad «{name}»." **Fechas** abre un
+  cuadro como el de Insertar fechas, «¿Qué fechas para {name}?», para cualquier rango, secuencia o
+  lista, dice "Las fechas sustituirán el
+  valor de la propiedad «{name}»." y escribe todas las fechas.
 - **Cada fecha como enlace**: activado escribe cada fecha como un enlace. Desactivado escribe texto
   con el formato del tipo de propiedad: `YYYY-MM-DD` para fecha,
   `YYYY-MM-DDTHH:mm` para fecha y hora, y el nombre de la nota en los demás tipos.
 
 Una frase que da una sola fecha escribe un valor, no una lista, salvo que la propiedad sea una lista
 o ya contenga una, que sigue siendo lista. El enlace es siempre un wikilink, porque las propiedades
-de Obsidian no tratan los enlaces Markdown como enlaces. Un `2026-11-23` suelto que ya esté en la
-propiedad se queda, y el enlace se añade a su lado; un enlace que ya está no se añade dos veces. La
-escritura solo ocurre si la nota activa es la que se modifica. Cancelar cualquiera de los cuadros no
+de Obsidian no tratan los enlaces Markdown como enlaces. Cancelar cualquiera de los cuadros no
 cambia nada.
 
-### Viniendo de la v1
+### Si vienes de la v1
 
 Al cargar por primera vez, las acciones de la v1 se convierten. Una acción conserva su primera
 escritura en una propiedad: esa propiedad y, si escribía enlaces, enlaces. El tipo de su pregunta da

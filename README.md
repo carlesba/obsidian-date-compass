@@ -75,9 +75,9 @@ Ranges and sequences give several dates at once:
 `until` takes a date without a year as the next time it comes: when `dec 20` is already past this
 year, it means 20 Dec next year. `every other wed` counts alternate weeks from the start of the
 current week, as set by **Week starts on**, so a weekday that has already passed this week first
-appears the week after next. While you type a sequence in the `@` list or in Insert dates, rows
-suggest how to go on: `@every` offers `every ... N times` hints and `@every wed for 5` offers
-`times`, `days`, `weeks` and `months`.
+appears the week after next. While you type a sequence, the `@` list shows rows with the dates each way of going on would give,
+such as `@every` or `@every wed for 5`, and equal results share one row. Insert dates says "Keep
+typing, as in every wed for 5 times." under the box.
 
 A range or sequence longer than 366 dates is refused with a message, and the API returns nothing
 for it.
@@ -168,8 +168,7 @@ Settings → **Mentions**:
 
 Keys in the list: Enter inserts the selected row, ⇧↵ opens Insert dates with the typed phrase, and
 ⌥↵ inserts with the link text flipped. The last row, **More…**, does what ⇧↵ does, so on a phone
-tap **More…**; in Insert dates, the **With link text** switch is the tap for ⌥↵. On a property line
-in source mode, Enter on a row also adds the dates to that property.
+tap **More…**; in Insert dates, the **With link text** switch is the tap for ⌥↵.
 
 The page warns when another enabled plugin (Natural Language Dates, its revived fork, Date List or
 Note Compass mentions) uses the same trigger, because both lists would compete.
@@ -188,8 +187,9 @@ From the `@` list, **More…** or ⇧↵ opens this box with the phrase you type
 
 **Into a property.** With the cursor on a property line in source mode, or with a property field
 focused in the Properties view, Insert dates adds the links to that property instead of the body.
-The box then says "Dates will be added to the property {name}." and has no preview or switch. Values
-already in the property keep their order, and a date already there as a link is not added twice. A
+The box then says "Dates will be added to the property {name}." and has no links line or switch.
+Values already in the property keep their order, a plain `2026-11-23` stays with the link added beside
+it, and a link already there is not added twice. Links written into a property are plain wikilinks. A
 cursor on a frontmatter line that is not a property shows "Put the cursor on a property to add
 dates to it."; the text is never written into the YAML.
 
@@ -205,7 +205,8 @@ dates:
 - Group **Link text**:
   - **Show a link text instead of the note name**: off by default; ⌥↵ and the **With link text**
     switch flip it for one insert.
-  - **What the link text says**: **The typed phrase** or **A date format**.
+  - **What the link text says**: **The typed phrase** or **A date format** (default). With the typed
+    phrase, several dates get no link text.
   - **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`.
 
 ## Date actions
@@ -233,7 +234,7 @@ creates one. An action page has:
   replaced.
 - **What it asks for**: **One date** takes a phrase for one note of any enabled period, and shows
   the sentence "The date will replace the value of the property {name}." in its box. **Dates**
-  opens the Insert dates box for any range, sequence or list, says "Dates will replace the value of
+  opens a box like Insert dates, "Which dates for {name}?", for any range, sequence or list, says "Dates will replace the value of
   the property {name}." and writes every date.
 - **Each date as link**: on writes each date as a link. Off writes plain text in the format of the
   property type: `YYYY-MM-DD` for a date property, `YYYY-MM-DDTHH:mm` for date and time, and the
@@ -241,9 +242,7 @@ creates one. An action page has:
 
 Phrases that resolve to one date write one value, not a list, unless the property is a list or
 already holds a list, which stays a list. A link is always a wikilink, because Obsidian properties
-do not treat Markdown links as links. A plain `2026-11-23` already in the property stays, and the
-link is added beside it; a link already there is not added twice. The write only happens when the
-active note is the one being changed. Cancelling either box changes nothing.
+do not treat Markdown links as links. Cancelling either box changes nothing.
 
 ### Coming from v1
 
