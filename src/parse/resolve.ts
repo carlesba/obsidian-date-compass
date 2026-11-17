@@ -16,7 +16,7 @@ export function resolve(node: ParsedNode, now: Date, options: ParseOptions): Out
 		case "count":
 			return resolveCount(node, today, options);
 		case "every":
-			return resolveEvery(node, today);
+			return resolveEvery(node, today, options);
 		case "within":
 			return resolveWithin(node, today, options);
 		case "weekdays":
@@ -84,14 +84,14 @@ function resolveCount(node: CountNode, today: CivilDate, options: ParseOptions):
 	return sequenceOf(collect((index) => (index < node.amount ? periodSpan(node.unit, addUnits(current, firstOffset + index, node.unit), options) : undefined)));
 }
 
-function resolveEvery(node: EveryNode, today: CivilDate): Outcome | undefined {
+function resolveEvery(node: EveryNode, today: CivilDate, options: ParseOptions): Outcome | undefined {
 	const bound = node.bound;
 	if ("times" in bound) {
 		if (bound.times < 1) return undefined;
 		if (bound.times > SEQUENCE_LIMIT) return { kind: "tooManyItems", limit: SEQUENCE_LIMIT };
-	} else if (bound.for.amount < 1) return undefined;
-	const windowEnd = "for" in bound ? addUnits(today, bound.for.amount, bound.for.unit) : undefined;
-	const accepts = (date: CivilDate, index: number) => ("times" in bound ? index < bound.times : windowEnd !== undefined && daysBetween(date, windowEnd) > 0);
+	} else if ("for" in bound && bound.for.amount < 1) return undefined;
+	const accepts = acceptance(bound, today, options);
+	if (!accepts) return undefined;
 	const pattern = node.pattern;
 	if ("step" in pattern) {
 		if (pattern.step.amount < 1) return undefined;
@@ -101,13 +101,24 @@ function resolveEvery(node: EveryNode, today: CivilDate): Outcome | undefined {
 		}));
 	}
 	const weekdays = new Set(pattern.weekdays);
+	const weekStep = pattern.weekStep ?? 1;
 	let day = today;
 	return sequenceOf(collect((index) => {
-		while (!weekdays.has(weekdayOf(day))) day = addDays(day, 1);
+		while (!weekdays.has(weekdayOf(day)) || Math.floor(daysBetween(today, day) / 7) % weekStep !== 0) day = addDays(day, 1);
 		const date = day;
 		day = addDays(day, 1);
 		return accepts(date, index) ? daySpan(date) : undefined;
 	}));
+}
+
+function acceptance(bound: EveryNode["bound"], today: CivilDate, options: ParseOptions): ((date: CivilDate, index: number) => boolean) | undefined {
+	if ("times" in bound) return (_date, index) => index < bound.times;
+	if ("until" in bound) {
+		const end = resolveDate(bound.until, today, options);
+		return end && ((date) => daysBetween(date, end) >= 0);
+	}
+	const windowEnd = addUnits(today, bound.for.amount, bound.for.unit);
+	return (date) => daysBetween(date, windowEnd) > 0;
 }
 
 function resolveWithin(node: WithinNode, today: CivilDate, options: ParseOptions): Outcome | undefined {

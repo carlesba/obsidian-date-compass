@@ -66,6 +66,8 @@ const lexicon: LexiconEntry[] = [
 	{ words: ["for"], meaning: { type: "for" } },
 	{ words: ["times"], meaning: { type: "times" } },
 	{ words: ["and"], meaning: { type: "and" } },
+	{ words: ["other"], meaning: { type: "other" } },
+	{ words: ["until", "till"], meaning: { type: "until" } },
 ];
 
 const rangeJoins: Element[][] = [[token("rangeJoin")], [symbol("-")], [symbol("."), symbol(".")]];
@@ -109,27 +111,41 @@ interface EveryPart<T> {
 
 const everyPatterns: Array<EveryPart<EveryNode["pattern"]>> = [
 	{ elements: [phrase("weekdays")], read: ([days]) => ({ weekdays: weekdaysOf(days) }) },
+	{ elements: [token("other"), phrase("weekdays")], read: ([, days]) => ({ weekdays: weekdaysOf(days), weekStep: 2 }) },
 	{ elements: [token("unit")], read: ([unit]): { step: Amount } => ({ step: { amount: 1, unit: unitOf(unit) } }) },
+	{ elements: [token("other"), token("unit")], read: ([, unit]): { step: Amount } => ({ step: { amount: 2, unit: unitOf(unit) } }) },
 	{ elements: [token("number"), token("unit")], read: ([amount, unit]) => ({ step: { amount: numberOf(amount), unit: unitOf(unit) } }) },
 ];
 
+const forBound: EveryPart<EveryNode["bound"]> = {
+	elements: [token("for"), token("number"), token("unit")],
+	read: ([, amount, unit]) => ({ for: { amount: numberOf(amount), unit: unitOf(unit) } }),
+};
+
 const everyBounds: Array<EveryPart<EveryNode["bound"]>> = [
-	{ elements: [token("for"), token("number"), token("unit")], read: ([, amount, unit]) => ({ for: { amount: numberOf(amount), unit: unitOf(unit) } }) },
+	forBound,
+	{ elements: [token("for"), token("number"), token("times")], read: ([, times]) => ({ times: numberOf(times) }) },
 	{ elements: [token("number"), token("times")], read: ([times]) => ({ times: numberOf(times) }) },
 	{ elements: [token("times"), token("number")], read: ([, times]) => ({ times: numberOf(times) }) },
+	{ elements: [token("until"), phrase("date")], read: ([, end]) => ({ until: dateOf(end) }) },
 ];
 
-const everyShapes: Shape[] = everyPatterns.flatMap((pattern) =>
-	everyBounds.map((bound): Shape => ({
+function everyShape(leading: Element[], pattern: EveryPart<EveryNode["pattern"]>, bound: EveryPart<EveryNode["bound"]>): Shape {
+	return {
 		produces: "sequence",
-		elements: [token("every"), ...pattern.elements, ...bound.elements],
+		elements: [...leading, ...pattern.elements, ...bound.elements],
 		build: (parts) => {
-			const patternParts = parts.slice(1, 1 + pattern.elements.length);
-			const boundParts = parts.slice(1 + pattern.elements.length);
+			const patternParts = parts.slice(leading.length, leading.length + pattern.elements.length);
+			const boundParts = parts.slice(leading.length + pattern.elements.length);
 			return { kind: "every", pattern: pattern.read(patternParts), bound: bound.read(boundParts) };
 		},
-	})),
-);
+	};
+}
+
+const everyShapes: Shape[] = [
+	...everyPatterns.flatMap((pattern) => everyBounds.map((bound) => everyShape([token("every")], pattern, bound))),
+	everyShape([], everyPatterns[0], forBound),
+];
 
 const countShapes: Shape[] = (["next", "last"] as const).map((which) => ({
 	produces: "sequence",
@@ -255,4 +271,4 @@ const shapes: Shape[] = [
 	...weekdayListShapes,
 ];
 
-export const en: Language = { id: "en", lexicon, shapes };
+export const en: Language = { id: "en", lexicon, shapes, hintWords: { plain: ["every", "other", "wed", "for", "times", "2", "5"], singularUnits: ["day", "week", "month"], pluralUnits: ["days", "weeks", "months"] } };

@@ -11,7 +11,7 @@ export type Meaning =
 	| { type: "relativeDay"; value: number }
 	| { type: "number"; value: number; digits?: number }
 	| { type: "symbol"; value: string }
-	| { type: "next" | "last" | "this" | "ago" | "in" | "of" | "ordinal" | "article" | "rangeJoin" | "from" | "every" | "for" | "times" | "and" };
+	| { type: "next" | "last" | "this" | "ago" | "in" | "of" | "ordinal" | "article" | "rangeJoin" | "from" | "every" | "for" | "times" | "and" | "other" | "until" };
 
 export type MeaningType = Meaning["type"];
 
@@ -67,8 +67,8 @@ export interface Amount {
 
 export interface EveryNode {
 	kind: "every";
-	pattern: { weekdays: Weekday[] } | { step: Amount };
-	bound: { for: Amount } | { times: number };
+	pattern: { weekdays: Weekday[]; weekStep?: number } | { step: Amount };
+	bound: { for: Amount } | { times: number } | { until: DateNode };
 }
 
 export interface WithinNode {
@@ -100,10 +100,17 @@ export interface Shape {
 	build: (parts: Part[]) => ParsedNode | undefined;
 }
 
+export interface HintWords {
+	plain: string[];
+	singularUnits: string[];
+	pluralUnits: string[];
+}
+
 export interface Language {
 	id: string;
 	lexicon: LexiconEntry[];
 	shapes: Shape[];
+	hintWords: HintWords;
 }
 
 export interface ParseOptions {
