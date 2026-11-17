@@ -1,4 +1,23 @@
-import { linkTarget } from "../actions/frontmatter.ts";
+const WIKILINK = /^\[\[([^\]|#]+)/;
+
+const MARKDOWN_LINK = /^\[[^\]]*\]\(<?([^)>]+)>?\)/;
+
+export function linkTarget(text: string): string {
+	const trimmed = text.trim();
+	const wikilink = WIKILINK.exec(trimmed);
+	if (wikilink) return wikilink[1].trim();
+	const markdown = MARKDOWN_LINK.exec(trimmed);
+	if (markdown) return safeDecode(markdown[1].trim());
+	return trimmed;
+}
+
+function safeDecode(text: string): string {
+	try {
+		return decodeURI(text);
+	} catch {
+		return text;
+	}
+}
 
 const LINK_START = /^\s*(\[\[|\[[^\]]*\]\()/;
 

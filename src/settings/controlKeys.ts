@@ -5,8 +5,8 @@ import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } fro
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
 import { withoutWhitespace } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, isLinkTemplate } from "../insertion/settings.ts";
-import { ACTION_FIELDS, INPUT_FIELDS, INPUT_TYPES, PROPERTY_MODES, VALUE_FORMATS, WRITE_FIELDS, WRITE_TARGETS, WRITE_VALUES } from "../actions/settings.ts";
-import type { ActionField, ActionInput, ActionWrite, DateAction, InputField, WriteField } from "../actions/settings.ts";
+import { ACTION_FIELDS, ASK_KINDS } from "../actions/settings.ts";
+import type { ActionField, DateAction } from "../actions/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
 
@@ -59,7 +59,7 @@ function periodFieldOfKey(key: string): { period: Period; field: PeriodField } |
 
 const ACTION_KEY_PREFIX = "actions/";
 
-const TYPED_ACTION_FIELDS = ["name", "key", "question", "defaultText", "property"];
+const TYPED_ACTION_FIELDS = ["name", "property"];
 
 export function isActionKey(key: string): boolean {
 	return key.startsWith(ACTION_KEY_PREFIX);
@@ -73,81 +73,35 @@ export function actionKey(actionId: string, field: ActionField): string {
 	return `${ACTION_KEY_PREFIX}${actionId}/${field}`;
 }
 
-export function inputKey(actionId: string, inputId: string, field: InputField): string {
-	return `${ACTION_KEY_PREFIX}${actionId}/inputs/${inputId}/${field}`;
+interface ActionControl {
+	action: DateAction;
+	field: ActionField;
 }
-
-export function writeKey(actionId: string, writeId: string, field: WriteField): string {
-	return `${ACTION_KEY_PREFIX}${actionId}/writes/${writeId}/${field}`;
-}
-
-type ActionControl =
-	| { kind: "action"; action: DateAction; field: ActionField }
-	| { kind: "input"; action: DateAction; input: ActionInput; field: InputField }
-	| { kind: "write"; action: DateAction; write: ActionWrite; field: WriteField };
 
 function actionControlOfKey(settings: DateCompassSettings, key: string): ActionControl | undefined {
 	if (!key.startsWith(ACTION_KEY_PREFIX)) return undefined;
 	const parts = key.slice(ACTION_KEY_PREFIX.length).split("/");
 	const action = settings.actions.find((candidate) => candidate.id === parts[0]);
-	if (!action) return undefined;
-	if (parts.length === 2) {
-		const field = ACTION_FIELDS.find((known) => known === parts[1]);
-		return field ? { kind: "action", action, field } : undefined;
-	}
-	if (parts.length !== 4) return undefined;
-	const [, list, id, name] = parts;
-	if (list === "inputs") {
-		const input = action.inputs.find((candidate) => candidate.id === id);
-		const field = INPUT_FIELDS.find((known) => known === name);
-		return input && field ? { kind: "input", action, input, field } : undefined;
-	}
-	if (list === "writes") {
-		const write = action.writes.find((candidate) => candidate.id === id);
-		const field = WRITE_FIELDS.find((known) => known === name);
-		return write && field ? { kind: "write", action, write, field } : undefined;
-	}
-	return undefined;
+	const field = ACTION_FIELDS.find((known) => known === parts[1]);
+	return parts.length === 2 && action && field ? { action, field } : undefined;
 }
 
-function readActionControl(control: ActionControl): unknown {
-	if (control.kind === "action") return control.action[control.field];
-	if (control.kind === "input") return control.input[control.field];
-	return control.write[control.field];
+function readActionControl({ action, field }: ActionControl): unknown {
+	return action[field];
 }
 
-function writeActionControl(control: ActionControl, value: unknown): boolean {
-	if (control.kind === "action") {
-		if (control.field === "enabled") return writeBoolean(value, (enabled) => (control.action.enabled = enabled));
-		return writeText(value, (name) => (control.action.name = name));
-	}
-	if (control.kind === "input") {
-		const { input } = control;
-		switch (control.field) {
-			case "type":
-				return writeChoice(INPUT_TYPES, value, (type) => (input.type = type));
-			case "optional":
-				return writeBoolean(value, (optional) => (input.optional = optional));
-			default: {
-				const field = control.field;
-				return writeText(value, (text) => (input[field] = text));
-			}
-		}
-	}
-	const { write } = control;
-	switch (control.field) {
-		case "target":
-			return writeChoice(WRITE_TARGETS, value, (target) => (write.target = target));
-		case "value":
-			return writeChoice(WRITE_VALUES, value, (choice) => (write.value = choice));
-		case "format":
-			return writeChoice(VALUE_FORMATS, value, (format) => (write.format = format));
-		case "mode":
-			return writeChoice(PROPERTY_MODES, value, (mode) => (write.mode = mode));
-		default: {
-			const field = control.field;
-			return writeText(value, (text) => (write[field] = text));
-		}
+function writeActionControl({ action, field }: ActionControl, value: unknown): boolean {
+	switch (field) {
+		case "enabled":
+			return writeBoolean(value, (enabled) => (action.enabled = enabled));
+		case "link":
+			return writeBoolean(value, (link) => (action.link = link));
+		case "asks":
+			return writeChoice(ASK_KINDS, value, (asks) => (action.asks = asks));
+		case "name":
+			return writeText(value, (name) => (action.name = name));
+		case "property":
+			return writeText(value, (property) => (action.property = property));
 	}
 }
 

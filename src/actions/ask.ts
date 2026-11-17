@@ -1,66 +1,33 @@
 import { MarkdownView, Notice } from "obsidian";
-import type { App, TFile } from "obsidian";
+import type { App } from "obsidian";
 import { t } from "../i18n/index.ts";
-import { ChoosingSuggestModal, DateNotePickerModal } from "../dateNotes/phraseModal.ts";
-import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
-import { markdownLinkTo, propertyLinkTo } from "../mentions/obsidianHost.ts";
+import { DateNotePickerModal } from "../dateNotes/phraseModal.ts";
+import { propertyLinkTo } from "../mentions/obsidianHost.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import { DatesModal } from "../sequence/modal.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import { runAction } from "./run.ts";
-import type { ActionHost, Answer, RunOutcome } from "./run.ts";
-import { questionOf, yesNoChoices } from "./settings.ts";
-import type { ActionInput, DateAction, YesNoChoice } from "./settings.ts";
+import { questionOf } from "./settings.ts";
+import type { DateAction } from "./settings.ts";
+import { propertyWidgetOf } from "./propertyType.ts";
+import { propertyKind, valueToWrite } from "./value.ts";
 
-const YES_NO_LABELS = { yes: "answerYes", no: "answerNo", skip: "skipQuestion" } as const;
-
-class YesNoModal extends ChoosingSuggestModal<YesNoChoice> {
-	private readonly input: ActionInput;
-	private readonly choose: (choice: YesNoChoice) => void;
-
-	constructor(app: App, input: ActionInput, choose: (choice: YesNoChoice) => void, dismissed: () => void) {
-		super(app, dismissed);
-		this.input = input;
-		this.choose = choose;
-		this.setPlaceholder(questionOf(input));
-	}
-
-	getSuggestions(query: string): YesNoChoice[] {
-		const typed = query.trim().toLowerCase();
-		return yesNoChoices(this.input).filter((choice) => t(YES_NO_LABELS[choice]).toLowerCase().startsWith(typed));
-	}
-
-	renderSuggestion(choice: YesNoChoice, el: HTMLElement): void {
-		el.setText(t(YES_NO_LABELS[choice]));
-	}
-
-	onChooseSuggestion(choice: YesNoChoice): void {
-		this.choose(choice);
-	}
-}
-
-function ask(app: App, settings: () => DateCompassSettings, input: ActionInput): Promise<Answer | undefined> {
+function askForNotes(app: App, settings: () => DateCompassSettings, action: DateAction): Promise<NoteRef[] | undefined> {
 	return new Promise((resolve) => {
 		let settled = false;
-		const answer = (value: Answer | undefined) => {
+		const answer = (notes: NoteRef[] | undefined) => {
 			if (settled) return;
 			settled = true;
-			resolve(value);
+			resolve(notes);
 		};
 		const dismissed = () => answer(undefined);
-		if (input.type === "yesNo") {
-			new YesNoModal(app, input, (choice) => answer(choice === "skip" ? { kind: "skipped" } : { kind: "yesNo", yes: choice === "yes" }), dismissed).openWithQuery("");
-			return;
-		}
-		if (input.type === "dates") {
+		if (action.asks === "dates") {
 			new DatesModal(
 				app,
 				settings,
-				{ title: questionOf(input), initialText: input.defaultText, optional: input.optional },
+				{ title: questionOf(action), initialText: "", optional: false, propertyName: action.property.trim(), replacesProperty: true },
 				(preview) => {
-					if (preview.kind === "dates") answer({ kind: "notes", notes: preview.notes });
-					else if (preview.kind === "empty" && input.optional) answer({ kind: "skipped" });
-					else return false;
+					if (preview.kind !== "dates") return false;
+					answer(preview.notes);
 					return true;
 				},
 				dismissed,
@@ -68,31 +35,15 @@ function ask(app: App, settings: () => DateCompassSettings, input: ActionInput):
 			return;
 		}
 		new DateNotePickerModal(app, settings, {
-			placeholder: questionOf(input),
-			allows: input.type === "date" ? (period) => period === "day" : () => true,
-			offersCurrentNotes: input.type === "periodicNote",
-			optional: input.optional,
-			choose: (picked) => answer(picked.kind === "skip" ? { kind: "skipped" } : { kind: "notes", notes: picked.row.notes }),
+			placeholder: questionOf(action),
+			allows: (period) => period === "day",
+			offersCurrentNotes: false,
+			optional: false,
+			choose: (picked) => answer(picked.kind === "note" ? picked.row.notes : undefined),
 			dismissed,
-		}).openWithQuery(input.defaultText);
+		}).openWithQuery("");
 	});
 }
-
-export function obsidianActionHost(app: App, settings: () => DateCompassSettings, file: TFile): ActionHost {
-	return {
-		ask: (input) => ask(app, settings, input),
-		linkTo: (note: NoteRef) => markdownLinkTo(app, note.path, file.path, undefined),
-		propertyLinkTo: (note: NoteRef) => propertyLinkTo(app, note, file.path),
-		processFrontMatter: (change) => app.fileManager.processFrontMatter(file, change),
-		notify: (message) => new Notice(message),
-	};
-}
-
-const OUTCOME_NOTICES: Partial<Record<RunOutcome, "actionNothingToWrite" | "actionNeedsEditor" | "actionHasNoCompleteWrite">> = {
-	nothingToWrite: "actionNothingToWrite",
-	noCompleteWrite: "actionHasNoCompleteWrite",
-	noEditor: "actionNeedsEditor",
-};
 
 export function canRunAction(app: App): boolean {
 	return app.workspace.getActiveViewOfType(MarkdownView)?.file != null;
@@ -102,18 +53,22 @@ export async function runActionInActiveNote(app: App, settings: () => DateCompas
 	const view = app.workspace.getActiveViewOfType(MarkdownView);
 	const file = view?.file;
 	if (!view || !file) return;
-	const host = obsidianActionHost(app, settings, file);
-	const { dateNotes, insertion } = settings();
+	const property = action.property.trim();
 	try {
-		const outcome = await runAction(action, host, {
-			periods: dateNotes.periods,
-			moment: obsidianMoment,
-			insertion,
-			editor: view.editor,
+		const notes = await askForNotes(app, settings, action);
+		if (!notes || notes.length === 0) return;
+		const kind = propertyKind(propertyWidgetOf(app, property));
+		await view.save();
+		await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
+			frontmatter[property] = valueToWrite({
+				notes,
+				link: action.link,
+				kind,
+				existingIsList: Array.isArray(frontmatter[property]),
+				linkTo: (note) => propertyLinkTo(app, note, file.path),
+			});
 		});
-		const notice = OUTCOME_NOTICES[outcome];
-		if (notice) host.notify(t(notice));
 	} catch (error) {
-		host.notify(t("actionFailed", { error: error instanceof Error ? error.message : String(error) }));
+		new Notice(t("actionFailed", { error: error instanceof Error ? error.message : String(error) }));
 	}
 }

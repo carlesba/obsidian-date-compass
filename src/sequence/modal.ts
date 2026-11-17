@@ -15,6 +15,7 @@ export interface DatesQuestion {
 	initialText: string;
 	optional: boolean;
 	propertyName?: string;
+	replacesProperty?: boolean;
 	links?: (notes: NoteRef[], phrase: string, withAlias: boolean) => string[];
 	withAliasInitially?: boolean;
 }
@@ -42,7 +43,7 @@ export class DatesModal extends Modal {
 		this.setTitle(this.question.title);
 		this.modalEl.addClass("date-compass-dates-modal");
 		const input = this.contentEl.createEl("input", { type: "text", cls: "date-compass-dates-input", attr: { placeholder: t("sequencePlaceholder") } });
-		if (this.question.propertyName !== undefined) this.contentEl.createDiv({ cls: "date-compass-dates-property", text: t("datesToProperty", { name: this.question.propertyName }) });
+		if (this.question.propertyName !== undefined) this.contentEl.createDiv({ cls: "date-compass-dates-property", text: t(this.question.replacesProperty ? "datesReplaceProperty" : "datesToProperty", { name: this.question.propertyName }) });
 		const previewEl = this.contentEl.createDiv({ cls: "date-compass-dates-reading" });
 		const linksEl = this.contentEl.createDiv({ cls: "date-compass-dates-links" });
 		const showPreview = () => {
