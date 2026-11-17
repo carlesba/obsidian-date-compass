@@ -93,11 +93,13 @@ function completionCandidates(normalized: string, index: LexiconIndex): string[]
 		const shortestByMeaning = new Map<string, string>();
 		for (const [key, alternatives] of index.alternatives) {
 			if (key === typed || !key.startsWith(typed)) continue;
-			const meaning = JSON.stringify(alternatives);
-			const current = shortestByMeaning.get(meaning);
-			if (current === undefined || key.length < current.length) shortestByMeaning.set(meaning, key);
+			for (const language of new Set(alternatives.map((alternative) => alternative.language))) {
+				const meaning = JSON.stringify(alternatives.filter((alternative) => alternative.language === language));
+				const current = shortestByMeaning.get(meaning);
+				if (current === undefined || key.length < current.length) shortestByMeaning.set(meaning, key);
+			}
 		}
-		return [...shortestByMeaning.values()]
+		return [...new Set(shortestByMeaning.values())]
 			.sort((left, right) => left.length - right.length || left.localeCompare(right))
 			.map((key) => normalized.slice(0, start) + (index.spellings.get(key) ?? key));
 	});

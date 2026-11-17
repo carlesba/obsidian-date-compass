@@ -79,6 +79,10 @@ const semantics: Row[] = [
 	{ input: "miércoles que viene", expected: day("2026-11-25"), options: SUNDAY },
 	{ input: "miércoles que viene", expected: day("2026-11-18"), options: NEXT_OCCURRENCE },
 	{ input: "el miércoles que viene", expected: day("2026-11-25") },
+	{ input: "el próximo domingo", expected: day("2026-11-29"), options: MONDAY },
+	{ input: "el próximo domingo", expected: day("2026-11-22"), options: SUNDAY },
+	{ input: "domingo que viene", expected: day("2026-11-29"), options: MONDAY },
+	{ input: "domingo que viene", expected: day("2026-11-22"), options: SUNDAY },
 	{ input: "el miércoles próximo", expected: day("2026-11-25") },
 	{ input: "el miércoles pasado", expected: day("2026-11-11") },
 	{ input: "miércoles pasado", expected: day("2026-11-11") },
@@ -90,6 +94,7 @@ const semantics: Row[] = [
 	{ input: "en 3 días", expected: day("2026-11-20") },
 	{ input: "en una semana", expected: day("2026-11-24") },
 	{ input: "dentro de una semana", expected: day("2026-11-24") },
+	{ input: "+1w", expected: day("2026-11-24") },
 	{ input: "+1sem", expected: day("2026-11-24") },
 	{ input: "1 semana", expected: day("2026-11-24") },
 	{ input: "en 40 días", expected: day("2026-12-27") },
@@ -141,6 +146,8 @@ const ranges: Row[] = [
 	{ input: "del lunes al viernes", expected: dayRun("2026-11-23", 5), options: SUNDAY },
 	{ input: "de lunes a viernes", expected: dayRun("2026-11-23", 5) },
 	{ input: "del viernes al lunes", expected: dayRun("2026-11-20", 4) },
+	{ input: "del viernes a hoy", expected: todayToFriday },
+	{ input: "del 3 de diciembre al 20 de noviembre", expected: dayRun("2026-11-20", 14) },
 	{ input: "los próximos 5 días", expected: dayRun("2026-11-17", 5) },
 	{ input: "próximos cinco días", expected: dayRun("2026-11-17", 5) },
 	{ input: "los últimos 3 días", expected: dayRun("2026-11-15", 3) },
@@ -255,11 +262,13 @@ test("prefix completion offers completions from every enabled language", () => {
 	assert.deepEqual(completionsOf("ma", ["es", "en"]), [
 		["mar", ["es", "en"]],
 		["may", ["es"]],
-		["mayo", ["es"]],
-		["march", ["en"]],
 		["marzo", ["es"]],
 		["mañana", ["es"]],
-		["martes", ["es"]],
+	]);
+	assert.deepEqual(completionsOf("ju", ["en", "es"]), [
+		["jue", ["es"]],
+		["jul", ["en"]],
+		["jun", ["en"]],
 	]);
 });
 

@@ -1,4 +1,4 @@
-import { dateOf, fourDigitNumber, monthOf, numberOf, periodOf, phrase, rangeEndOf, relativeDayOf, symbol, token, unit, unitOf, weekdayOf, weekdaysOf } from "../shape.ts";
+import { dateOf, fourDigitNumber, monthOf, numberOf, periodOf, phrase, rangeEndOf, relativeDayOf, symbol, token, unitOf, weekdayOf, weekdaysOf } from "../shape.ts";
 import type { Amount, Category, Element, EveryNode, Language, LexiconEntry, Part, Shape, Weekday } from "../types.ts";
 
 const weekdays: Array<[Weekday, string[]]> = [
