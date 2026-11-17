@@ -6,7 +6,7 @@ import { propertyLinkTo } from "../mentions/obsidianHost.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import { DatesModal } from "../sequence/modal.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import { questionOf } from "./settings.ts";
+import { actionWarning, questionOf } from "./settings.ts";
 import type { DateAction } from "./settings.ts";
 import { propertyWidgetOf } from "./propertyType.ts";
 import { propertyKind, valueToWrite } from "./value.ts";
@@ -24,7 +24,7 @@ function askForNotes(app: App, settings: () => DateCompassSettings, action: Date
 			new DatesModal(
 				app,
 				settings,
-				{ title: questionOf(action), initialText: "", optional: false, propertyName: action.property.trim(), replacesProperty: true },
+				{ title: questionOf(action), initialText: "", propertyName: action.property.trim(), replacesProperty: true },
 				(preview) => {
 					if (preview.kind !== "dates") return false;
 					answer(preview.notes);
@@ -34,14 +34,15 @@ function askForNotes(app: App, settings: () => DateCompassSettings, action: Date
 			).open();
 			return;
 		}
-		new DateNotePickerModal(app, settings, {
+		const picker = new DateNotePickerModal(app, settings, {
 			placeholder: questionOf(action),
-			allows: (period) => period === "day",
+			allows: () => true,
 			offersCurrentNotes: false,
-			optional: false,
-			choose: (picked) => answer(picked.kind === "note" ? picked.row.notes : undefined),
+			choose: (row) => answer(row.notes),
 			dismissed,
-		}).openWithQuery("");
+		});
+		picker.setInstructions([{ command: "", purpose: t("dateReplacesProperty", { name: action.property.trim() }) }]);
+		picker.openWithQuery("");
 	});
 }
 
@@ -53,6 +54,7 @@ export async function runActionInActiveNote(app: App, settings: () => DateCompas
 	const view = app.workspace.getActiveViewOfType(MarkdownView);
 	const file = view?.file;
 	if (!view || !file) return;
+	if (actionWarning(action)) return;
 	const property = action.property.trim();
 	try {
 		const notes = await askForNotes(app, settings, action);

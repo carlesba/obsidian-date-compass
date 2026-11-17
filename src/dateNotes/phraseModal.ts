@@ -35,18 +35,15 @@ export abstract class ChoosingSuggestModal<Choice> extends SuggestModal<Choice> 
 	}
 }
 
-export type PickedNote = { kind: "note"; row: DateRow } | { kind: "skip" };
-
 export interface NotePickerOptions {
 	placeholder: string;
 	allows: (period: Period) => boolean;
 	offersCurrentNotes: boolean;
-	optional: boolean;
-	choose: (picked: PickedNote) => void;
+	choose: (row: DateRow) => void;
 	dismissed?: () => void;
 }
 
-export class DateNotePickerModal extends ChoosingSuggestModal<PickedNote> {
+export class DateNotePickerModal extends ChoosingSuggestModal<DateRow> {
 	private readonly settings: () => DateCompassSettings;
 	private readonly options: NotePickerOptions;
 
@@ -58,19 +55,18 @@ export class DateNotePickerModal extends ChoosingSuggestModal<PickedNote> {
 		this.emptyStateText = t("phraseNoMatch");
 	}
 
-	getSuggestions(query: string): PickedNote[] {
+	getSuggestions(query: string): DateRow[] {
 		const context = obsidianRowContext(this.settings(), this.options.allows);
 		const rows = query.trim() === "" && this.options.offersCurrentNotes ? currentNoteRows(context) : singleNoteRows(buildRows(query, context));
-		const picked: PickedNote[] = rows.map((row) => ({ kind: "note", row }));
-		return this.options.optional ? [...picked, { kind: "skip" }] : picked;
+		return rows;
 	}
 
-	renderSuggestion(picked: PickedNote, el: HTMLElement): void {
-		el.setText(picked.kind === "skip" ? t("skipQuestion") : rowLabel(picked.row, obsidianMoment()));
+	renderSuggestion(row: DateRow, el: HTMLElement): void {
+		el.setText(rowLabel(row, obsidianMoment()));
 	}
 
-	onChooseSuggestion(picked: PickedNote): void {
-		this.options.choose(picked);
+	onChooseSuggestion(row: DateRow): void {
+		this.options.choose(row);
 	}
 }
 
@@ -80,10 +76,8 @@ export class OpenDateNoteByPhraseModal extends DateNotePickerModal {
 			placeholder: t("phrasePlaceholder"),
 			allows: () => true,
 			offersCurrentNotes: false,
-			optional: false,
-			choose: (picked) => {
-				if (picked.kind !== "note") return;
-				const [note] = picked.row.notes;
+			choose: (row) => {
+				const [note] = row.notes;
 				void openDateNote(app, settings().dateNotes, note.date, note.period);
 			},
 		});

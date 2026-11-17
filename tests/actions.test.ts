@@ -220,7 +220,7 @@ test("one command per enabled action, re-registered when actions are enabled, di
 	actions.splice(0, 1);
 	registry.sync(actions);
 	assert.deepEqual([...commands], [["action-set-reminders", "Set reminders"]]);
-	assert.deepEqual(actionCommands([{ ...newAction([]), name: "  " }]).map((command) => command.name), ["Untitled action"]);
+	assert.deepEqual(actionCommands([{ ...newAction([]), name: "  ", property: "p" }]).map((command) => command.name), ["Untitled action"]);
 	assert.equal(actionName({ ...newAction([]), name: " Go " }), "Go");
 });
 
@@ -285,5 +285,15 @@ test("a new action never reuses the id, and so the command, of a removed one", (
 });
 
 test("the action row says what it sets and what it asks", () => {
-	assert.equal(actionSummary(presetActions()[1]), "Sets reminders from Dates: a range, sequence or list.");
+	assert.equal(actionSummary(presetActions()[1]), "Sets reminders. Asks for Dates.");
+});
+
+test("an action with no property is not offered as a command", () => {
+	const unfinished = { ...newAction([]), name: "Draft" };
+	assert.deepEqual(actionCommands([unfinished, ...presetActions()]).map((command) => command.name), ["Set dates", "Set reminders"]);
+});
+
+test("only the stored v1 preset is renamed, not a custom action that shares its name", () => {
+	const custom = { ...v1AddDates, id: "mine" };
+	assert.deepEqual(mergeActions([custom]).map((action) => action.name), ["Add dates"]);
 });

@@ -13,7 +13,6 @@ import type { InsertionRange, SequencePreview } from "./preview.ts";
 export interface DatesQuestion {
 	title: string;
 	initialText: string;
-	optional: boolean;
 	propertyName?: string;
 	replacesProperty?: boolean;
 	links?: (notes: NoteRef[], phrase: string, withAlias: boolean) => string[];
@@ -48,7 +47,7 @@ export class DatesModal extends Modal {
 		const linksEl = this.contentEl.createDiv({ cls: "date-compass-dates-links" });
 		const showPreview = () => {
 			this.preview = previewSequence(input.value, obsidianRowContext(this.settings()));
-			previewEl.setText(this.preview.kind === "empty" ? (this.question.optional ? t("emptySkipsQuestion") : "") : this.preview.text);
+			previewEl.setText(this.preview.kind === "empty" ? "" : this.preview.text);
 			linksEl.setText(this.linksLine(input.value));
 		};
 		if (this.question.links) {
@@ -103,8 +102,8 @@ export function openInsertDatesModal(settings: () => DateCompassSettings, target
 		app,
 		settings,
 		propertyTarget
-			? { title: t("insertDates"), initialText, optional: false, propertyName: propertyTarget.name }
-			: { title: t("insertDates"), initialText, optional: false, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
+			? { title: t("insertDates"), initialText, propertyName: propertyTarget.name }
+			: { title: t("insertDates"), initialText, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
 		(preview, withAlias, phrase) => {
 			if (preview.kind !== "dates") return false;
 			if (propertyTarget) addDatesToProperty(app, editor, propertyTarget.file, propertyTarget.name, preview.notes, range);

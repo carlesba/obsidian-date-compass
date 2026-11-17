@@ -59,7 +59,7 @@ function migratedAction(data: Record<string, unknown>, earlier: readonly DateAct
 	const name = text(data.name);
 	return {
 		id: uniqueId(data.id, earlier),
-		name: V1_PRESET_NAMES.includes(name) ? t("presetSetDates") : name,
+		name: data.id === "add-dates" && V1_PRESET_NAMES.includes(name) ? t("presetSetDates") : name,
 		enabled: typeof data.enabled === "boolean" ? data.enabled : true,
 		property: text(write.property).trim(),
 		asks: question?.type === "date" || question?.type === "periodicNote" ? "date" : "dates",

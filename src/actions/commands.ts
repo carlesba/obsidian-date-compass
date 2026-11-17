@@ -1,5 +1,5 @@
 import type { Command } from "obsidian";
-import { actionName } from "./settings.ts";
+import { actionName, actionWarning } from "./settings.ts";
 import type { DateAction } from "./settings.ts";
 
 export interface CommandHost {
@@ -18,7 +18,7 @@ export function actionCommandId(action: DateAction): string {
 }
 
 export function actionCommands(actions: readonly DateAction[]): ActionCommand[] {
-	return actions.filter((action) => action.enabled).map((action) => ({ id: actionCommandId(action), name: actionName(action), action }));
+	return actions.filter((action) => action.enabled && !actionWarning(action)).map((action) => ({ id: actionCommandId(action), name: actionName(action), action }));
 }
 
 export class ActionCommands {
