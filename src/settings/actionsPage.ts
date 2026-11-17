@@ -13,6 +13,7 @@ import {
 	newInput,
 	newWrite,
 	writeWarning,
+	writesUsing,
 } from "../actions/settings.ts";
 import type { ActionInput, ActionWrite, DateAction, InputType, PropertyMode, ValueFormat, WriteTarget, WriteValue } from "../actions/settings.ts";
 import { actionKey, inputKey, writeKey } from "./controlKeys.ts";
@@ -22,7 +23,7 @@ export interface ActionsPageContext {
 	actions: () => DateAction[];
 	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
-	change: (mutate: () => unknown) => void;
+	change: (mutate: () => unknown) => Promise<void>;
 }
 
 export const ACTIONS_PAGE_ID = "actions";
@@ -85,14 +86,13 @@ function actionsList(actions: DateAction[], context: ActionsPageContext): Settin
 		heading: t("actionsList"),
 		emptyState: t("noActionsYet"),
 		items: actions.map((action) => actionRow(action, context)),
-		onReorder: (from, to) => context.change(() => moveEntry(actions, from, to)),
-		onDelete: (index) => context.change(() => actions.splice(index, 1)),
+		onReorder: (from, to) => void context.change(() => moveEntry(actions, from, to)),
+		onDelete: (index) => void context.change(() => actions.splice(index, 1)),
 		addItem: {
 			name: t("addAction"),
 			action: () => {
 				const action = newAction(actions);
-				context.change(() => actions.push(action));
-				context.openPage(actionPageId(action));
+				void context.change(() => actions.push(action)).then(() => context.openPage(actionPageId(action)));
 			},
 		},
 	};
@@ -156,14 +156,13 @@ function inputsList(action: DateAction, context: ActionsPageContext): SettingDef
 		heading: t("actionQuestions"),
 		emptyState: t("noQuestionsYet"),
 		items: action.inputs.map((input) => inputPage(action, input)),
-		onReorder: (from, to) => context.change(() => moveEntry(action.inputs, from, to)),
-		onDelete: (index) => context.change(() => action.inputs.splice(index, 1)),
+		onReorder: (from, to) => void context.change(() => moveEntry(action.inputs, from, to)),
+		onDelete: (index) => void context.change(() => action.inputs.splice(index, 1)),
 		addItem: {
 			name: t("addQuestion"),
 			action: () => {
 				const input = newInput(action.inputs);
-				context.change(() => action.inputs.push(input));
-				context.openPage(inputPageId(action, input));
+				void context.change(() => action.inputs.push(input)).then(() => context.openPage(inputPageId(action, input)));
 			},
 		},
 	};
@@ -171,7 +170,6 @@ function inputsList(action: DateAction, context: ActionsPageContext): SettingDef
 
 function inputPage(action: DateAction, input: ActionInput): IdentifiedPage {
 	const key = (field: Parameters<typeof inputKey>[2]) => inputKey(action.id, input.id, field);
-	const asksText = () => input.type !== "yesNo";
 	return {
 		type: "page",
 		id: inputPageId(action, input),
@@ -189,11 +187,17 @@ function inputPage(action: DateAction, input: ActionInput): IdentifiedPage {
 					{ name: t("inputKey"), desc: t("inputKeyDesc"), control: { type: "text", key: key("key"), placeholder: input.id } },
 					{ name: t("inputQuestion"), desc: t("inputQuestionDesc"), control: { type: "text", key: key("question"), placeholder: inputName(input) } },
 					{ name: t("inputFieldType"), desc: t("inputFieldTypeDesc"), control: { type: "dropdown", key: key("type"), options: translatedLabels(INPUT_TYPE_LABELS) } },
+					{
+						name: t("inputUsedBy"),
+						get desc() {
+							return answerUse(action, input);
+						},
+					},
 					{ name: t("inputOptional"), desc: t("inputOptionalDesc"), control: { type: "toggle", key: key("optional") } },
 					{
 						name: t("inputDefaultText"),
 						get desc() {
-							return asksText() ? t("inputDefaultTextDesc") : t("inputDefaultYesNoDesc");
+							return asksForNotes(input) ? t("inputDefaultTextDesc") : t("inputDefaultYesNoDesc");
 						},
 						control: { type: "text", key: key("defaultText") },
 					},
@@ -209,14 +213,13 @@ function writesList(action: DateAction, context: ActionsPageContext): SettingDef
 		heading: t("actionWrites"),
 		emptyState: t("noWritesYet"),
 		items: action.writes.map((write) => writePage(action, write)),
-		onReorder: (from, to) => context.change(() => moveEntry(action.writes, from, to)),
-		onDelete: (index) => context.change(() => action.writes.splice(index, 1)),
+		onReorder: (from, to) => void context.change(() => moveEntry(action.writes, from, to)),
+		onDelete: (index) => void context.change(() => action.writes.splice(index, 1)),
 		addItem: {
 			name: t("addWrite"),
 			action: () => {
 				const write = newWrite(action.writes, action.inputs);
-				context.change(() => action.writes.push(write));
-				context.openPage(writePageId(action, write));
+				void context.change(() => action.writes.push(write)).then(() => context.openPage(writePageId(action, write)));
 			},
 		},
 	};
@@ -286,6 +289,12 @@ function writePage(action: DateAction, write: ActionWrite): IdentifiedPage {
 		status: () => (writeWarning(action, write) ? "warning" : null),
 		items: [group],
 	};
+}
+
+export function answerUse(action: DateAction, input: ActionInput): string {
+	const writes = writesUsing(action, input);
+	if (writes.length === 0) return t("answerUnused");
+	return writes.map((write) => (write.input === input.id ? t("answerWrittenTo", { target: writeName(write), value: t(VALUE_LABELS[write.value]) }) : t("answerDecides", { target: writeName(write) }))).join(" ");
 }
 
 export function writeSummary(action: DateAction, write: ActionWrite): string {

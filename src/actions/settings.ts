@@ -131,8 +131,8 @@ function mergeWrite(data: Record<string, unknown>, earlier: readonly ActionWrite
 	};
 }
 
-export function newAction(actions: readonly DateAction[]): DateAction {
-	return { id: freeId(actions, "action"), name: "", enabled: true, inputs: [], writes: [] };
+export function newAction(actions: readonly DateAction[], now: number = Date.now()): DateAction {
+	return { id: freeId(actions, `action-${now.toString(36)}`), name: "", enabled: true, inputs: [], writes: [] };
 }
 
 export function newInput(inputs: readonly ActionInput[]): ActionInput {
@@ -159,6 +159,22 @@ export function actionName(action: DateAction): string {
 
 export function inputName(input: ActionInput): string {
 	return input.key.trim() === "" ? t("untitledInput") : input.key.trim();
+}
+
+export type YesNoChoice = "yes" | "no" | "skip";
+
+export function yesNoChoices(input: Pick<ActionInput, "defaultText" | "optional">): YesNoChoice[] {
+	const startsWithNo = [t("answerNo"), "no"].some((no) => no.toLowerCase() === input.defaultText.trim().toLowerCase());
+	const choices: YesNoChoice[] = startsWithNo ? ["no", "yes"] : ["yes", "no"];
+	return input.optional ? [...choices, "skip"] : choices;
+}
+
+export function questionOf(input: ActionInput): string {
+	return input.question.trim() === "" ? inputName(input) : input.question;
+}
+
+export function writesUsing(action: DateAction, input: ActionInput): ActionWrite[] {
+	return action.writes.filter((write) => write.input === input.id || write.condition === input.id);
 }
 
 export function writeWarning(action: DateAction, write: ActionWrite): string | undefined {

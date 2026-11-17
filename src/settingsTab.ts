@@ -12,6 +12,8 @@ import {
 	MENTIONS_TRIGGER_KEY,
 	NEXT_WEEKDAY_KEY,
 	WEEK_START_KEY,
+	isActionKey,
+	isTypedActionKey,
 	languageKey,
 	readControl,
 	writeControl,
@@ -52,8 +54,6 @@ const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
 const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, MENTIONS_ALIAS_MODE_KEY];
 
 const TYPING_PAUSE_MS = 800;
-
-const TYPED_ACTION_FIELDS = ["name", "key", "question", "defaultText", "property"];
 
 interface AppWithSettingModal {
 	setting?: { openPagePath?: (tabId: string, path: string[]) => unknown };
@@ -113,7 +113,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						actions: () => this.plugin.settings.actions,
 						write: (key, value) => void this.setControlValue(key, value),
 						openPage: (pageId) => this.openPage(pageId),
-						change: (mutate) => void this.changeActions(mutate),
+						change: (mutate) => this.changeActions(mutate),
 					}),
 				],
 			},
@@ -177,10 +177,8 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		await this.plugin.saveSettings();
 		if (CONTROLS_THAT_SHOW_OR_HIDE_ITEMS.includes(key)) this.update();
 		else if (key === MENTIONS_TRIGGER_KEY) this.updateAfterTyping();
-		else if (key.startsWith("actions/")) {
-			if (TYPED_ACTION_FIELDS.includes(key.split("/").pop() ?? "")) this.updateAfterTyping();
-			else this.update();
-		}
+		else if (isTypedActionKey(key)) this.updateAfterTyping();
+		else if (isActionKey(key)) this.update();
 	}
 
 	private async resetSettings(): Promise<void> {

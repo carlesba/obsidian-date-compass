@@ -5,7 +5,7 @@ import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } fro
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
 import { ALIAS_MODES, LINK_SEPARATORS, withoutWhitespace } from "../mentions/settings.ts";
 import { SEQUENCE_LAYOUTS, isItemTemplate } from "../sequence/settings.ts";
-import { INPUT_FIELDS, INPUT_TYPES, PROPERTY_MODES, VALUE_FORMATS, WRITE_FIELDS, WRITE_TARGETS, WRITE_VALUES } from "../actions/settings.ts";
+import { ACTION_FIELDS, INPUT_FIELDS, INPUT_TYPES, PROPERTY_MODES, VALUE_FORMATS, WRITE_FIELDS, WRITE_TARGETS, WRITE_VALUES } from "../actions/settings.ts";
 import type { ActionField, ActionInput, ActionWrite, DateAction, InputField, WriteField } from "../actions/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
@@ -69,6 +69,16 @@ function languageOfKey(key: string): ParserLanguage | undefined {
 
 const ACTION_KEY_PREFIX = "actions/";
 
+const TYPED_ACTION_FIELDS = ["name", "key", "question", "defaultText", "property"];
+
+export function isActionKey(key: string): boolean {
+	return key.startsWith(ACTION_KEY_PREFIX);
+}
+
+export function isTypedActionKey(key: string): boolean {
+	return isActionKey(key) && TYPED_ACTION_FIELDS.includes(key.split("/").pop() ?? "");
+}
+
 export function actionKey(actionId: string, field: ActionField): string {
 	return `${ACTION_KEY_PREFIX}${actionId}/${field}`;
 }
@@ -92,7 +102,7 @@ function actionControlOfKey(settings: DateCompassSettings, key: string): ActionC
 	const action = settings.actions.find((candidate) => candidate.id === parts[0]);
 	if (!action) return undefined;
 	if (parts.length === 2) {
-		const field = parts[1] === "name" || parts[1] === "enabled" ? parts[1] : undefined;
+		const field = ACTION_FIELDS.find((known) => known === parts[1]);
 		return field ? { kind: "action", action, field } : undefined;
 	}
 	if (parts.length !== 4) return undefined;

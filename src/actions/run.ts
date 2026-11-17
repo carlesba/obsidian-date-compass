@@ -15,6 +15,7 @@ export type Answer = { kind: "notes"; notes: NoteRef[] } | { kind: "yesNo"; yes:
 export interface ActionHost {
 	ask(input: ActionInput): Promise<Answer | undefined>;
 	linkTo: (note: NoteRef) => string;
+	propertyLinkTo: (note: NoteRef) => string;
 	processFrontMatter(change: (frontmatter: Record<string, unknown>) => void): Promise<void>;
 	notify(message: string): void;
 }
@@ -32,16 +33,17 @@ export interface PlannedWrites {
 	body: { notes: NoteRef[]; format: ActionWrite["format"] }[];
 }
 
-export type RunOutcome = "written" | "cancelled" | "nothingToWrite" | "noEditor";
+export type RunOutcome = "written" | "cancelled" | "nothingToWrite" | "noEditor" | "noCompleteWrite";
 
 export async function runAction(action: DateAction, host: ActionHost, context: ActionContext): Promise<RunOutcome> {
+	if (action.writes.every((write) => writeWarning(action, write))) return "noCompleteWrite";
 	const answers = new Map<string, Answer>();
 	for (const input of action.inputs) {
 		const answer = await host.ask(input);
 		if (!answer) return "cancelled";
 		answers.set(input.id, answer);
 	}
-	const planned = plannedWrites(action, answers, host.linkTo);
+	const planned = plannedWrites(action, answers, host.propertyLinkTo);
 	if (planned.properties.length === 0 && planned.body.length === 0) return "nothingToWrite";
 	if (planned.body.length > 0 && !context.editor) return "noEditor";
 	if (planned.properties.length > 0) {
@@ -55,7 +57,7 @@ export async function runAction(action: DateAction, host: ActionHost, context: A
 	return "written";
 }
 
-export function plannedWrites(action: DateAction, answers: ReadonlyMap<string, Answer>, linkTo: (note: NoteRef) => string): PlannedWrites {
+export function plannedWrites(action: DateAction, answers: ReadonlyMap<string, Answer>, propertyLinkTo: (note: NoteRef) => string): PlannedWrites {
 	const planned: PlannedWrites = { properties: [], body: [] };
 	for (const write of action.writes) {
 		if (writeWarning(action, write) || !conditionHolds(write, answers)) continue;
@@ -63,7 +65,7 @@ export function plannedWrites(action: DateAction, answers: ReadonlyMap<string, A
 		if (answer?.kind !== "notes" || answer.notes.length === 0) continue;
 		const notes = chosenNotes(answer.notes, write.value);
 		if (write.target === "body") planned.body.push({ notes, format: write.format });
-		else planned.properties.push({ property: write.property.trim(), values: notes.map(formatter(write.format, linkTo)), mode: write.mode });
+		else planned.properties.push({ property: write.property.trim(), values: notes.map(formatter(write.format, propertyLinkTo)), mode: write.mode });
 	}
 	return planned;
 }

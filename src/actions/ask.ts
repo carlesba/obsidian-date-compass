@@ -3,23 +3,16 @@ import type { App, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { ChoosingSuggestModal, DateNotePickerModal } from "../dateNotes/phraseModal.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
-import { markdownLinkTo } from "../mentions/obsidianHost.ts";
+import { markdownLinkTo, unsavedFile } from "../mentions/obsidianHost.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import { DatesModal } from "../sequence/modal.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { runAction } from "./run.ts";
 import type { ActionHost, Answer, RunOutcome } from "./run.ts";
-import type { ActionInput, DateAction } from "./settings.ts";
-
-type YesNoChoice = "yes" | "no" | "skip";
+import { questionOf, yesNoChoices } from "./settings.ts";
+import type { ActionInput, DateAction, YesNoChoice } from "./settings.ts";
 
 const YES_NO_LABELS = { yes: "answerYes", no: "answerNo", skip: "skipQuestion" } as const;
-
-export function yesNoChoices(input: Pick<ActionInput, "defaultText" | "optional">): YesNoChoice[] {
-	const startsWithNo = [t("answerNo"), "no"].some((no) => no.toLowerCase() === input.defaultText.trim().toLowerCase());
-	const choices: YesNoChoice[] = startsWithNo ? ["no", "yes"] : ["yes", "no"];
-	return input.optional ? [...choices, "skip"] : choices;
-}
 
 class YesNoModal extends ChoosingSuggestModal<YesNoChoice> {
 	private readonly input: ActionInput;
@@ -44,10 +37,6 @@ class YesNoModal extends ChoosingSuggestModal<YesNoChoice> {
 	onChooseSuggestion(choice: YesNoChoice): void {
 		this.choose(choice);
 	}
-}
-
-function questionOf(input: ActionInput): string {
-	return input.question.trim() === "" ? input.key : input.question;
 }
 
 function ask(app: App, settings: () => DateCompassSettings, input: ActionInput): Promise<Answer | undefined> {
@@ -78,10 +67,9 @@ function ask(app: App, settings: () => DateCompassSettings, input: ActionInput):
 			).open();
 			return;
 		}
-		const enabledPeriods = settings().dateNotes.periods;
 		new DateNotePickerModal(app, settings, {
 			placeholder: questionOf(input),
-			allows: input.type === "date" ? (period) => period === "day" : (period) => enabledPeriods[period].enabled,
+			allows: input.type === "date" ? (period) => period === "day" : () => true,
 			offersCurrentNotes: input.type === "periodicNote",
 			optional: input.optional,
 			choose: (picked) => answer(picked.kind === "skip" ? { kind: "skipped" } : { kind: "notes", notes: picked.row.notes }),
@@ -94,13 +82,15 @@ export function obsidianActionHost(app: App, settings: () => DateCompassSettings
 	return {
 		ask: (input) => ask(app, settings, input),
 		linkTo: (note: NoteRef) => markdownLinkTo(app, note.path, file.path, undefined),
+		propertyLinkTo: (note: NoteRef) => `[[${app.metadataCache.fileToLinktext(app.vault.getFileByPath(note.path) ?? unsavedFile(note.path), file.path, true)}]]`,
 		processFrontMatter: (change) => app.fileManager.processFrontMatter(file, change),
 		notify: (message) => new Notice(message),
 	};
 }
 
-const OUTCOME_NOTICES: Partial<Record<RunOutcome, "actionNothingToWrite" | "actionNeedsEditor">> = {
+const OUTCOME_NOTICES: Partial<Record<RunOutcome, "actionNothingToWrite" | "actionNeedsEditor" | "actionHasNoCompleteWrite">> = {
 	nothingToWrite: "actionNothingToWrite",
+	noCompleteWrite: "actionHasNoCompleteWrite",
 	noEditor: "actionNeedsEditor",
 };
 

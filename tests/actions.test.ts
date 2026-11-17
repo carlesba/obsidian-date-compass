@@ -9,13 +9,14 @@ import { currentNoteRows } from "../src/mentions/rows.ts";
 import { previewSequence } from "../src/sequence/preview.ts";
 import type { CursorEditor, SequenceContext } from "../src/sequence/preview.ts";
 import { mergeSequence } from "../src/sequence/settings.ts";
-import { mergeActions, newAction, newInput, newWrite, presetActions, writeWarning } from "../src/actions/settings.ts";
+import { mergeActions, newAction, newInput, newWrite, presetActions, questionOf, writeWarning, yesNoChoices } from "../src/actions/settings.ts";
 import type { DateAction, PropertyMode } from "../src/actions/settings.ts";
 import { dateSortKey, linkTarget, mergedProperty } from "../src/actions/frontmatter.ts";
 import { plannedWrites, runAction } from "../src/actions/run.ts";
 import type { ActionContext, ActionHost, Answer } from "../src/actions/run.ts";
 import { ActionCommands, actionCommands } from "../src/actions/commands.ts";
-import { actionsPage, answerOptions, conditionOptions } from "../src/settings/actionsPage.ts";
+import { actionSummary, actionsPage, answerOptions, answerUse, conditionOptions, writeName, writeSummary } from "../src/settings/actionsPage.ts";
+import { pagePath } from "../src/settings/pages.ts";
 import { actionKey, inputKey, readControl, writeControl, writeKey } from "../src/settings/controlKeys.ts";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
 
@@ -169,7 +170,8 @@ function fakeHost(answers: Record<string, Answer | undefined>, frontmatter: Reco
 			host.asked.push(input.question);
 			return Promise.resolve(answers[input.key]);
 		},
-		linkTo,
+		linkTo: (note) => `[${note.name}](${note.path})`,
+		propertyLinkTo: linkTo,
 		processFrontMatter: (change) => {
 			host.frontmatterWrites++;
 			change(host.frontmatter);
@@ -237,7 +239,7 @@ test("a body write inserts at the cursor in the Insert sequence layout", async (
 	const host = fakeHost({ reminders: { kind: "notes", notes: notesOf("mon to wed") } });
 	assert.equal(await runAction(action, host, actionContext(editor)), "written");
 	assert.equal(host.frontmatterWrites, 0);
-	assert.deepEqual(editor.inserted, ["[[2026-11-23]], [[2026-11-24]], [[2026-11-25]]", "2026-11-25"]);
+	assert.deepEqual(editor.inserted, ["[2026-11-23](2026-11-23.md), [2026-11-24](2026-11-24.md), [2026-11-25](2026-11-25.md)", "2026-11-25"]);
 	assert.equal(await runAction(action, fakeHost({ reminders: { kind: "notes", notes: notesOf("mon") } }), actionContext()), "noEditor");
 });
 
@@ -295,7 +297,7 @@ function controlKeysOf(items: readonly unknown[]): string[] {
 
 test("the Actions subpage reads and writes every control through controlKeys", () => {
 	const settings = defaultSettings();
-	const page = actionsPage({ actions: () => settings.actions, write: () => undefined, openPage: () => undefined, change: (mutate) => void mutate() });
+	const page = actionsPage({ actions: () => settings.actions, write: () => undefined, openPage: () => undefined, change: (mutate) => Promise.resolve(void mutate()) });
 	const keys = controlKeysOf(page.items ?? []);
 	assert.deepEqual(keys.slice(0, 7), [
 		actionKey("add-dates", "enabled"),
@@ -326,25 +328,28 @@ test("the Actions subpage reads and writes every control through controlKeys", (
 	assert.equal(settings.actions[0].writes[1].property, "begins");
 });
 
-test("the Actions subpage adds, reorders and removes actions, questions and writes", () => {
+test("the Actions subpage adds, reorders and removes actions, questions and writes", async () => {
 	const settings = defaultSettings();
 	const opened: string[] = [];
-	const context = { actions: () => settings.actions, write: () => undefined, openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => void mutate() };
+	const context = { actions: () => settings.actions, write: () => undefined, openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => Promise.resolve(void mutate()) };
 	type ListLike = { onReorder?: (a: number, b: number) => void; onDelete?: (index: number) => void; addItem?: { action: (el: HTMLElement) => void }; items?: unknown[] };
 	const [actionsList, hidden] = (actionsPage(context).items ?? []) as unknown as [ListLike, { items: { items: ListLike[] }[] }];
 	actionsList.onReorder?.(0, 1);
 	assert.deepEqual(settings.actions.map((action) => action.id), ["set-reminders", "add-dates"]);
 	actionsList.addItem?.action({} as HTMLElement);
-	assert.deepEqual(opened, ["action-action-1"]);
+	await Promise.resolve();
+	assert.equal(opened.length, 1);
+	assert.match(opened[0], /^action-action-[a-z0-9]+-1$/);
 	actionsList.onDelete?.(2);
 	assert.deepEqual(settings.actions.map((action) => action.id), ["set-reminders", "add-dates"]);
 	const [, questions, writes] = hidden.items[0].items;
 	questions.addItem?.action({} as HTMLElement);
 	writes.onDelete?.(0);
+	await Promise.resolve();
 	const addDates = settings.actions[1];
 	assert.deepEqual(addDates.inputs.map((input) => input.id), ["dates", "update-start-and-end", "input-1"]);
 	assert.deepEqual(addDates.writes.map((write) => write.id), ["start", "end"]);
-	assert.deepEqual(opened, ["action-action-1", "action-add-dates-input-input-1"]);
+	assert.equal(opened[1], "action-add-dates-input-input-1");
 });
 
 test("a periodic note question with no text offers the current note of each enabled period", () => {
@@ -353,4 +358,45 @@ test("a periodic note question with no text offers the current note of each enab
 	const withQuarters = { ...defaultDateNotes().periods, quarter: { ...periods.quarter, enabled: true } };
 	const sunday = currentNoteRows({ now: moment("2026-11-22 09:00", "YYYY-MM-DD HH:mm"), moment, options: { ...options, weekStart: "sunday" }, periods: withQuarters, allows: (period) => period !== "day" });
 	assert.deepEqual(sunday.map((row) => row.notes[0].name), ["2026-W48", "2026-11", "2026-Q4", "2026"]);
+});
+
+test("a new action never reuses the id, and so the command, of a removed one", () => {
+	const first = newAction([], 1000);
+	const second = newAction([], 2000);
+	assert.notEqual(first.id, second.id);
+	assert.notEqual(newAction([first], 1000).id, first.id);
+	const [stored] = mergeActions([{ id: "a/b" }]);
+	assert.equal(stored.id.includes("/"), false);
+});
+
+test("an action whose every write is incomplete asks nothing", async () => {
+	const action = addDates();
+	for (const write of action.writes) write.input = "";
+	const host = fakeHost({});
+	assert.equal(await runAction(action, host, actionContext()), "noCompleteWrite");
+	assert.deepEqual(host.asked, []);
+});
+
+test("a yes/no question offers Yes first unless it starts with no, and a skip row only when optional", () => {
+	assert.deepEqual(yesNoChoices({ defaultText: "", optional: false }), ["yes", "no"]);
+	assert.deepEqual(yesNoChoices({ defaultText: " No ", optional: true }), ["no", "yes", "skip"]);
+	assert.equal(questionOf({ ...newInput([]), key: "when", question: " " }), "when");
+});
+
+test("the Actions rows describe what each action asks and writes and how each answer is used", () => {
+	const action = addDates();
+	assert.equal(actionSummary(action), "Asks dates, updateStartAndEnd. Writes dates, start, end.");
+	assert.equal(actionSummary(newAction([])), "Asks nothing. Writes nothing.");
+	assert.equal(writeSummary(action, action.writes[1]), "The first from dates.");
+	assert.equal(writeName({ ...action.writes[0], target: "body" }), "The note at the cursor");
+	assert.equal(answerUse(action, action.inputs[0]), "All of them: written to dates. The first: written to start. The last: written to end.");
+	assert.equal(answerUse(action, action.inputs[1]), "Decides whether start is written. Decides whether end is written.");
+	assert.equal(answerUse(action, newInput(action.inputs)), "No write uses this answer yet.");
+});
+
+test("a page is found by its id through groups, lists and hidden pages", () => {
+	const settings = defaultSettings();
+	const page = actionsPage({ actions: () => settings.actions, write: () => undefined, openPage: () => undefined, change: () => Promise.resolve() });
+	assert.deepEqual(pagePath([{ type: "group", items: [page] }], "action-add-dates-write-end"), ["actions", "action-add-dates", "action-add-dates-write-end"]);
+	assert.equal(pagePath([page], "nowhere"), undefined);
 });
