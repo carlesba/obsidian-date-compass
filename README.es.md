@@ -364,7 +364,7 @@ No hay nada oculto: todo comportamiento que elige u oculta algo es uno de estos 
 
 ## Todavía no
 
-- Una vista de calendario.
+- Una vista de calendario; está prevista para una versión posterior.
 - Horas del día.
 - Idiomas distintos del inglés y el español.
 - Publicar en la lista de plugins de la comunidad, un repositorio de GitHub, etiquetas o versiones.

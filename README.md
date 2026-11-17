@@ -348,7 +348,7 @@ Nothing is hidden: every behaviour that picks or hides something is a setting ab
 
 ## Not yet
 
-- A calendar view.
+- A calendar view; it is planned for a later version.
 - Times of day.
 - Languages other than English and Spanish.
 - Publishing to the community plugin list, a GitHub repository, tags or releases.
