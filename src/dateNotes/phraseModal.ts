@@ -1,11 +1,10 @@
 import { SuggestModal } from "obsidian";
 import type { App } from "obsidian";
 import { t } from "../i18n/index.ts";
-import { buildRows, currentNoteRows, rowLabel, singleNoteRows } from "../mentions/rows.ts";
+import { buildRows, rowLabel, singleNoteRows } from "../mentions/rows.ts";
 import type { DateRow } from "../mentions/rows.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import type { Period } from "./periods.ts";
 import { openDateNote } from "./commands.ts";
 import { obsidianMoment } from "./obsidianHost.ts";
 
@@ -37,8 +36,6 @@ export abstract class ChoosingSuggestModal<Choice> extends SuggestModal<Choice> 
 
 export interface NotePickerOptions {
 	placeholder: string;
-	allows: (period: Period) => boolean;
-	offersCurrentNotes: boolean;
 	choose: (row: DateRow) => void;
 	dismissed?: () => void;
 }
@@ -56,9 +53,7 @@ export class DateNotePickerModal extends ChoosingSuggestModal<DateRow> {
 	}
 
 	getSuggestions(query: string): DateRow[] {
-		const context = obsidianRowContext(this.settings(), this.options.allows);
-		const rows = query.trim() === "" && this.options.offersCurrentNotes ? currentNoteRows(context) : singleNoteRows(buildRows(query, context));
-		return rows;
+		return singleNoteRows(buildRows(query, obsidianRowContext(this.settings())));
 	}
 
 	renderSuggestion(row: DateRow, el: HTMLElement): void {
@@ -74,8 +69,6 @@ export class OpenDateNoteByPhraseModal extends DateNotePickerModal {
 	constructor(app: App, settings: () => DateCompassSettings) {
 		super(app, settings, {
 			placeholder: t("phrasePlaceholder"),
-			allows: () => true,
-			offersCurrentNotes: false,
 			choose: (row) => {
 				const [note] = row.notes;
 				void openDateNote(app, settings().dateNotes, note.date, note.period);

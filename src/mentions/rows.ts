@@ -4,7 +4,7 @@ import { complete, parse } from "../parse/index.ts";
 import type { Completion, Interpretation, ParseOptions, Span } from "../parse/index.ts";
 import { noteName, notePath } from "../dateNotes/paths.ts";
 import type { MomentFactory } from "../dateNotes/paths.ts";
-import { PERIODS, isPeriod } from "../dateNotes/periods.ts";
+import { isPeriod } from "../dateNotes/periods.ts";
 import type { Period, PeriodSettingsByPeriod } from "../dateNotes/periods.ts";
 import type { MentionSettings } from "./settings.ts";
 
@@ -69,26 +69,6 @@ export function buildRows(query: string, context: RowContext): DateRow[] {
 
 export function singleNoteRows(rows: readonly DateRow[]): DateRow[] {
 	return rows.filter((row) => row.notes.length === 1);
-}
-
-export function currentNoteRows(context: RowContext): DateRow[] {
-	return PERIODS.flatMap((period) => {
-		const interpretation: Interpretation = {
-			language: "",
-			node: { kind: "period", unit: period, anchor: { offset: 0 } },
-			result: { kind: "single", span: { unit: period, start: currentPeriodStart(context, period).format(ISO_DATE), end: "" } },
-		};
-		const notes = notesOf(interpretation, context);
-		return notes ? [{ source: "interpretation" as const, text: "", language: "", notes }] : [];
-	});
-}
-
-function currentPeriodStart(context: RowContext, period: Period): Moment {
-	const today = context.now.clone().startOf("day");
-	if (period === "day") return today;
-	if (period !== "week") return today.startOf(period);
-	const firstDay = context.options.weekStart === "sunday" ? 0 : 1;
-	return today.subtract((today.day() - firstDay + 7) % 7, "days");
 }
 
 export function mayStillMatch(query: string, context: RowContext): boolean {

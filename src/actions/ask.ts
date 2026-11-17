@@ -34,15 +34,11 @@ function askForNotes(app: App, settings: () => DateCompassSettings, action: Date
 			).open();
 			return;
 		}
-		const picker = new DateNotePickerModal(app, settings, {
-			placeholder: questionOf(action),
-			allows: () => true,
-			offersCurrentNotes: false,
+		new DateNotePickerModal(app, settings, {
+			placeholder: `${questionOf(action)} ${t("dateReplacesProperty", { name: action.property.trim() })}`,
 			choose: (row) => answer(row.notes),
 			dismissed,
-		});
-		picker.setInstructions([{ command: "", purpose: t("dateReplacesProperty", { name: action.property.trim() }) }]);
-		picker.openWithQuery("");
+		}).openWithQuery("");
 	});
 }
 
