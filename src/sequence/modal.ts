@@ -8,42 +8,58 @@ import type { DateCompassSettings } from "../settings.ts";
 import { insertAtCursor, previewSequence } from "./preview.ts";
 import type { SequencePreview } from "./preview.ts";
 
-export class InsertDateSequenceModal extends Modal {
-	private readonly editor: Editor;
-	private readonly sourcePath: string;
+export interface DatesQuestion {
+	title: string;
+	initialText: string;
+	optional: boolean;
+}
+
+export class DatesModal extends Modal {
 	private readonly settings: () => DateCompassSettings;
+	private readonly question: DatesQuestion;
+	private readonly accept: (preview: SequencePreview) => boolean;
+	private readonly closed: () => void;
 	private preview: SequencePreview = { kind: "empty" };
 
-	constructor(app: App, editor: Editor, sourcePath: string, settings: () => DateCompassSettings) {
+	constructor(app: App, settings: () => DateCompassSettings, question: DatesQuestion, accept: (preview: SequencePreview) => boolean, closed: () => void = () => undefined) {
 		super(app);
-		this.editor = editor;
-		this.sourcePath = sourcePath;
 		this.settings = settings;
+		this.question = question;
+		this.accept = accept;
+		this.closed = closed;
 	}
 
 	onOpen(): void {
-		this.setTitle(t("insertDateSequence"));
+		this.setTitle(this.question.title);
 		const input = this.contentEl.createEl("input", { type: "text", attr: { placeholder: t("sequencePlaceholder") } });
 		const previewEl = this.contentEl.createDiv();
-		input.addEventListener("input", () => {
+		const showPreview = () => {
 			this.preview = previewSequence(input.value, obsidianRowContext(this.settings()));
-			previewEl.setText(this.preview.kind === "empty" ? "" : this.preview.text);
-		});
+			previewEl.setText(this.preview.kind === "empty" ? (this.question.optional ? t("emptySkipsQuestion") : "") : this.preview.text);
+		};
+		input.value = this.question.initialText;
+		showPreview();
+		input.addEventListener("input", showPreview);
 		input.addEventListener("keydown", (event) => {
 			if (event.key !== "Enter" || event.isComposing) return;
 			event.preventDefault();
-			this.insertLinks();
+			if (this.accept(this.preview)) this.close();
 		});
 		input.focus();
 	}
 
 	onClose(): void {
 		this.contentEl.empty();
+		this.closed();
 	}
+}
 
-	private insertLinks(): void {
-		const { insertSequence, mentions } = this.settings();
-		const linkTo = (note: NoteRef) => markdownLinkTo(this.app, note.path, this.sourcePath, undefined);
-		if (insertAtCursor(this.editor, this.preview, linkTo, insertSequence, mentions.separator)) this.close();
+export class InsertDateSequenceModal extends DatesModal {
+	constructor(app: App, editor: Editor, sourcePath: string, settings: () => DateCompassSettings) {
+		super(app, settings, { title: t("insertDateSequence"), initialText: "", optional: false }, (preview) => {
+			const { insertSequence, mentions } = settings();
+			const linkTo = (note: NoteRef) => markdownLinkTo(app, note.path, sourcePath, undefined);
+			return insertAtCursor(editor, preview, linkTo, insertSequence, mentions.separator);
+		});
 	}
 }

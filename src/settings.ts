@@ -1,3 +1,5 @@
+import { mergeActions } from "./actions/settings.ts";
+import type { DateAction } from "./actions/settings.ts";
 import { mergeDateNotes } from "./dateNotes/periods.ts";
 import type { DateNotesSettings } from "./dateNotes/periods.ts";
 import { mergeMentions } from "./mentions/settings.ts";
@@ -25,6 +27,7 @@ export interface DateCompassSettings {
 	dateNotes: DateNotesSettings;
 	mentions: MentionSettings;
 	insertSequence: SequenceSettings;
+	actions: DateAction[];
 }
 
 export function isParserLanguage(value: unknown): value is ParserLanguage {
@@ -49,6 +52,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		dateNotes: mergeDateNotes(data.dateNotes),
 		mentions: mergeMentions(data.mentions),
 		insertSequence: mergeSequence(data.insertSequence),
+		actions: mergeActions(data.actions),
 	};
 }
 

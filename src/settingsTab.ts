@@ -1,4 +1,4 @@
-import { PluginSettingTab, debounce } from "obsidian";
+import { Notice, PluginSettingTab, debounce } from "obsidian";
 import type { App, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
 import { t, translatedLabels } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
@@ -25,6 +25,8 @@ import { mentionGroups } from "./settings/mentionsPage.ts";
 import { insertSequenceGroups } from "./settings/insertSequencePage.ts";
 import { sameTriggerPlugins } from "./mentions/conflicts.ts";
 import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
+import { actionsPage } from "./settings/actionsPage.ts";
+import { pagePath } from "./settings/pages.ts";
 
 const LANGUAGE_NAMES: Record<ParserLanguage, TranslationKey> = {
 	en: "languageEnglish",
@@ -50,6 +52,12 @@ const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
 const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, MENTIONS_ALIAS_MODE_KEY];
 
 const TYPING_PAUSE_MS = 800;
+
+const TYPED_ACTION_FIELDS = ["name", "key", "question", "defaultText", "property"];
+
+interface AppWithSettingModal {
+	setting?: { openPagePath?: (tabId: string, path: string[]) => unknown };
+}
 
 function sectionPage(name: TranslationKey, desc: TranslationKey, items: SettingDefinitionItem[] = []): SettingDefinitionPage {
 	return { type: "page", name: t(name), desc: t(desc), items };
@@ -101,7 +109,12 @@ export class DateCompassSettingTab extends PluginSettingTab {
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
 					sectionPage("insertSequenceSection", "insertSequenceSectionDesc", insertSequenceGroups()),
-					sectionPage("actionsSection", "actionsSectionDesc"),
+					actionsPage({
+						actions: () => this.plugin.settings.actions,
+						write: (key, value) => void this.setControlValue(key, value),
+						openPage: (pageId) => this.openPage(pageId),
+						change: (mutate) => void this.changeActions(mutate),
+					}),
 				],
 			},
 			{
@@ -140,6 +153,21 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
+	private async changeActions(mutate: () => unknown): Promise<void> {
+		mutate();
+		await this.plugin.saveSettings();
+		this.update();
+	}
+
+	private openPage(pageId: string): void {
+		const modal = (this.app as App & AppWithSettingModal).setting;
+		if (typeof modal?.openPagePath !== "function") {
+			new Notice(t("needsNewerObsidian"));
+			return;
+		}
+		modal.openPagePath(this.plugin.manifest.id, pagePath(this.getSettingDefinitions(), pageId) ?? [pageId]);
+	}
+
 	getControlValue(key: string): unknown {
 		return readControl(this.plugin.settings, key);
 	}
@@ -149,6 +177,10 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		await this.plugin.saveSettings();
 		if (CONTROLS_THAT_SHOW_OR_HIDE_ITEMS.includes(key)) this.update();
 		else if (key === MENTIONS_TRIGGER_KEY) this.updateAfterTyping();
+		else if (key.startsWith("actions/")) {
+			if (TYPED_ACTION_FIELDS.includes(key.split("/").pop() ?? "")) this.updateAfterTyping();
+			else this.update();
+		}
 	}
 
 	private async resetSettings(): Promise<void> {
