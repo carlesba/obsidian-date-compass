@@ -4,6 +4,7 @@ import type { DateCompassSettings, ParserLanguage } from "../settings.ts";
 import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } from "../dateNotes/periods.ts";
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
 import { ALIAS_MODES, LINK_SEPARATORS, withoutWhitespace } from "../mentions/settings.ts";
+import { SEQUENCE_LAYOUTS, isItemTemplate } from "../sequence/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
 
@@ -22,6 +23,10 @@ export const MENTIONS_ALIAS_MODE_KEY = "mentions/aliasMode";
 export const MENTIONS_ALIAS_FORMAT_KEY = "mentions/aliasFormat";
 
 export const MENTIONS_SEPARATOR_KEY = "mentions/separator";
+
+export const SEQUENCE_LAYOUT_KEY = "insertSequence/layout";
+
+export const SEQUENCE_ITEM_TEMPLATE_KEY = "insertSequence/itemTemplate";
 
 const MENTION_PERIOD_KEY_PREFIX = "mentions/periods/";
 
@@ -76,6 +81,8 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === MENTIONS_SEPARATOR_KEY) return settings.mentions.separator;
 	const mentionPeriod = mentionPeriodOfKey(key);
 	if (mentionPeriod) return settings.mentions.periods[mentionPeriod];
+	if (key === SEQUENCE_LAYOUT_KEY) return settings.insertSequence.layout;
+	if (key === SEQUENCE_ITEM_TEMPLATE_KEY) return settings.insertSequence.itemTemplate;
 	return undefined;
 }
 
@@ -92,6 +99,12 @@ export function writeControl(settings: DateCompassSettings, key: string, value: 
 	if (key === TEMPLATE_RUNNER_KEY) return writeChoice(TEMPLATE_RUNNER_CHOICES, value, (choice) => (settings.dateNotes.templateRunner = choice));
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return writePeriodField(settings, periodField.period, periodField.field, value);
+	if (key === SEQUENCE_LAYOUT_KEY) return writeChoice(SEQUENCE_LAYOUTS, value, (choice) => (settings.insertSequence.layout = choice));
+	if (key === SEQUENCE_ITEM_TEMPLATE_KEY) {
+		if (typeof value !== "string" || itemTemplateError(value)) return false;
+		settings.insertSequence.itemTemplate = value;
+		return true;
+	}
 	return writeMentionControl(settings, key, value);
 }
 
@@ -137,6 +150,10 @@ function writePeriodField(settings: DateCompassSettings, period: Period, field: 
 	else if (formatError(value)) return false;
 	else periodSettings.format = value.trim();
 	return true;
+}
+
+export function itemTemplateError(value: string): string | undefined {
+	return isItemTemplate(value) ? undefined : t("itemTemplateNeedsLink");
 }
 
 export function formatError(value: string): string | undefined {

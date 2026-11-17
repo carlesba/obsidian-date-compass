@@ -22,6 +22,7 @@ import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
 import { enabledExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 import { mentionGroups } from "./settings/mentionsPage.ts";
+import { insertSequenceGroups } from "./settings/insertSequencePage.ts";
 import { sameTriggerPlugins } from "./mentions/conflicts.ts";
 import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
 
@@ -99,7 +100,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 				items: [
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
-					sectionPage("insertSequenceSection", "insertSequenceSectionDesc"),
+					sectionPage("insertSequenceSection", "insertSequenceSectionDesc", insertSequenceGroups()),
 					sectionPage("actionsSection", "actionsSectionDesc"),
 				],
 			},

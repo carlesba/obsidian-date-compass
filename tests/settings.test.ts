@@ -15,6 +15,7 @@ import {
 	writeControl,
 } from "../src/settings/controlKeys.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
+import { mergeSequence } from "../src/sequence/settings.ts";
 import { sameTriggerWarning } from "../src/settings/mentionsPage.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
 
@@ -43,6 +44,7 @@ test("a fresh install gets the defaults, with English as the only parser languag
 			aliasFormat: "ddd D MMM",
 			separator: "commaSpace",
 		},
+		insertSequence: { layout: "inline", itemTemplate: "{{link}}" },
 	});
 });
 
@@ -59,6 +61,7 @@ test("stored partial settings merge over the defaults", () => {
 		dayMonthOrder: "monthDay",
 		dateNotes: defaultDateNotes(),
 		mentions: mergeMentions(undefined),
+		insertSequence: mergeSequence(undefined),
 	});
 });
 
@@ -107,7 +110,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: mergeMentions(undefined) });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: mergeMentions(undefined), insertSequence: mergeSequence(undefined) });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });

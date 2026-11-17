@@ -122,14 +122,21 @@ export function noteDescription(note: NoteRef, now: Moment): string {
 	}
 }
 
-function sequenceDescription(notes: readonly NoteRef[], now: Moment): string {
+export function noteCount(notes: readonly NoteRef[]): string {
+	return t(notes.every((note) => note.period === "day") ? "dateCount" : "noteCount", { count: notes.length });
+}
+
+export function rangeDescription(notes: readonly NoteRef[], now: Moment, between: string): string {
 	const first = notes[0];
 	const last = notes[notes.length - 1];
-	const count = t(notes.every((note) => note.period === "day") ? "dateCount" : "noteCount", { count: notes.length });
 	if (first.period === "day" && last.period === "day" && first.start.isSame(last.start, "month") && first.start.year() === now.year()) {
-		return `${first.start.format("ddd D")} → ${last.start.format("ddd D MMM")} · ${count}`;
+		return `${first.start.format("ddd D")}${between}${last.start.format("ddd D MMM")}`;
 	}
-	return `${noteDescription(first, now)} → ${noteDescription(last, now)} · ${count}`;
+	return `${noteDescription(first, now)}${between}${noteDescription(last, now)}`;
+}
+
+function sequenceDescription(notes: readonly NoteRef[], now: Moment): string {
+	return `${rangeDescription(notes, now, " → ")} · ${noteCount(notes)}`;
 }
 
 export function rowLabel(row: DateRow, now: Moment): string {

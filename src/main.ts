@@ -8,6 +8,7 @@ import { importDateNotes } from "./dateNotes/import.ts";
 import { installedExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 import { OpenDateNoteByPhraseModal } from "./dateNotes/phraseModal.ts";
 import { DateMentionSuggest } from "./mentions/suggest.ts";
+import { InsertDateSequenceModal } from "./sequence/modal.ts";
 
 export default class DateCompassPlugin extends Plugin {
 	settings: DateCompassSettings = defaultSettings();
@@ -27,6 +28,11 @@ export default class DateCompassPlugin extends Plugin {
 			id: "open-date-note-by-phrase",
 			name: t("openDateNoteByPhrase"),
 			callback: () => new OpenDateNoteByPhraseModal(this.app, () => this.settings).open(),
+		});
+		this.addCommand({
+			id: "insert-date-sequence",
+			name: t("insertDateSequence"),
+			editorCallback: (editor, context) => new InsertDateSequenceModal(this.app, editor, context.file?.path ?? "", () => this.settings).open(),
 		});
 		this.registerEditorSuggest(new DateMentionSuggest(this.app, () => this.settings));
 		this.app.workspace.onLayoutReady(() => void this.importDateNotesOnce());
