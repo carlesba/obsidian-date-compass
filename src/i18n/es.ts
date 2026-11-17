@@ -114,6 +114,7 @@ export const es: Translation = {
 	moreRow: "Más…",
 	instructionWithAlias: "invertir texto del enlace",
 	instructionMore: "más opciones",
+	propertyNotWritten: "No se pudieron añadir las fechas a la propiedad. Comprueba que las propiedades de la nota sean válidas.",
 	noPropertyAtCursor: "Coloca el cursor en una propiedad para añadirle fechas.",
 	sequencePlaceholder: "Escribe un rango o una secuencia, como cada lunes durante 4 semanas",
 	sequenceTooLong: "Salen más de {limit} fechas. Acorta el rango o la secuencia.",

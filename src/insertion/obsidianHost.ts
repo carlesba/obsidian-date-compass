@@ -1,5 +1,5 @@
-import { MarkdownView, Notice } from "obsidian";
-import type { App, TFile } from "obsidian";
+import { Notice } from "obsidian";
+import type { App, Editor, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { dateSortKey, applyPropertyWrites } from "../actions/frontmatter.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
@@ -26,8 +26,7 @@ export function obsidianLinks(app: App, sourcePath: string, settings: DateCompas
 		insertionLinks(notes, phrase, settings.insertion, withAlias, (note, alias) => markdownLinkTo(app, note.path, sourcePath, alias));
 }
 
-export function destinationInActiveEditor(view: MarkdownView): DatesDestination {
-	const { editor } = view;
+export function destinationInActiveEditor(editor: Editor): DatesDestination {
 	const lines = Array.from({ length: editor.lineCount() }, (_, index) => editor.getLine(index));
 	return chooseDestination({ lines, cursorLine: editor.getCursor("from").line, focusedProperty: focusedPropertyName() });
 }
@@ -36,6 +35,10 @@ export async function addDatesToProperty(app: App, file: TFile, name: string, no
 	const values = notes.map((note) => propertyLinkTo(app, note, file.path));
 	const sortKeyOf = dateSortKey(periods, obsidianMoment);
 	await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => applyPropertyWrites(frontmatter, [{ property: name, values, mode: "dedupeSort" }], sortKeyOf));
+}
+
+export function noticePropertyNotWritten(): void {
+	new Notice(t("propertyNotWritten"));
 }
 
 export function noticeNoProperty(): void {

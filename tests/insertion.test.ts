@@ -60,6 +60,7 @@ test("links are placed with the chosen separator in the list they are typed in",
 	assert.equal(insertionText(links, "bulletLines", "1. "), "[[a]]\n- [[b]]");
 	assert.equal(insertionText(links, "bulletLines", "meet "), "\n- [[a]]\n- [[b]]");
 	assert.equal(insertionText(["[[a]]"], "bulletLines", "meet "), "[[a]]");
+	assert.equal(insertionText(["[[a]]"], "lines", "Due "), "[[a]]");
 	assert.equal(insertionText(links, "lines", ""), "[[a]]\n[[b]]");
 	assert.equal(insertionText(links, "lines", "  Due "), "\n  [[a]]\n  [[b]]");
 });

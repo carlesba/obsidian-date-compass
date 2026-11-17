@@ -48,7 +48,7 @@ function joinLinks(links: readonly string[], separator: LinkSeparator): string {
 const LIST_MARKER_ONLY = /^\s*([-*+]|\d+[.)])\s+$/;
 
 export function insertionText(links: readonly string[], separator: LinkSeparator, textBeforeInsertion: string): string {
-	if (separator === "lines") return linesText(links, textBeforeInsertion);
+	if (links.length > 1 && separator === "lines") return linesText(links, textBeforeInsertion);
 	if (links.length < 2 || separator !== "bulletLines") return joinLinks(links, separator);
 	return bulletLinesText(links, textBeforeInsertion);
 }

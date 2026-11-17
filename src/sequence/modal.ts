@@ -2,7 +2,7 @@ import { Modal, Setting } from "obsidian";
 import type { App, Editor, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
-import { addDatesToProperty, obsidianLinks } from "../insertion/obsidianHost.ts";
+import { addDatesToProperty, noticePropertyNotWritten, obsidianLinks } from "../insertion/obsidianHost.ts";
 import type { DatesDestination } from "../insertion/destination.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import type { DateCompassSettings } from "../settings.ts";
@@ -101,7 +101,7 @@ export function openInsertDatesModal(settings: () => DateCompassSettings, target
 		(preview, withAlias, phrase) => {
 			if (preview.kind !== "dates") return false;
 			if (destination.kind === "property") {
-				void addDatesToProperty(app, file, destination.name, preview.notes, settings().dateNotes.periods);
+				addDatesToProperty(app, file, destination.name, preview.notes, settings().dateNotes.periods).catch(noticePropertyNotWritten);
 				return true;
 			}
 			insertLinks(editor, linksOf(preview.notes, phrase, withAlias), settings().insertion.separator, range);

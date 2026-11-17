@@ -1,4 +1,4 @@
-import { MarkdownView, Plugin, getLanguage } from "obsidian";
+import { Plugin, getLanguage } from "obsidian";
 import { DEFAULT_LANGUAGE, setLanguage, t } from "./i18n/index.ts";
 import { defaultSettings, mergeSettings } from "./settings.ts";
 import type { DateCompassSettings } from "./settings.ts";
@@ -48,8 +48,8 @@ export default class DateCompassPlugin extends Plugin {
 			name: t("insertDates"),
 			editorCallback: (editor, context) => {
 				const { file } = context;
-				if (!file || !(context instanceof MarkdownView)) return;
-				const destination = destinationInActiveEditor(context);
+				if (!file) return;
+				const destination = destinationInActiveEditor(editor);
 				if (destination.kind === "frontmatterWithoutProperty") noticeNoProperty();
 				else openInsertDatesModal(() => this.settings, { app: this.app, editor, file, destination }, "");
 			},

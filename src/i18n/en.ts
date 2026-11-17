@@ -112,6 +112,7 @@ export const en = {
 	moreRow: "More…",
 	instructionWithAlias: "flip link text",
 	instructionMore: "more options",
+	propertyNotWritten: "Could not add the dates to the property. Check that the note's properties are valid.",
 	noPropertyAtCursor: "Put the cursor on a property to add dates to it.",
 	sequencePlaceholder: "Type a range or sequence, such as every mon for 4 weeks",
 	sequenceTooLong: "This makes more than {limit} dates. Shorten the range or sequence.",
