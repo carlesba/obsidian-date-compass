@@ -1,16 +1,19 @@
 import { linkTarget } from "../actions/frontmatter.ts";
 
+const LINK_START = /^\s*(\[\[|\[[^\]]*\]\()/;
+
 function identityOf(item: unknown): string {
-	return typeof item === "string" ? linkTarget(item) : JSON.stringify(item);
+	if (typeof item !== "string") return JSON.stringify(item);
+	return LINK_START.test(item) ? `link:${linkTarget(item)}` : `text:${item}`;
 }
 
-export function propertyWithLinks(existing: unknown, links: readonly string[]): unknown[] {
-	const kept: unknown[] = existing === undefined || existing === null || existing === "" ? [] : Array.isArray(existing) ? (existing as unknown[]).slice() : [existing];
-	const present = new Set(kept.map(identityOf));
-	for (const link of links) {
-		if (present.has(identityOf(link))) continue;
+export function propertyWithLinks(existing: unknown, links: readonly string[]): unknown[] | undefined {
+	const items: unknown[] = existing === undefined || existing === null || existing === "" ? [] : Array.isArray(existing) ? (existing as unknown[]).slice() : [existing];
+	const present = new Set(items.map(identityOf));
+	const missing = links.filter((link) => {
+		if (present.has(identityOf(link))) return false;
 		present.add(identityOf(link));
-		kept.push(link);
-	}
-	return kept;
+		return true;
+	});
+	return missing.length === 0 ? undefined : [...items, ...missing];
 }

@@ -198,6 +198,8 @@ test("a property destination without a file becomes body insertion", () => {
 test("the property write appends only the missing links and keeps what was there in its order", () => {
 	const links = ["[[2026-11-23]]", "[[2026-11-24]]"];
 	assert.deepEqual(propertyWithLinks(undefined, links), links);
+	assert.deepEqual(propertyWithLinks("2026-11-23", ["[[2026-11-23]]"]), ["2026-11-23", "[[2026-11-23]]"]);
+	assert.equal(propertyWithLinks("[[2026-11-23]]", ["[[2026-11-23]]"]), undefined);
 	assert.deepEqual(propertyWithLinks("", links), links);
 	assert.deepEqual(propertyWithLinks("[[2026-12-01]]", links), ["[[2026-12-01]]", ...links]);
 	assert.deepEqual(propertyWithLinks(["[[2026-12-01]]", "b", "[[2026-12-01]]", "[[2026-11-24|Tue]]"], links), ["[[2026-12-01]]", "b", "[[2026-12-01]]", "[[2026-11-24|Tue]]", "[[2026-11-23]]"]);

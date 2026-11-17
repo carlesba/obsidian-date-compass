@@ -1,4 +1,4 @@
-import { Notice } from "obsidian";
+import { MarkdownView, Notice } from "obsidian";
 import type { App, Editor, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { markdownLinkTo, propertyLinkTo } from "../mentions/obsidianHost.ts";
@@ -33,9 +33,11 @@ export function destinationInActiveEditor(editor: Editor): DatesDestination {
 export function addDatesToProperty(app: App, editor: Editor, file: TFile, name: string, notes: readonly NoteRef[], range?: InsertionRange): void {
 	if (range) editor.replaceRange("", range.start, range.end);
 	const write = async () => {
+		if (range) await app.workspace.getActiveViewOfType(MarkdownView)?.save();
 		const links = notes.map((note) => propertyLinkTo(app, note, file.path));
 		await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
-			frontmatter[name] = propertyWithLinks(frontmatter[name], links);
+			const updated = propertyWithLinks(frontmatter[name], links);
+			if (updated) frontmatter[name] = updated;
 		});
 	};
 	write().catch(noticePropertyNotWritten);
