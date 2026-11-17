@@ -67,7 +67,7 @@ Ranges and sequences give several dates at once:
 | `every mon, wed for 4 weeks` | those weekdays over the next 4 weeks, starting today |
 | `every 2 days x5`, `every 2 weeks 5 times`, `every 2 days for 10 times` | that many dates starting today, a step apart |
 | `every wed until dec 20` | every Wednesday from today to 20 Dec, the end date included when it matches |
-| `every other day for 6 days` | 17, 19 and 21 Nov: every second day inside the next 6 days |
+| `every other day for 6 days` | every second day inside the next 6 days |
 | `every other wed for 3 months` | alternate Wednesdays over the next 3 months |
 | `wed for 5 weeks` | a Wednesday a week for the next 5 weeks, like `every wed for 5 weeks` |
 | `W48 to W50`, `weeks of december` | the week notes W48 to W50; the five weeks that touch December |
