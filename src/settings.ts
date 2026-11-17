@@ -58,7 +58,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 
 function readLanguages(stored: unknown): ParserLanguage[] | undefined {
 	if (!Array.isArray(stored)) return undefined;
-	return PARSER_LANGUAGES.filter((language) => stored.includes(language));
+	return stored.filter((language, index): language is ParserLanguage => isParserLanguage(language) && stored.indexOf(language) === index);
 }
 
 function oneOf<Choice extends string>(choices: readonly Choice[], stored: unknown, fallback: Choice): Choice {

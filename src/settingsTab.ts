@@ -3,8 +3,7 @@ import type { App, SettingDefinitionItem, SettingDefinitionPage } from "obsidian
 import { t, translatedLabels } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
-import { PARSER_LANGUAGES } from "./settings.ts";
-import type { DayMonthOrder, NextWeekdayMeaning, ParserLanguage, WeekStart } from "./settings.ts";
+import type { ParserLanguage, DayMonthOrder, NextWeekdayMeaning, WeekStart } from "./settings.ts";
 import {
 	DAY_MONTH_ORDER_KEY,
 	MENTIONS_ALIAS_MODE_KEY,
@@ -14,7 +13,6 @@ import {
 	WEEK_START_KEY,
 	isActionKey,
 	isTypedActionKey,
-	languageKey,
 	readControl,
 	writeControl,
 } from "./settings/controlKeys.ts";
@@ -28,12 +26,8 @@ import { insertSequenceGroups } from "./settings/insertSequencePage.ts";
 import { sameTriggerPlugins } from "./mentions/conflicts.ts";
 import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
 import { actionsPage } from "./settings/actionsPage.ts";
+import { renderLanguagePicker } from "./settings/languagePicker.ts";
 import { pagePath } from "./settings/pages.ts";
-
-const LANGUAGE_NAMES: Record<ParserLanguage, TranslationKey> = {
-	en: "languageEnglish",
-	es: "languageSpanish",
-};
 
 const WEEK_START_LABELS: Record<WeekStart, TranslationKey> = {
 	locale: "weekStartLocale",
@@ -76,16 +70,17 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		return [
 			{
 				type: "group",
-				heading: t("parserLanguages"),
-				items: PARSER_LANGUAGES.map((language) => ({
-					name: t(LANGUAGE_NAMES[language]),
-					desc: t("parserLanguagesDesc"),
-					control: { type: "toggle" as const, key: languageKey(language) },
-				})),
-			},
-			{
-				type: "group",
+				heading: t("localizationSection"),
 				items: [
+					{
+						name: t("parserLanguages"),
+						desc: t("parserLanguagesDesc"),
+						render: (setting) =>
+							renderLanguagePicker(setting, {
+								languages: () => this.plugin.settings.languages,
+								change: (languages) => void this.changeLanguages(languages),
+							}),
+					},
 					{
 						name: t("weekStart"),
 						desc: t("weekStartDesc"),
@@ -149,6 +144,12 @@ export class DateCompassSettingTab extends PluginSettingTab {
 
 	private async copyDateNotesFrom(source: DateNoteSource): Promise<void> {
 		if (!copyFromSource(this.plugin.settings.dateNotes, source, enabledExternalDateNotes(this.app))) return;
+		await this.plugin.saveSettings();
+		this.update();
+	}
+
+	private async changeLanguages(languages: ParserLanguage[]): Promise<void> {
+		this.plugin.settings.languages = languages;
 		await this.plugin.saveSettings();
 		this.update();
 	}

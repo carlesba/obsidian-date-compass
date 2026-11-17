@@ -1,6 +1,6 @@
 import { t } from "../i18n/index.ts";
-import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, PARSER_LANGUAGES, WEEK_STARTS } from "../settings.ts";
-import type { DateCompassSettings, ParserLanguage } from "../settings.ts";
+import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, WEEK_STARTS } from "../settings.ts";
+import type { DateCompassSettings } from "../settings.ts";
 import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } from "../dateNotes/periods.ts";
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
 import { ALIAS_MODES, LINK_SEPARATORS, withoutWhitespace } from "../mentions/settings.ts";
@@ -42,8 +42,6 @@ function mentionPeriodOfKey(key: string): Period | undefined {
 	return isPeriod(period) ? period : undefined;
 }
 
-const LANGUAGE_KEY_PREFIX = "languages/";
-
 const PERIOD_KEY_PREFIX = "dateNotes/";
 
 export function periodKey(period: Period, field: PeriodField): string {
@@ -55,16 +53,6 @@ function periodFieldOfKey(key: string): { period: Period; field: PeriodField } |
 	const [period, field] = key.slice(PERIOD_KEY_PREFIX.length).split("/");
 	const knownField = PERIOD_FIELDS.find((known) => known === field);
 	return isPeriod(period) && knownField ? { period, field: knownField } : undefined;
-}
-
-export function languageKey(language: ParserLanguage): string {
-	return `${LANGUAGE_KEY_PREFIX}${language}`;
-}
-
-function languageOfKey(key: string): ParserLanguage | undefined {
-	if (!key.startsWith(LANGUAGE_KEY_PREFIX)) return undefined;
-	const language = key.slice(LANGUAGE_KEY_PREFIX.length);
-	return PARSER_LANGUAGES.find((known) => known === language);
 }
 
 const ACTION_KEY_PREFIX = "actions/";
@@ -176,8 +164,6 @@ function writeText(value: unknown, write: (value: string) => unknown): boolean {
 export function readControl(settings: DateCompassSettings, key: string): unknown {
 	const actionControl = actionControlOfKey(settings, key);
 	if (actionControl) return readActionControl(actionControl);
-	const language = languageOfKey(key);
-	if (language) return settings.languages.includes(language);
 	if (key === WEEK_START_KEY) return settings.weekStart;
 	if (key === NEXT_WEEKDAY_KEY) return settings.nextWeekday;
 	if (key === DAY_MONTH_ORDER_KEY) return settings.dayMonthOrder;
@@ -199,12 +185,6 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 export function writeControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
 	const actionControl = actionControlOfKey(settings, key);
 	if (actionControl) return writeActionControl(actionControl, value);
-	const language = languageOfKey(key);
-	if (language) {
-		const others = settings.languages.filter((enabled) => enabled !== language);
-		settings.languages = PARSER_LANGUAGES.filter((known) => others.includes(known) || (known === language && value === true));
-		return true;
-	}
 	if (key === WEEK_START_KEY) return writeChoice(WEEK_STARTS, value, (choice) => (settings.weekStart = choice));
 	if (key === NEXT_WEEKDAY_KEY) return writeChoice(NEXT_WEEKDAY_MEANINGS, value, (choice) => (settings.nextWeekday = choice));
 	if (key === DAY_MONTH_ORDER_KEY) return writeChoice(DAY_MONTH_ORDERS, value, (choice) => (settings.dayMonthOrder = choice));

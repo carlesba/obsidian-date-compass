@@ -8,7 +8,6 @@ import {
 	MENTIONS_SEPARATOR_KEY,
 	MENTIONS_TRIGGER_KEY,
 	TEMPLATE_RUNNER_KEY,
-	languageKey,
 	mentionPeriodKey,
 	periodKey,
 	readControl,
@@ -120,11 +119,6 @@ test("stored values the plugin does not know fall back to the defaults", () => {
 
 test("settings controls read and write the settings they name", () => {
 	const settings = defaultSettings();
-	assert.equal(writeControl(settings, languageKey("es"), true), true);
-	assert.deepEqual(settings.languages, ["en", "es"]);
-	assert.equal(readControl(settings, languageKey("es")), true);
-	assert.equal(writeControl(settings, languageKey("en"), false), true);
-	assert.deepEqual(settings.languages, ["es"]);
 	assert.equal(writeControl(settings, "weekStart", "monday"), true);
 	assert.equal(readControl(settings, "weekStart"), "monday");
 	assert.equal(writeControl(settings, "weekStart", "friday"), false);
@@ -158,4 +152,9 @@ test("every Mentions control reads and writes its setting and refuses bad values
 test("the Mentions page warns only when another plugin shares the trigger", () => {
 	assert.equal(sameTriggerWarning([]), undefined);
 	assert.match(sameTriggerWarning(["Natural Language Dates", "Date List"]) ?? "", /Natural Language Dates, Date List also suggests/);
+});
+
+test("the stored language order survives a load, and repeated or unknown languages are dropped", () => {
+	assert.deepEqual(mergeSettings({ languages: ["es", "en"] }).languages, ["es", "en"]);
+	assert.deepEqual(mergeSettings({ languages: ["en", "es", "en", "fr"] }).languages, ["en", "es"]);
 });
