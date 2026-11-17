@@ -11,9 +11,11 @@ import { DateMentionSuggest } from "./mentions/suggest.ts";
 import { InsertDateSequenceModal } from "./sequence/modal.ts";
 import { ActionCommands } from "./actions/commands.ts";
 import { canRunAction, runActionInActiveNote } from "./actions/ask.ts";
+import { createObsidianDateCompassApi } from "./api/obsidianHost.ts";
 
 export default class DateCompassPlugin extends Plugin {
 	settings: DateCompassSettings = defaultSettings();
+	readonly api = createObsidianDateCompassApi(this.app, () => this.settings);
 	private interfaceLanguage = DEFAULT_LANGUAGE;
 	private readonly actionCommands = new ActionCommands(this, ({ id, name, action }) => ({
 		id,
