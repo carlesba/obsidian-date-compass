@@ -70,7 +70,8 @@ Los rangos y las secuencias dan varias fechas a la vez:
 | `every 2 days x5`, `every 2 weeks 5 times` | cinco fechas desde hoy, separadas por ese paso |
 | `W48 to W50`, `weeks of december` | las notas semanales de W48 a W50; las cinco semanas que tocan diciembre |
 
-Un rango o una secuencia de más de 366 fechas se rechaza con un mensaje.
+Un rango o una secuencia de más de 366 fechas se rechaza con un mensaje, y la API no devuelve nada
+para él.
 
 ### Español
 
@@ -135,7 +136,9 @@ Comandos:
 ## Menciones mientras escribes
 
 Escribe el disparador, `@` por defecto, y una frase. Una lista de sugerencias muestra a qué apunta
-cada lectura antes de aceptarla, como `Wed 11 Nov → [[2026-11-11]]`. La frase puede tener espacios:
+cada lectura antes de aceptarla, como `Wed 11 Nov → [[2026-11-11]]` (las filas de ejemplo de esta
+sección se muestran como en la interfaz en inglés; en español las fechas y el recuento van en
+español). La frase puede tener espacios:
 `@el miércoles pasado`, `@de hoy a viernes`. Un rango muestra una sola fila, como `Tue 17 → Fri 20
 Nov · 4 dates`, que inserta los cuatro enlaces. Las filas van en este orden: la mejor lectura, las
 otras lecturas (otros idiomas, palabras ambiguas) y luego las formas de completar lo que escribes.
@@ -200,11 +203,12 @@ página de una acción tiene:
 - **Preguntas**, que se añaden con **Añadir pregunta**. Cada pregunta tiene:
   - **Clave**: el nombre con el que las escrituras usan su respuesta.
   - **Pregunta**: lo que pregunta el comando; vacía pregunta con la clave.
-  - **Tipo de campo**: **Una fecha**, **Fechas: un rango, una secuencia o una lista**, **Una nota
-    periódica** o **Sí o no**.
+  - **Tipo de campo**: **Una fecha** (una nota diaria), **Fechas: un rango, una secuencia o una
+    lista**, **Una nota periódica** o **Sí o no**. Una pregunta de nota periódica sin texto escrito
+    lista la nota actual de cada periodo activado para elegir.
   - **Cómo se usa la respuesta**: qué escrituras la usan.
-  - **Se puede omitir**: si se puede dejar sin responder; las escrituras que usan una respuesta
-    omitida no escriben nada.
+  - **Se puede omitir**: si se puede dejar sin responder. Para omitirla, pulsa Intro sin texto o
+    elige **Omitir esta pregunta**; las escrituras que usan una respuesta omitida no escriben nada.
   - **Escrito de antemano**: texto ya escrito cuando se abre la pregunta, como `hoy`. En una
     pregunta de sí o no, `no` ofrece No primero.
 - **Escrituras**, que se añaden con **Añadir escritura**. Cada escritura tiene:
@@ -226,8 +230,8 @@ Obsidian no tratan los enlaces Markdown como enlaces.
 
 Otros plugins y los scripts de Templater llegan a Date Compass con
 `app.plugins.plugins["date-compass"].api`. Tiene seis funciones, y cada una lee tus ajustes
-actuales: idiomas, inicio de semana, orden de las fechas numéricas y las carpetas y formatos de
-Notas de fecha.
+actuales: idiomas, inicio de semana, qué significa "próximo" día de la semana, orden de las fechas
+numéricas y las carpetas, formatos e interruptores Activadas de Notas de fecha.
 
 Los resultados son objetos simples, así que los scripts no necesitan ninguna biblioteca. Una
 **nota** tiene:
@@ -240,13 +244,17 @@ Los resultados son objetos simples, así que los scripts no necesitan ninguna bi
 | `name` | el nombre de la nota, según el formato del nombre del periodo | `2026-W47` |
 | `path` | la ruta en la bóveda, según la carpeta y el formato del periodo | `journal/2026-W47.md` |
 
-Una **lectura** tiene `language` (`en` o `es`) y `notes`: una nota para una fecha o un periodo, y
+Una **lectura** tiene `language` (`en`, `es`, o `shared` para expresiones sin palabras como `W50`,
+`-3d` o `3/12`) y `notes`: una nota para una fecha o un periodo, y
 varias para un rango o una secuencia.
 
 `now` es opcional en todas y por defecto es el momento actual; pasa un `Date` o un moment. Un
-argumento `date` admite un `Date`, un moment o un texto `YYYY-MM-DD`; cualquier otra cosa, o un
-periodo desconocido, lanza un error. Las expresiones de un periodo desactivado en Notas de fecha no
-dan resultado, igual que en las menciones. Los tipos de TypeScript `DateCompassApi`,
+argumento `date` admite un `Date`, un moment o un texto `YYYY-MM-DD`. Cualquier otra cosa, un
+periodo desconocido o un periodo desactivado en Notas de fecha hacen que `notePath` lance un error y
+que `openNote` lo rechace. Las expresiones de un periodo desactivado en Notas de fecha no dan
+resultado, igual que en las menciones. Una semana es la que nombra el formato: semanas ISO con el
+`GGGG-[W]WW` por defecto, así que con semanas que empiezan en domingo pasa el `date` de una nota y no
+su `start`. Los tipos de TypeScript `DateCompassApi`,
 `DateCompassInterpretation` y `DateCompassNote` se exportan desde `src/api/index.ts`.
 
 Empieza cada script con:
@@ -300,7 +308,8 @@ La página principal es corta:
 
 - **Idiomas**: un interruptor para **Inglés** y otro para **Español**. Al principio están activados
   el idioma de tu interfaz y el inglés.
-- **La semana empieza el**: **Según la configuración regional**, **Lunes** o **Domingo**.
+- **La semana empieza el**: **Según la configuración regional** (por defecto), **Lunes** o
+  **Domingo**.
 - **"Próximo" día de la semana significa**: **Ese día de la semana que viene** (por defecto) o **La
   próxima vez que llegue ese día**.
 - **Fechas numéricas**: **Día y luego mes** (por defecto) o **Mes y luego día**, para `3/12`.

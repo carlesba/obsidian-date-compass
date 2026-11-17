@@ -112,8 +112,34 @@ test("notePath and dateOf round-trip through the configured folder and format of
 	assert.equal(api.notePath(moment("2026-11-17", "YYYY-MM-DD"), "week"), "journal/weekly/2026-W47.md");
 	assert.equal(api.dateOf("journal/2026-11-17.md"), undefined);
 	assert.equal(api.dateOf("journal/daily/2026/11/2026-11-17.txt"), undefined);
-	assert.throws(() => api.notePath("17 Nov", "day"), TypeError);
+});
+
+for (const weekStart of ["monday", "sunday"] as const) {
+	test(`dateOf describes a note exactly as parse does, with ${weekStart} weeks and a slashed day format`, () => {
+		const { api } = fakeApi((settings) => {
+			settings.weekStart = weekStart;
+			settings.dateNotes.periods.day.format = "YYYY/MM/YYYY-MM-DD";
+			settings.dateNotes.periods.month.folder = "months";
+		});
+		for (const phrase of ["today", "this week", "next week", "this month", "next quarter", "next year", "W48 to W50"]) {
+			const notes = api.resolve(phrase, NOW)?.notes ?? assert.fail(phrase);
+			for (const note of notes) assert.deepEqual(api.dateOf(note.path), note, phrase);
+		}
+	});
+}
+
+test("notePath and openNote refuse what is not a date, an unknown period and a period turned off", async () => {
+	const { api, opened } = fakeApi((settings) => (settings.dateNotes.periods.quarter.enabled = false));
+	for (const date of ["17 Nov", "tomorrow", undefined, null, 0, {}]) {
+		assert.throws(() => api.notePath(date as string, "day"), TypeError, String(date));
+		await assert.rejects(api.openNote(date as string, "day"), TypeError, String(date));
+	}
 	assert.throws(() => api.notePath("2026-11-17", "fortnight" as Period), TypeError);
+	assert.throws(() => api.notePath("2026-11-17", "quarter"), TypeError);
+	await assert.rejects(api.openNote("2026-11-17", "fortnight" as Period), TypeError);
+	await assert.rejects(api.openNote("2026-11-17", "quarter"), TypeError);
+	assert.deepEqual(opened, []);
+	assert.equal(api.dateOf("2026-Q4.md"), undefined);
 });
 
 test("every note parse returns names its own path", () => {
@@ -158,6 +184,29 @@ test("openNote calls the open-or-create path with the date and period", async ()
 		{ date: "2026-12-01", period: "month" },
 		{ date: "2026-11-17", period: "day" },
 	]);
-	assert.throws(() => api.openNote("tomorrow", "day"), TypeError);
-	assert.equal(opened.length, 2);
+	await api.openNote(moment("2026-11-23", "YYYY-MM-DD"), "week");
+	assert.deepEqual(opened[2], { date: "2026-11-23", period: "week" });
+});
+
+test("phrases with no words report the shared language, and languages keep their enabled order", () => {
+	const { api } = fakeApi((settings) => (settings.languages = ["es", "en"]));
+	assert.deepEqual(["W50", "-3d", "2027", "3/12"].map((phrase) => api.resolve(phrase, NOW)?.language), ["shared", "shared", "shared", "shared"]);
+	assert.deepEqual(api.parse("mar", NOW).map((reading) => reading.language), ["es", "en"]);
+});
+
+test("parse offers no completions, nothing for blank text, and nothing past the sequence limit", () => {
+	const { api } = fakeApi();
+	assert.deepEqual(api.parse("next we", NOW), []);
+	assert.deepEqual(api.parse("   ", NOW), []);
+	assert.deepEqual(api.sequence("every day for 400 days", NOW), []);
+	assert.equal(api.sequence("every day for 300 days", NOW).length, 300);
+});
+
+test("parse ignores the Mentions period toggles and reads every period phrase of the manual", () => {
+	const { api } = fakeApi((settings) => {
+		for (const period of PERIODS) settings.mentions.periods[period] = false;
+	});
+	assert.equal(api.resolve("today", NOW)?.notes[0].path, "2026-11-17.md");
+	assert.equal(api.resolve("2026-Q1", NOW)?.notes[0].path, "2026-Q1.md");
+	assert.equal(api.resolve("next month", NOW)?.notes[0].path, "2026-12.md");
 });

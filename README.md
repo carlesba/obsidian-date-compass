@@ -67,7 +67,8 @@ Ranges and sequences give several dates at once:
 | `every 2 days x5`, `every 2 weeks 5 times` | five dates starting today, a step apart |
 | `W48 to W50`, `weeks of december` | the week notes W48 to W50; the five weeks that touch December |
 
-A range or sequence longer than 366 dates is refused with a message.
+A range or sequence longer than 366 dates is refused with a message, and the API returns nothing
+for it.
 
 ### Spanish
 
@@ -193,11 +194,12 @@ command on or off, and click it to edit. **Add action** creates one. An action p
 - **Questions**, added with **Add question**. Each question has:
   - **Key**: the name writes use for its answer.
   - **Question**: what the command asks; empty asks with the key.
-  - **Field type**: **One date**, **Dates: a range, sequence or list**, **A periodic note**, or
-    **Yes or no**.
+  - **Field type**: **One date** (a day note), **Dates: a range, sequence or list**, **A periodic
+    note**, or **Yes or no**. A periodic-note question with no text typed lists the current note of
+    each enabled period to pick from.
   - **How the answer is used**: which writes use it.
-  - **Can be skipped**: whether it may be left unanswered; writes that use a skipped answer write
-    nothing.
+  - **Can be skipped**: whether it may be left unanswered. To skip, press Enter with no text or
+    pick **Skip this question**; writes that use a skipped answer write nothing.
   - **Typed in advance**: text already in the box when the question opens, such as `today`. For a
     yes-or-no question, `no` offers No first.
 - **Writes**, added with **Add write**. Each write has:
@@ -218,7 +220,8 @@ Markdown links as links.
 
 Other plugins and Templater scripts reach Date Compass through
 `app.plugins.plugins["date-compass"].api`. It has six functions, and each reads your current
-settings: languages, week start, numeric date order, and the folders and formats of Date notes.
+settings: languages, week start, what "next" weekday means, numeric date order, and the folders,
+formats and Enabled switches of Date notes.
 
 Results are plain objects, so scripts need no extra library. A **note** has:
 
@@ -230,12 +233,16 @@ Results are plain objects, so scripts need no extra library. A **note** has:
 | `name` | the note name, from the period's name format | `2026-W47` |
 | `path` | the vault path, from the period's folder and name format | `journal/2026-W47.md` |
 
-A **reading** has `language` (`en` or `es`) and `notes`: one note for a date or a period, several
+A **reading** has `language` (`en`, `es`, or `shared` for phrases without words such as `W50`,
+`-3d` or `3/12`) and `notes`: one note for a date or a period, several
 for a range or sequence.
 
 `now` is optional everywhere and defaults to the current time; pass a `Date` or a moment. A `date`
-argument takes a `Date`, a moment or a `YYYY-MM-DD` string; anything else, or an unknown period,
-throws. Phrases for a period turned off in Date notes give no result, as in mentions. The
+argument takes a `Date`, a moment or a `YYYY-MM-DD` string. Anything else, an unknown period, or a
+period turned off in Date notes makes `notePath` throw and `openNote` reject. Phrases for a period
+turned off in Date notes give no result, as in mentions. A week is the one the name format names:
+ISO weeks with the default `GGGG-[W]WW`, so with Sunday weeks pass a note's `date` rather than its
+`start`. The
 TypeScript types `DateCompassApi`, `DateCompassInterpretation` and `DateCompassNote` are exported
 from `src/api/index.ts`.
 
@@ -290,7 +297,7 @@ The main page is short:
 
 - **Languages**: a toggle for **English** and **Spanish**. At first both your interface language
   and English are on.
-- **Week starts on**: **Locale default**, **Monday** or **Sunday**.
+- **Week starts on**: **Locale default** (default), **Monday** or **Sunday**.
 - **"Next" weekday means**: **That day of next week** (default) or **The next time that day
   comes**.
 - **Numeric dates**: **Day, then month** (default) or **Month, then day**, for `3/12`.
