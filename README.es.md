@@ -3,7 +3,7 @@
 Date Compass es un plugin de Obsidian que entiende fechas escritas en inglés o en español natural y
 las convierte en enlaces a tus notas de fecha. Escribe `@el miércoles pasado` y obtienes
 `[[2026-11-11]]`; escribe `cada lunes y miércoles durante 4 semanas` y obtienes un enlace por cada fecha; ejecuta
-un comando que escribe `dates`, `start` y `end` en las propiedades de una nota. También gestiona
+un comando que rellena una propiedad como `dates` en la nota actual. También gestiona
 los ajustes de tus notas diarias, semanales, mensuales, trimestrales y anuales, para que todas las
 funciones estén de acuerdo en qué nota es "2026-W48".
 
@@ -15,23 +15,23 @@ Los nombres de los ajustes son los que muestra Obsidian con la interfaz en espa�
 - [Expresiones de fecha](#expresiones-de-fecha)
 - [Notas de fecha y plantillas](#notas-de-fecha-y-plantillas)
 - [Menciones mientras escribes](#menciones-mientras-escribes)
-- [Insertar secuencia de fechas](#insertar-secuencia-de-fechas)
+- [Insertar fechas y los ajustes de Inserción](#insertar-fechas-y-los-ajustes-de-inserción)
 - [Acciones de fecha](#acciones-de-fecha)
 - [API pública para Templater](#api-pública-para-templater)
 - [Organización de los ajustes](#organización-de-los-ajustes)
-- [Fuera de la v1](#fuera-de-la-v1)
+- [Todavía no](#todavía-no)
 - [Para Carles: comprobaciones a mano y decisiones abiertas](#para-carles-comprobaciones-a-mano-y-decisiones-abiertas)
 
 ## Expresiones de fecha
 
 Todas las funciones leen las fechas con el mismo analizador. Entiende las expresiones de abajo en
-cada idioma activado en **Idiomas**, no distingue mayúsculas ni acentos (`miercoles` =
+cada idioma de la lista **Entender fechas en**, no distingue mayúsculas ni acentos (`miercoles` =
 `miércoles`) y separa palabras de cifras (`3daysago` = `3 days ago`). Mientras escribes, la última
 palabra también se completa: `next we` ofrece "next Wed" y "next week".
 
-Cuando una palabra significa cosas distintas en dos idiomas activados, obtienes todos los
-significados y eliges tú: `mar` es marzo en inglés (March) y martes en español. Date Compass nunca
-adivina.
+Cuando una palabra significa cosas distintas en dos idiomas de la lista, obtienes todos los
+significados y eliges tú, con el primer idioma de la lista arriba: `mar` es marzo en inglés
+(March) y martes en español. Date Compass nunca adivina.
 
 ### Inglés
 
@@ -46,7 +46,7 @@ adivina.
 | `in a week`, `+1w`, `1 week`, `in 2 weeks` | 24 nov, 24 nov, 24 nov, 1 dic |
 | `in 40 days`, `40d` | 27 dic |
 | `dec 3`, `3 dec`, `december 3rd`, `2026-12-03` | 3 dic; una fecha sin año es del año actual |
-| `3/12` | 3 dic (ver **Fechas numéricas**) |
+| `3/12` | 3 dic (ver **Leer fechas escritas como**) |
 | `this week`, `next week`, `last week`, `W50`, `2026-W48` | notas semanales 2026-W47, W48, W46, W50, W48 |
 | `week of dec 3` | la nota semanal que contiene el 3 dic: 2026-W49 |
 | `this month`, `last month`, `march` | notas mensuales 2026-11, 2026-10, 2026-03 |
@@ -67,15 +67,26 @@ Los rangos y las secuencias dan varias fechas a la vez:
 | `next 3 weeks` | tres notas semanales empezando por esta semana |
 | `every mon for 4 weeks` | 23 nov, 30 nov, 7 dic, 14 dic |
 | `every mon, wed for 4 weeks` | esos días durante las próximas 4 semanas, desde hoy |
-| `every 2 days x5`, `every 2 weeks 5 times` | cinco fechas desde hoy, separadas por ese paso |
+| `every 2 days x5`, `every 2 weeks 5 times`, `every 2 days for 10 times` | ese número de fechas desde hoy, separadas por ese paso |
+| `every wed until dec 20` | cada miércoles desde hoy hasta el 20 dic, con el último día incluido si coincide |
+| `every other day for 6 days` | un día sí y otro no dentro de los próximos 6 días |
+| `every other wed for 3 months` | miércoles alternos durante los próximos 3 meses |
+| `wed for 5 weeks` | un miércoles por semana durante 5 semanas, como `every wed for 5 weeks` |
 | `W48 to W50`, `weeks of december` | las notas semanales de W48 a W50; las cinco semanas que tocan diciembre |
+
+Con `until`, una fecha sin año es la próxima vez que llega: si el `dec 20` ya pasó este año, se
+entiende el 20 dic del año que viene. `every other wed` cuenta las semanas alternas desde el inicio
+de la semana actual, según **La semana empieza el**, así que un día que ya pasó esta semana
+aparece por primera vez dentro de dos semanas. Mientras escribes una secuencia en la lista de `@` o
+en Insertar fechas, las filas sugieren cómo seguir: `@every` ofrece `every ... N times` y `@every
+wed for 5` ofrece `times`, `days`, `weeks` y `months`.
 
 Un rango o una secuencia de más de 366 fechas se rechaza con un mensaje, y la API no devuelve nada
 para él.
 
 ### Español
 
-Activa **Español** en **Idiomas** para usarlas.
+Añade **Español** en **Entender fechas en** para usarlas.
 
 | Escribes | Obtienes |
 | --- | --- |
@@ -93,7 +104,11 @@ Activa **Español** en **Idiomas** para usarlas.
 | `del lunes al viernes` | del 23 al 27 nov |
 | `los próximos 5 días` | cinco días desde hoy |
 | `cada lunes y miércoles durante 4 semanas` | lunes y miércoles de las próximas 4 semanas |
-| `cada 2 días 5 veces` | cinco fechas desde hoy, cada dos días |
+| `cada 2 días 5 veces`, `cada 2 días durante 10 veces` | ese número de fechas desde hoy, cada dos días |
+| `cada miércoles hasta el 20 de diciembre` | cada miércoles desde hoy hasta el 20 dic |
+| `cada otro día durante 6 días` | un día sí y otro no dentro de los próximos 6 días |
+| `cada otro miércoles durante 3 meses` | miércoles alternos durante los próximos 3 meses |
+| `miércoles durante 5 semanas` | un miércoles por semana durante 5 semanas |
 
 ## Notas de fecha y plantillas
 
@@ -144,7 +159,8 @@ Nov · 4 dates`, que inserta los cuatro enlaces. Las filas van en este orden: la
 otras lecturas (otros idiomas, palabras ambiguas) y luego las formas de completar lo que escribes.
 
 Los enlaces siguen los ajustes de enlaces de tu bóveda (wikilinks o Markdown, estilo de ruta), y un
-enlace a una nota que aún no existe se inserta igualmente; la nota no se crea. Las sugerencias nunca
+enlace a una nota que aún no existe se inserta igualmente; la nota no se crea. Cómo se escribe cada
+enlace se define en Inserción, más abajo. Las sugerencias nunca
 se abren dentro de bloques de código, código en línea ni frontmatter. Escape cierra la lista y
 queda cerrada para esa mención.
 
@@ -154,84 +170,108 @@ Ajustes → **Menciones**:
 - **Disparador**: los caracteres que inician una mención.
 - **Periodos que se pueden mencionar**: un interruptor por periodo. Un periodo desactivado en Notas
   de fecha nunca se ofrece.
-- **Texto del enlace**: **El nombre de la nota**, **La frase escrita** o **Un formato de fecha**;
-  con este último, **Formato del texto del enlace** lo define, como `ddd D MMM`.
-- **Entre enlaces de un rango**: **Coma y espacio**, **Espacio** o **Una viñeta por línea**.
+
+Teclas de la lista: Intro inserta la fila seleccionada, ⇧↵ abre Insertar fechas con la frase
+escrita y ⌥↵ inserta con el texto del enlace invertido. La última fila, **Más…**, hace lo mismo que
+⇧↵, así que en el móvil toca **Más…**; en Insertar fechas, el interruptor **Con texto en el
+enlace** es el equivalente táctil de ⌥↵. En una línea de propiedad en modo código, Intro sobre una
+fila también añade las fechas a esa propiedad.
 
 La página avisa cuando otro plugin activado (Natural Language Dates, su versión revivida, Date List
 o las menciones de Note Compass) usa el mismo disparador, porque las dos listas competirían.
 
-## Insertar secuencia de fechas
+## Insertar fechas y los ajustes de Inserción
 
-El comando **Insertar secuencia de fechas** abre un cuadro con un solo campo. Mientras escribes
-muestra el resultado, con el número de fechas y la primera y la última (`4 dates · Mon 23 Nov – Mon 14 Dec`
-con la interfaz en inglés para `every mon for 4 weeks`), o dice
-por qué el texto no es una fecha, o sugiere cómo seguir escribiendo. Intro inserta los enlaces en
-el cursor.
+El comando **Insertar fechas** abre un cuadro con un solo campo. Mientras escribes muestra el
+resultado, con el número de fechas y la primera y la última (`4 dates · Mon 23 Nov – Mon 14 Dec`
+con la interfaz en inglés para `every mon for 4 weeks`), o dice por qué el texto no es una fecha, o
+sugiere cómo seguir escribiendo. La línea de enlaces se corta con puntos suspensivos si es larga. El
+interruptor **Con texto en el enlace** escribe los enlaces con un texto en lugar del nombre de la
+nota, y el botón **Hecho** o Intro inserta los enlaces en el cursor. En escritorio, ⌥↵ en lugar de
+Intro invierte **Con texto en el enlace** para esa inserción; en el móvil usa el interruptor.
 
-Ajustes → **Insertar secuencia**:
+Desde la lista de `@`, **Más…** o ⇧↵ abre este cuadro con la frase que escribiste; al pulsar Hecho,
+los enlaces sustituyen a `@frase`.
 
-- **Disposición**: **En línea, con el separador de Menciones entre enlaces de un rango** (por
-  defecto), **Lista con viñetas** o **Uno por línea**.
-- **Plantilla de cada elemento**: el texto que se inserta por cada fecha, donde `{{link}}` es su
-  enlace, como `Revisar {{link}}`. Una plantilla sin `{{link}}` se rechaza.
+**En una propiedad.** Con el cursor en una línea de propiedad en modo código, o con un campo de
+propiedad enfocado en la vista de Propiedades, Insertar fechas añade los enlaces a esa propiedad en
+lugar de al cuerpo. El cuadro dice entonces «Las fechas se añadirán a la propiedad «{nombre}».» y no
+tiene vista previa ni interruptor. Los valores que ya tiene la propiedad conservan su orden, y una
+fecha que ya está como enlace no se añade dos veces. Con el cursor en una línea del frontmatter que
+no es una propiedad aparece «Coloca el cursor en una propiedad para añadirle fechas.»; el texto
+nunca se escribe dentro del YAML.
+
+Ajustes → **Inserción** define cada enlace que escribe Date Compass, desde la lista de `@` y desde
+Insertar fechas:
+
+- **Forma de cada enlace**: el texto que se escribe por cada fecha; por defecto `{{link}}`.
+  Variables: `{{link}}` es el enlace que crea Obsidian, `{{name}}` el nombre de la nota, `{{path}}`
+  su ruta, `{{alias}}` el texto del enlace y `{{date:FORMATO}}` la fecha en formato moment.js.
+  Ejemplo: `Revisar {{link}}`. Una plantilla vacía se rechaza.
+- **Entre varios enlaces**: **Coma y espacio** (por defecto), **Espacio**, **Una viñeta por línea**
+  o **Un enlace por línea**. Una sola fecha es siempre un enlace sin más, nunca una viñeta.
+- Grupo **Texto del enlace**:
+  - **Mostrar un texto en lugar del nombre de la nota**: desactivado por defecto; ⌥↵ y el
+    interruptor **Con texto en el enlace** lo invierten en una inserción.
+  - **Qué dice el texto del enlace**: **La frase escrita** o **Un formato de fecha**.
+  - **Formato de fecha del texto del enlace**: solo aparece con **Un formato de fecha**; por
+    defecto `ddd D MMM`.
 
 ## Acciones de fecha
 
-Una acción es un comando que te hace preguntas y escribe las fechas que respondes en las propiedades
-de la nota actual o en el cursor. Cada acción activada aparece en la paleta de comandos como
-"Date Compass: *nombre*".
+Una acción es un comando que hace una pregunta y rellena una propiedad de la nota actual,
+sustituyendo su valor. Cada acción activada aparece en la paleta de comandos como "Date Compass:
+*nombre*". Una acción sin propiedad no se ofrece.
 
 ### Los dos predefinidos
 
-Los dos se añaden en la primera instalación y se pueden quitar.
+Los dos se añaden en la primera instalación y se pueden quitar. Los dos piden **Fechas** y tienen
+activado **Cada fecha como enlace**.
 
-- **Añadir fechas** pregunta **Fechas** (por ejemplo `de hoy a viernes`) y luego **¿Actualizar
-  inicio y fin?** (sí o no). Añade los enlaces a la propiedad `dates` y, si respondes que sí, pone
-  en `start` la primera fecha y en `end` la última, como texto de fecha. Un valor suelto que ya
-  esté en `dates` se convierte antes en una lista.
-- **Poner recordatorios** pregunta **Recordatorios** (por ejemplo `cada lunes y miércoles durante
-  4 semanas`) y añade los enlaces a la propiedad `reminders`.
+- **Poner fechas** rellena la propiedad `dates`.
+- **Poner recordatorios** rellena la propiedad `reminders`.
 
 ### Crear una acción
 
-Ajustes → **Acciones** lista todas las acciones. Arrastra una fila para reordenar, usa su casilla
-para activar o desactivar el comando y haz clic para editarla. **Añadir acción** crea una. La
-página de una acción tiene:
+Ajustes → **Acciones** lista todas las acciones. Cada fila tiene un interruptor que ofrece la acción
+como comando y un lápiz para editarla. Arrastra una fila para reordenarla, bórrala desde la lista y
+**Añadir acción** crea una. La página de una acción tiene:
 
-- **Activada** y **Nombre**: el nombre del comando en la paleta.
-- **Preguntas**, que se añaden con **Añadir pregunta**. Cada pregunta tiene:
-  - **Clave**: el nombre con el que las escrituras usan su respuesta.
-  - **Pregunta**: lo que pregunta el comando; vacía pregunta con la clave.
-  - **Tipo de campo**: **Una fecha** (una nota diaria), **Fechas: un rango, una secuencia o una
-    lista**, **Una nota periódica** o **Sí o no**. Una pregunta de nota periódica sin texto escrito
-    lista la nota actual de cada periodo activado para elegir.
-  - **Cómo se usa la respuesta**: qué escrituras la usan.
-  - **Se puede omitir**: si se puede dejar sin responder. Para omitirla, pulsa Intro sin texto o
-    elige **Omitir esta pregunta**; las escrituras que usan una respuesta omitida no escriben nada.
-  - **Escrito de antemano**: texto ya escrito cuando se abre la pregunta, como `hoy`. En una
-    pregunta de sí o no, `no` ofrece No primero.
-- **Escrituras**, que se añaden con **Añadir escritura**. Cada escritura tiene:
-  - **Escribir la respuesta en**: **Una propiedad** (y **Propiedad** le da nombre) o **La nota en
-    el cursor**, dispuesta como en Insertar secuencia.
-  - **Respuesta de**: la pregunta cuyas fechas se escriben.
-  - **Qué fechas de la respuesta**: **Todas**, **La primera** o **La última**.
-  - **Escribir cada fecha como**: **Un enlace** o **Texto de fecha** con el formato de nombre del
-    periodo.
-  - **Valores que ya tiene la propiedad**: **Conservarlos y añadir las fechas detrás**,
-    **Conservarlos, añadir las fechas, quitar duplicados y ordenar por fecha** (por defecto) o
-    **Sustituirlos por las fechas**.
-  - **Escribir solo cuando**: **Siempre**, o cuando una pregunta de sí o no se responde que sí.
+- **Activada**: ofrece esta acción como el comando "Date Compass: <nombre>".
+- **Nombre**: el nombre del comando en la paleta de comandos.
+- **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta. Su valor se
+  sustituye.
+- **Qué pide**: **Una fecha** admite una frase de una nota de cualquier periodo activado y muestra
+  en su cuadro «La fecha sustituirá el valor de la propiedad «{nombre}».». **Fechas** abre el
+  cuadro de Insertar fechas para cualquier rango, secuencia o lista, dice «Las fechas sustituirán el
+  valor de la propiedad «{nombre}».» y escribe todas las fechas.
+- **Cada fecha como enlace**: activado escribe cada fecha como un enlace. Desactivado escribe texto
+  con el formato del tipo de propiedad: `YYYY-MM-DD` para fecha,
+  `YYYY-MM-DDTHH:mm` para fecha y hora, y el nombre de la nota en los demás tipos.
 
-Los enlaces que se escriben en propiedades son siempre wikilinks, porque las propiedades de
-Obsidian no tratan los enlaces Markdown como enlaces.
+Una frase que da una sola fecha escribe un valor, no una lista, salvo que la propiedad sea una lista
+o ya contenga una, que sigue siendo lista. El enlace es siempre un wikilink, porque las propiedades
+de Obsidian no tratan los enlaces Markdown como enlaces. Un `2026-11-23` suelto que ya esté en la
+propiedad se queda, y el enlace se añade a su lado; un enlace que ya está no se añade dos veces. La
+escritura solo ocurre si la nota activa es la que se modifica. Cancelar cualquiera de los cuadros no
+cambia nada.
+
+### Viniendo de la v1
+
+Al cargar por primera vez, las acciones de la v1 se convierten. Una acción conserva su primera
+escritura en una propiedad: esa propiedad y, si escribía enlaces, enlaces. El tipo de su pregunta da
+**Una fecha** (fecha o nota periódica) o **Fechas** (cualquier otro). Todo lo demás se pierde: las
+escrituras siguientes, las escrituras en el cuerpo, las preguntas de sí o no y sus condiciones, los
+modos, primera y última, e inicio y fin. Toda acción convertida ahora sustituye el valor donde la v1
+añadía. Una acción sin escritura en una propiedad se elimina. El predefinido "Añadir fechas" pasa a
+llamarse **Poner fechas**.
 
 ## API pública para Templater
 
 Otros plugins y los scripts de Templater llegan a Date Compass con
 `app.plugins.plugins["date-compass"].api`. Tiene seis funciones, y cada una lee tus ajustes
-actuales: idiomas, inicio de semana, qué significa "próximo" día de la semana, orden de las fechas
-numéricas y las carpetas, formatos e interruptores Activadas de Notas de fecha.
+actuales: idiomas, inicio de semana, qué significa "próximo" día de la semana, cómo se leen las fechas
+escritas y las carpetas, formatos e interruptores Activadas de Notas de fecha.
 
 Los resultados son objetos simples, así que los scripts no necesitan ninguna biblioteca. Una
 **nota** tiene:
@@ -304,25 +344,27 @@ para una fecha suelta, o una lista vacía.
 
 ## Organización de los ajustes
 
-La página principal es corta:
+La página principal tiene un grupo **Localización**:
 
-- **Idiomas**: un interruptor para **Inglés** y otro para **Español**. Al principio están activados
-  el idioma de tu interfaz y el inglés.
+- **Entender fechas en**: los idiomas como fichas, por orden de prioridad. **Añadir idioma** añade
+  uno al final; cada ficha tiene un botón para quitarla, salvo la última que queda. Cuando una
+  palabra significa cosas distintas, como "mar", la primera fila es la del primer idioma.
 - **La semana empieza el**: **Según la configuración regional** (por defecto), **Lunes** o
   **Domingo**.
 - **"Próximo" día de la semana significa**: **Ese día de la semana que viene** (por defecto) o **La
   próxima vez que llegue ese día**.
-- **Fechas numéricas**: **Día y luego mes** (por defecto) o **Mes y luego día**, para `3/12`.
-- **Notas de fecha**, **Menciones**, **Insertar secuencia** y **Acciones**: haz clic en una fila
-  para abrir su página.
-- **Restablecer todos los ajustes**: devuelve cada opción a los valores predeterminados tras
-  confirmarlo.
+- **Leer fechas escritas como**: **D/M, como en 31/12** (por defecto) o **M/D, como en 12/31**,
+  para `3/12`.
+
+Debajo, haz clic en una fila para abrir su página: **Notas de fecha**, **Menciones**, **Inserción**
+y **Acciones**. Al final está **Restablecer todos los ajustes**, que devuelve cada opción a los
+valores predeterminados tras confirmarlo.
 
 No hay nada oculto: todo comportamiento que elige u oculta algo es uno de estos ajustes.
 
-## Fuera de la v1
+## Todavía no
 
-- Una vista de calendario; está prevista para una versión posterior.
+- Una vista de calendario.
 - Horas del día.
 - Idiomas distintos del inglés y el español.
 - Publicar en la lista de plugins de la comunidad, un repositorio de GitHub, etiquetas o versiones.
