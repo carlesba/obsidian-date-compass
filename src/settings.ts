@@ -4,8 +4,8 @@ import { mergeDateNotes } from "./dateNotes/periods.ts";
 import type { DateNotesSettings } from "./dateNotes/periods.ts";
 import { mergeMentions } from "./mentions/settings.ts";
 import type { MentionSettings } from "./mentions/settings.ts";
-import { mergeSequence } from "./sequence/settings.ts";
-import type { SequenceSettings } from "./sequence/settings.ts";
+import { mergeInsertion } from "./insertion/settings.ts";
+import type { InsertionSettings } from "./insertion/settings.ts";
 
 export const PARSER_LANGUAGES = ["en", "es"] as const;
 export type ParserLanguage = (typeof PARSER_LANGUAGES)[number];
@@ -26,7 +26,7 @@ export interface DateCompassSettings {
 	dayMonthOrder: DayMonthOrder;
 	dateNotes: DateNotesSettings;
 	mentions: MentionSettings;
-	insertSequence: SequenceSettings;
+	insertion: InsertionSettings;
 	actions: DateAction[];
 }
 
@@ -51,7 +51,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		dayMonthOrder: oneOf(DAY_MONTH_ORDERS, data.dayMonthOrder, "dayMonth"),
 		dateNotes: mergeDateNotes(data.dateNotes),
 		mentions: mergeMentions(data.mentions),
-		insertSequence: mergeSequence(data.insertSequence),
+		insertion: mergeInsertion(data.insertion, data.mentions, data.insertSequence),
 		actions: mergeActions(data.actions),
 	};
 }

@@ -4,13 +4,18 @@ import { t } from "../i18n/index.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
+import { insertionLinks, usesAlias } from "../insertion/render.ts";
+import { insertLinks } from "../sequence/preview.ts";
+import { openInsertDatesModal } from "../sequence/modal.ts";
 import { markdownLinkTo } from "./obsidianHost.ts";
-import { aliasOf, buildRows, insertionText, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
+import { buildRows, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
 import type { DateRow, RowContext } from "./rows.ts";
+import { isMoreRow, selectionIntent, withMoreRow } from "./selection.ts";
+import type { Suggestion } from "./selection.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "./trigger.ts";
 import type { Dismissal } from "./trigger.ts";
 
-export class DateMentionSuggest extends EditorSuggest<DateRow> {
+export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 	private readonly settings: () => DateCompassSettings;
 	private dismissal: Dismissal | undefined;
 	private rows: DateRow[] = [];
@@ -19,6 +24,14 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 		super(app);
 		this.settings = settings;
 		this.showInstructions();
+		this.scope.register(["Shift"], "Enter", (event) => this.chooseSelectedWith(event));
+		this.scope.register(["Alt"], "Enter", (event) => this.chooseSelectedWith(event));
+	}
+
+	private chooseSelectedWith(event: KeyboardEvent): boolean {
+		const chooser = (this as unknown as { suggestions?: { useSelectedItem?: (event: KeyboardEvent) => void } }).suggestions;
+		chooser?.useSelectedItem?.(event);
+		return false;
 	}
 
 	onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
@@ -44,18 +57,21 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 		return { start, end: cursor, query: match.query };
 	}
 
-	getSuggestions(): DateRow[] {
-		return this.rows;
+	getSuggestions(): Suggestion[] {
+		return withMoreRow(this.rows);
 	}
 
-	renderSuggestion(row: DateRow, el: HTMLElement): void {
-		el.setText(rowLabel(row, obsidianMoment()));
+	renderSuggestion(suggestion: Suggestion, el: HTMLElement): void {
+		el.setText(isMoreRow(suggestion) ? t("moreRow") : rowLabel(suggestion, obsidianMoment()));
 	}
 
-	selectSuggestion(row: DateRow): void {
+	selectSuggestion(suggestion: Suggestion, event: MouseEvent | KeyboardEvent): void {
 		const context = this.context;
 		this.finish();
-		if (context) this.insertLinks(row, context);
+		if (!context) return;
+		const intent = selectionIntent(suggestion, event);
+		if (intent === "openDatesModal") this.openDatesModal(context);
+		else if (!isMoreRow(suggestion)) this.insertLinks(suggestion, context, intent === "insertFlippingAlias");
 	}
 
 	close(): void {
@@ -85,17 +101,22 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 		return match?.start === start.ch;
 	}
 
-	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext): void {
-		const { mentions } = this.settings();
-		const links = row.notes.map((note) => markdownLinkTo(this.app, note.path, file.path, aliasOf(row, note, mentions)));
-		const textBeforeMention = editor.getLine(start.line).slice(0, start.ch);
-		editor.replaceRange(insertionText(links, mentions.separator, textBeforeMention), start, end);
+	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext, flippingAlias: boolean): void {
+		const { insertion } = this.settings();
+		const links = insertionLinks(row.notes, row.text, insertion, usesAlias(insertion, flippingAlias), (note, alias) => markdownLinkTo(this.app, note.path, file.path, alias));
+		insertLinks(editor, links, insertion.separator, { start, end });
+	}
+
+	private openDatesModal({ editor, file, start, end, query }: EditorSuggestContext): void {
+		openInsertDatesModal(this.settings, { app: this.app, editor, file, destination: { kind: "body" }, range: { start, end } }, query);
 	}
 
 	private showInstructions(): void {
 		if (Platform.isMobile) return;
 		this.setInstructions([
 			{ command: "↵", purpose: t("instructionInsertLink") },
+			{ command: "⌥↵", purpose: t("instructionWithAlias") },
+			{ command: "⇧↵", purpose: t("instructionMore") },
 			{ command: "esc", purpose: t("instructionDismiss") },
 		]);
 	}

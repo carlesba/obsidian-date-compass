@@ -6,7 +6,7 @@ import { noteName, notePath } from "../dateNotes/paths.ts";
 import type { MomentFactory } from "../dateNotes/paths.ts";
 import { PERIODS, isPeriod } from "../dateNotes/periods.ts";
 import type { Period, PeriodSettingsByPeriod } from "../dateNotes/periods.ts";
-import type { LinkSeparator, MentionSettings } from "./settings.ts";
+import type { MentionSettings } from "./settings.ts";
 
 export interface DateParser {
 	parse(text: string, now: Date, options: ParseOptions): Interpretation[];
@@ -163,40 +163,4 @@ export function rowLabel(row: DateRow, now: Moment): string {
 	if (row.notes.length > 1) return sequenceDescription(row.notes, now);
 	const [note] = row.notes;
 	return `${noteDescription(note, now)} → [[${note.name}]]`;
-}
-
-export function aliasOf(row: DateRow, note: NoteRef, mention: Pick<MentionSettings, "aliasMode" | "aliasFormat">): string | undefined {
-	if (mention.aliasMode === "typed") return row.notes.length === 1 ? row.text : undefined;
-	if (mention.aliasMode === "format") return note.start.format(mention.aliasFormat);
-	return undefined;
-}
-
-export function joinLinks(links: readonly string[], separator: LinkSeparator): string {
-	if (links.length < 2) return links.join("");
-	if (separator === "space") return links.join(" ");
-	if (separator === "bulletLines") return links.map((link) => `- ${link}`).join("\n");
-	return links.join(", ");
-}
-
-const LIST_MARKER_ONLY = /^\s*([-*+]|\d+[.)])\s+$/;
-
-export function insertionText(links: readonly string[], separator: LinkSeparator, textBeforeMention: string): string {
-	if (links.length < 2 || separator !== "bulletLines") return joinLinks(links, separator);
-	return bulletLinesText(links, textBeforeMention);
-}
-
-export function indentOf(line: string): string {
-	return /^\s*/.exec(line)?.[0] ?? "";
-}
-
-export function isListMarkerOnly(line: string): boolean {
-	return LIST_MARKER_ONLY.test(line);
-}
-
-export function bulletLinesText(links: readonly string[], textBeforeMention: string): string {
-	const indent = indentOf(textBeforeMention);
-	const bullets = links.map((link) => `${indent}- ${link}`);
-	if (isListMarkerOnly(textBeforeMention)) return [links[0], ...bullets.slice(1)].join("\n");
-	if (textBeforeMention.trim() === "") return [`- ${links[0]}`, ...bullets.slice(1)].join("\n");
-	return `\n${bullets.join("\n")}`;
 }

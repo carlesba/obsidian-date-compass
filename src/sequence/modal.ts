@@ -1,51 +1,80 @@
-import { Modal } from "obsidian";
-import type { App, Editor } from "obsidian";
+import { Modal, Setting } from "obsidian";
+import type { App, Editor, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
-import { markdownLinkTo } from "../mentions/obsidianHost.ts";
+import { addDatesToProperty, obsidianLinks } from "../insertion/obsidianHost.ts";
+import type { DatesDestination } from "../insertion/destination.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import { insertAtCursor, previewSequence } from "./preview.ts";
-import type { SequencePreview } from "./preview.ts";
+import { insertLinks, previewSequence } from "./preview.ts";
+import type { InsertionRange, SequencePreview } from "./preview.ts";
 
 export interface DatesQuestion {
 	title: string;
 	initialText: string;
 	optional: boolean;
+	acceptLabel?: string;
+	links?: (notes: NoteRef[], phrase: string, withAlias: boolean) => string[];
+	withAliasInitially?: boolean;
 }
+
+export type DatesAccept = (preview: SequencePreview, withAlias: boolean, phrase: string) => boolean;
 
 export class DatesModal extends Modal {
 	private readonly settings: () => DateCompassSettings;
 	private readonly question: DatesQuestion;
-	private readonly accept: (preview: SequencePreview) => boolean;
+	private readonly accept: DatesAccept;
 	private readonly closed: () => void;
 	private preview: SequencePreview = { kind: "empty" };
+	private withAlias: boolean;
 
-	constructor(app: App, settings: () => DateCompassSettings, question: DatesQuestion, accept: (preview: SequencePreview) => boolean, closed: () => void = () => undefined) {
+	constructor(app: App, settings: () => DateCompassSettings, question: DatesQuestion, accept: DatesAccept, closed: () => void = () => undefined) {
 		super(app);
 		this.settings = settings;
 		this.question = question;
 		this.accept = accept;
 		this.closed = closed;
+		this.withAlias = question.withAliasInitially ?? false;
 	}
 
 	onOpen(): void {
 		this.setTitle(this.question.title);
-		const input = this.contentEl.createEl("input", { type: "text", attr: { placeholder: t("sequencePlaceholder") } });
-		const previewEl = this.contentEl.createDiv();
+		this.modalEl.addClass("date-compass-dates-modal");
+		const input = this.contentEl.createEl("input", { type: "text", cls: "date-compass-dates-input", attr: { placeholder: t("sequencePlaceholder") } });
+		const previewEl = this.contentEl.createDiv({ cls: "date-compass-dates-reading" });
+		const linksEl = this.contentEl.createDiv({ cls: "date-compass-dates-links" });
 		const showPreview = () => {
 			this.preview = previewSequence(input.value, obsidianRowContext(this.settings()));
 			previewEl.setText(this.preview.kind === "empty" ? (this.question.optional ? t("emptySkipsQuestion") : "") : this.preview.text);
+			linksEl.setText(this.linksLine(input.value));
 		};
+		if (this.question.links) {
+			new Setting(this.contentEl).setName(t("withAlias")).setDesc(t("withAliasDesc")).addToggle((toggle) =>
+				toggle.setValue(this.withAlias).onChange((checked) => {
+					this.withAlias = checked;
+					showPreview();
+				}),
+			);
+		}
+		new Setting(this.contentEl).addButton((button) => button.setButtonText(this.question.acceptLabel ?? t("datesDone")).setCta().onClick(() => this.submit(input.value, this.withAlias)));
 		input.value = this.question.initialText;
 		showPreview();
 		input.addEventListener("input", showPreview);
 		input.addEventListener("keydown", (event) => {
 			if (event.key !== "Enter" || event.isComposing) return;
 			event.preventDefault();
-			if (this.accept(this.preview)) this.close();
+			this.submit(input.value, event.altKey && this.question.links ? !this.withAlias : this.withAlias);
 		});
 		input.focus();
+	}
+
+	private linksLine(phrase: string): string {
+		if (!this.question.links || this.preview.kind !== "dates") return "";
+		return this.question.links(this.preview.notes, phrase.trim(), this.withAlias).join(", ");
+	}
+
+	private submit(phrase: string, withAlias: boolean): void {
+		if (this.accept(this.preview, withAlias, phrase.trim())) this.close();
 	}
 
 	onClose(): void {
@@ -54,12 +83,29 @@ export class DatesModal extends Modal {
 	}
 }
 
-export class InsertDateSequenceModal extends DatesModal {
-	constructor(app: App, editor: Editor, sourcePath: string, settings: () => DateCompassSettings) {
-		super(app, settings, { title: t("insertDateSequence"), initialText: "", optional: false }, (preview) => {
-			const { insertSequence, mentions } = settings();
-			const linkTo = (note: NoteRef) => markdownLinkTo(app, note.path, sourcePath, undefined);
-			return insertAtCursor(editor, preview, linkTo, insertSequence, mentions.separator);
-		});
-	}
+export interface InsertDatesTarget {
+	app: App;
+	editor: Editor;
+	file: TFile;
+	destination: DatesDestination;
+	range?: InsertionRange;
+}
+
+export function openInsertDatesModal(settings: () => DateCompassSettings, target: InsertDatesTarget, initialText: string): void {
+	const { app, editor, file, destination, range } = target;
+	const linksOf = (notes: NoteRef[], phrase: string, withAlias: boolean) => obsidianLinks(app, file.path, settings())(notes, phrase, withAlias);
+	new DatesModal(
+		app,
+		settings,
+		{ title: t("insertDates"), initialText, optional: false, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
+		(preview, withAlias, phrase) => {
+			if (preview.kind !== "dates") return false;
+			if (destination.kind === "property") {
+				void addDatesToProperty(app, file, destination.name, preview.notes, settings().dateNotes.periods);
+				return true;
+			}
+			insertLinks(editor, linksOf(preview.notes, phrase, withAlias), settings().insertion.separator, range);
+			return true;
+		},
+	).open();
 }

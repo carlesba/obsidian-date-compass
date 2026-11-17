@@ -4,7 +4,7 @@ import { moment } from "./moment.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { Period } from "../src/dateNotes/periods.ts";
 import type { Completion, Interpretation, ParseOptions, Unit } from "../src/parse/index.ts";
-import { aliasOf, buildRows, insertionText, joinLinks, mayStillMatch, mentionAllows, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
+import { buildRows, mayStillMatch, mentionAllows, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
 import type { DateParser, RowContext } from "../src/mentions/rows.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "../src/mentions/trigger.ts";
@@ -133,15 +133,6 @@ test("a week that starts on Sunday is named after the ISO week of its weekdays",
 	assert.equal(row.notes[0].start.format("YYYY-MM-DD"), "2026-11-15");
 });
 
-test("the link text is the note name, the typed phrase, or a moment format", () => {
-	const [row] = buildRows("last wed", context());
-	assert.equal(aliasOf(row, row.notes[0], { aliasMode: "none", aliasFormat: "ddd D MMM" }), undefined);
-	assert.equal(aliasOf(row, row.notes[0], { aliasMode: "typed", aliasFormat: "ddd D MMM" }), "last wed");
-	assert.equal(aliasOf(row, row.notes[0], { aliasMode: "format", aliasFormat: "ddd D MMM" }), "Wed 11 Nov");
-	const completion = buildRows("last we", context()).find((candidate) => candidate.notes[0].period === "day");
-	assert.equal(completion && aliasOf(completion, completion.notes[0], { aliasMode: "typed", aliasFormat: "" }), "last wed");
-});
-
 function sequence(unit: Unit, starts: string[]): Interpretation {
 	const items = starts.map((start) => ({ unit, start, end: start }));
 	return { language: "en", node: { kind: "day", amount: 0, unit: "day" }, result: { kind: "sequence", span: { unit, start: starts[0], end: starts[starts.length - 1] }, items } };
@@ -163,9 +154,6 @@ test("a range is one row that names every date it inserts", () => {
 	const withoutWeeks = buildRows("q", context({ parser, allows: (period) => period !== "week" }));
 	assert.equal(withoutWeeks.length, 2);
 	assert.deepEqual(singleNoteRows(rows).map((row) => row.notes[0].name), ["2026-11-17"]);
-	const [days] = rows;
-	assert.equal(aliasOf(days, days.notes[1], { aliasMode: "typed", aliasFormat: "" }), undefined);
-	assert.equal(aliasOf(days, days.notes[1], { aliasMode: "format", aliasFormat: "D MMM" }), "1 Dec");
 });
 
 test("a query may still match while the parser expects more words", () => {
@@ -176,15 +164,6 @@ test("a query may still match while the parser expects more words", () => {
 	assert.equal(isDeadEnd("today to ", (text) => mayStillMatch(text, context())), false);
 	assert.equal(isDeadEnd("next ", (text) => mayStillMatch(text, context())), false);
 	assert.equal(isDeadEnd("hello ", (text) => mayStillMatch(text, context())), true);
-});
-
-test("range links are joined with the chosen separator", () => {
-	const links = ["[[2026-11-17]]", "[[2026-11-18]]"];
-	assert.equal(joinLinks(links, "commaSpace"), "[[2026-11-17]], [[2026-11-18]]");
-	assert.equal(joinLinks(links, "space"), "[[2026-11-17]] [[2026-11-18]]");
-	assert.equal(joinLinks(links, "bulletLines"), "- [[2026-11-17]]\n- [[2026-11-18]]");
-	assert.equal(joinLinks(["[[2026-11-17]]"], "bulletLines"), "[[2026-11-17]]");
-	assert.equal(joinLinks(["[[2026-11-17]]"], "commaSpace"), "[[2026-11-17]]");
 });
 
 test("the locale week start maps to Monday or Sunday for the parser", () => {
@@ -216,27 +195,12 @@ test("plugins that suggest after the same trigger are named", () => {
 
 test("mention settings merge with defaults", () => {
 	const periods: Record<Period, boolean> = { day: true, week: true, month: true, quarter: true, year: true };
-	assert.deepEqual(mergeMentions(undefined), { enabled: true, trigger: "@", periods, aliasMode: "none", aliasFormat: "ddd D MMM", separator: "commaSpace" });
-	assert.deepEqual(mergeMentions({ enabled: false, trigger: " ; ; ", aliasMode: "format", aliasFormat: " D MMM ", separator: "bulletLines", periods: { year: false } }), {
+	assert.deepEqual(mergeMentions(undefined), { enabled: true, trigger: "@", periods });
+	assert.deepEqual(mergeMentions({ enabled: false, trigger: " ; ; ", periods: { year: false } }), {
 		enabled: false,
 		trigger: ";;",
 		periods: { ...periods, year: false },
-		aliasMode: "format",
-		aliasFormat: "D MMM",
-		separator: "bulletLines",
 	});
-	assert.equal(mergeMentions({ aliasMode: "bogus", separator: 3 }).aliasMode, "none");
-});
-
-test("range links in bullets keep the list they are typed in", () => {
-	const links = ["[[a]]", "[[b]]"];
-	assert.equal(insertionText(links, "bulletLines", ""), "- [[a]]\n- [[b]]");
-	assert.equal(insertionText(links, "bulletLines", "  "), "- [[a]]\n  - [[b]]");
-	assert.equal(insertionText(links, "bulletLines", "  - "), "[[a]]\n  - [[b]]");
-	assert.equal(insertionText(links, "bulletLines", "1. "), "[[a]]\n- [[b]]");
-	assert.equal(insertionText(links, "bulletLines", "meet "), "\n- [[a]]\n- [[b]]");
-	assert.equal(insertionText(links, "commaSpace", "meet "), "[[a]], [[b]]");
-	assert.equal(insertionText(["[[a]]"], "bulletLines", "meet "), "[[a]]");
 });
 
 test("labels name the year when it is not the current one", () => {

@@ -4,13 +4,9 @@ import { moment } from "./moment.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { Analysis, Interpretation, ParseOptions, Refusal } from "../src/parse/index.ts";
 import type { DateParser } from "../src/mentions/rows.ts";
-import { insertAtCursor, previewSequence, sequenceInsertion } from "../src/sequence/preview.ts";
-import type { CursorEditor, SequenceContext, SequencePreview } from "../src/sequence/preview.ts";
-import { mergeSequence } from "../src/sequence/settings.ts";
-import type { SequenceSettings } from "../src/sequence/settings.ts";
-import { SEQUENCE_ITEM_TEMPLATE_KEY, SEQUENCE_LAYOUT_KEY, itemTemplateError, readControl, writeControl } from "../src/settings/controlKeys.ts";
-import { insertSequenceGroups } from "../src/settings/insertSequencePage.ts";
-import { defaultSettings } from "../src/settings.ts";
+import type { EditorPosition } from "obsidian";
+import { insertAtCursor, insertLinks, previewSequence } from "../src/sequence/preview.ts";
+import type { InsertionEditor, InsertionRange, SequenceContext } from "../src/sequence/preview.ts";
 
 const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 
@@ -96,92 +92,34 @@ test("a parseable interpretation wins over a refusal", () => {
 	assert.equal(previewText("gibberish", { parser: NO_PARSE, analyze: NO_ANALYSIS }), "This text is not a date, a range or a sequence.");
 });
 
-const LINKS = ["[[2026-11-23]]", "[[2026-11-24]]", "[[2026-11-25]]"];
-
-function settings(overrides: Partial<SequenceSettings>): SequenceSettings {
-	return { ...mergeSequence(undefined), ...overrides };
-}
-
-test("the inline layout joins the links with the Mentions separator", () => {
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "inline" }), "commaSpace", "Due "), "[[2026-11-23]], [[2026-11-24]], [[2026-11-25]]");
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "inline" }), "space", "Due "), "[[2026-11-23]] [[2026-11-24]] [[2026-11-25]]");
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "inline" }), "bulletLines", ""), "- [[2026-11-23]]\n- [[2026-11-24]]\n- [[2026-11-25]]");
-});
-
-test("the bullet list layout puts one bullet per link, whatever the Mentions separator", () => {
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "bulletList" }), "commaSpace", ""), "- [[2026-11-23]]\n- [[2026-11-24]]\n- [[2026-11-25]]");
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "bulletList" }), "space", "  - "), "[[2026-11-23]]\n  - [[2026-11-24]]\n  - [[2026-11-25]]");
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "bulletList" }), "space", "Due "), "\n- [[2026-11-23]]\n- [[2026-11-24]]\n- [[2026-11-25]]");
-	assert.equal(sequenceInsertion(LINKS.slice(0, 1), settings({ layout: "bulletList" }), "commaSpace", ""), "- [[2026-11-23]]");
-});
-
-test("the one-per-line layout puts each link on its own line", () => {
-	assert.equal(sequenceInsertion(LINKS, settings({ layout: "linePerItem" }), "commaSpace", ""), "[[2026-11-23]]\n[[2026-11-24]]\n[[2026-11-25]]");
-	assert.equal(sequenceInsertion(LINKS.slice(0, 2), settings({ layout: "linePerItem" }), "commaSpace", "  "), "[[2026-11-23]]\n  [[2026-11-24]]");
-	assert.equal(sequenceInsertion(LINKS.slice(0, 2), settings({ layout: "linePerItem" }), "commaSpace", "  Due "), "\n  [[2026-11-23]]\n  [[2026-11-24]]");
-});
-
-test("the item template wraps every link", () => {
-	const template = settings({ layout: "linePerItem", itemTemplate: "- [ ] review {{link}} ({{link}})" });
-	assert.equal(
-		sequenceInsertion(LINKS.slice(0, 2), template, "commaSpace", ""),
-		"- [ ] review [[2026-11-23]] ([[2026-11-23]])\n- [ ] review [[2026-11-24]] ([[2026-11-24]])",
-	);
-	assert.equal(sequenceInsertion(LINKS.slice(0, 2), settings({ layout: "inline", itemTemplate: "on {{link}}" }), "commaSpace", ""), "on [[2026-11-23]], on [[2026-11-24]]");
-});
-
-test("insert sequence settings default to inline with the bare link and refuse unknown stored values", () => {
-	assert.deepEqual(mergeSequence(undefined), { layout: "inline", itemTemplate: "{{link}}" });
-	assert.deepEqual(mergeSequence({ layout: "table", itemTemplate: "no link" }), { layout: "inline", itemTemplate: "{{link}}" });
-	assert.deepEqual(mergeSequence({ layout: "bulletList", itemTemplate: "[ ] {{link}}" }), { layout: "bulletList", itemTemplate: "[ ] {{link}}" });
-});
-
-test("the Insert sequence subpage reads and writes its two controls through controlKeys", () => {
-	const keys = insertSequenceGroups().flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
-	assert.deepEqual(keys, [SEQUENCE_LAYOUT_KEY, SEQUENCE_ITEM_TEMPLATE_KEY]);
-	const stored = defaultSettings();
-	assert.equal(readControl(stored, SEQUENCE_LAYOUT_KEY), "inline");
-	assert.equal(readControl(stored, SEQUENCE_ITEM_TEMPLATE_KEY), "{{link}}");
-	assert.equal(writeControl(stored, SEQUENCE_LAYOUT_KEY, "bulletList"), true);
-	assert.equal(writeControl(stored, SEQUENCE_LAYOUT_KEY, "table"), false);
-	assert.equal(writeControl(stored, SEQUENCE_ITEM_TEMPLATE_KEY, "- [ ] {{link}}"), true);
-	assert.equal(writeControl(stored, SEQUENCE_ITEM_TEMPLATE_KEY, "- [ ] "), false);
-	assert.equal(writeControl(stored, SEQUENCE_ITEM_TEMPLATE_KEY, 3), false);
-	assert.deepEqual(stored.insertSequence, { layout: "bulletList", itemTemplate: "- [ ] {{link}}" });
-	assert.equal(readControl(stored, SEQUENCE_LAYOUT_KEY), "bulletList");
-	assert.equal(readControl(stored, SEQUENCE_ITEM_TEMPLATE_KEY), "- [ ] {{link}}");
-});
-
-function fakeEditor(line: string, ch = line.length): CursorEditor & { inserted: string[] } {
+function fakeEditor(line: string, ch = line.length): InsertionEditor & { inserted: string[]; replaced: { text: string; range: InsertionRange }[] } {
 	const inserted: string[] = [];
+	const replaced: { text: string; range: InsertionRange }[] = [];
 	return {
 		inserted,
+		replaced,
 		getCursor: () => ({ line: 0, ch }),
 		getLine: () => line,
 		replaceSelection: (text: string) => void inserted.push(text),
+		replaceRange: (text: string, start: EditorPosition, end?: EditorPosition) => void replaced.push({ text, range: { start, end: end ?? start } }),
 	};
 }
 
-test("Enter inserts the previewed links at the cursor in the chosen layout", () => {
-	const preview = previewSequence("every mon for 4 weeks", context());
-	const editor = fakeEditor("- ");
-	const linkTo = (note: { name: string }) => `[[${note.name}]]`;
-	assert.equal(insertAtCursor(editor, preview, linkTo, settings({ layout: "bulletList", itemTemplate: "Review {{link}}" }), "commaSpace"), true);
-	assert.deepEqual(editor.inserted, ["Review [[2026-11-23]]\n- Review [[2026-11-30]]\n- Review [[2026-12-07]]\n- Review [[2026-12-14]]"]);
+test("the previewed links are inserted at the cursor with the chosen separator", () => {
+	const links = ["[[2026-11-23]]", "[[2026-11-24]]"];
+	const bullets = fakeEditor("- ");
+	insertAtCursor(bullets, links, "bulletLines");
+	assert.deepEqual(bullets.inserted, ["[[2026-11-23]]\n- [[2026-11-24]]"]);
 	const inline = fakeEditor("Due on ");
-	assert.equal(insertAtCursor(inline, previewSequence("mon to wed", context()), linkTo, settings({ layout: "inline" }), "space"), true);
-	assert.deepEqual(inline.inserted, ["[[2026-11-23]] [[2026-11-24]] [[2026-11-25]]"]);
+	insertAtCursor(inline, links, "space");
+	assert.deepEqual(inline.inserted, ["[[2026-11-23]] [[2026-11-24]]"]);
 });
 
-test("Enter inserts nothing while the text does not parse", () => {
-	const editor = fakeEditor("");
-	const invalid: SequencePreview = previewSequence("hello world", context());
-	assert.equal(insertAtCursor(editor, invalid, () => "x", settings({}), "commaSpace"), false);
-	assert.equal(insertAtCursor(editor, { kind: "empty" }, () => "x", settings({}), "commaSpace"), false);
-	assert.deepEqual(editor.inserted, []);
-});
-
-test("an item template without {{link}} is refused with a message", () => {
-	assert.equal(itemTemplateError("- [ ] "), "Include {{link}} where the link goes.");
-	assert.equal(itemTemplateError("- [ ] {{link}}"), undefined);
+test("links can replace the typed mention instead of the selection", () => {
+	const editor = fakeEditor("Due @mon to tue");
+	const range = { start: { line: 0, ch: 4 }, end: { line: 0, ch: 15 } };
+	insertLinks(editor, ["[[a]]", "[[b]]"], "commaSpace", range);
+	assert.deepEqual(editor.replaced, [{ text: "[[a]], [[b]]", range }]);
+	insertLinks(editor, ["[[a]]"], "commaSpace");
+	assert.deepEqual(editor.inserted, ["[[a]]"]);
 });

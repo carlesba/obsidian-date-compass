@@ -1,10 +1,10 @@
 import type { MomentFactory } from "../dateNotes/paths.ts";
 import type { PeriodSettingsByPeriod } from "../dateNotes/periods.ts";
 import type { NoteRef } from "../mentions/rows.ts";
-import type { LinkSeparator } from "../mentions/settings.ts";
+import { formattedItems } from "../insertion/render.ts";
+import type { InsertionSettings } from "../insertion/settings.ts";
 import { insertAtCursor } from "../sequence/preview.ts";
 import type { CursorEditor } from "../sequence/preview.ts";
-import type { SequenceSettings } from "../sequence/settings.ts";
 import { applyPropertyWrites, dateSortKey } from "./frontmatter.ts";
 import type { PropertyWrite } from "./frontmatter.ts";
 import { ALWAYS, writeWarning } from "./settings.ts";
@@ -23,8 +23,7 @@ export interface ActionHost {
 export interface ActionContext {
 	periods: PeriodSettingsByPeriod;
 	moment: MomentFactory;
-	insertSequence: SequenceSettings;
-	separator: LinkSeparator;
+	insertion: InsertionSettings;
 	editor?: CursorEditor;
 }
 
@@ -52,7 +51,8 @@ export async function runAction(action: DateAction, host: ActionHost, context: A
 	}
 	for (const { notes, format } of planned.body) {
 		if (!context.editor) break;
-		insertAtCursor(context.editor, { kind: "dates", notes, text: "" }, formatter(format, host.linkTo), context.insertSequence, context.separator);
+		const items = formattedItems(notes.map(formatter(format, host.linkTo)), notes, context.insertion.linkTemplate);
+		insertAtCursor(context.editor, items, context.insertion.separator);
 	}
 	return "written";
 }

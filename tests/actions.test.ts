@@ -8,7 +8,7 @@ import type { NoteRef } from "../src/mentions/rows.ts";
 import { currentNoteRows } from "../src/mentions/rows.ts";
 import { previewSequence } from "../src/sequence/preview.ts";
 import type { CursorEditor, SequenceContext } from "../src/sequence/preview.ts";
-import { mergeSequence } from "../src/sequence/settings.ts";
+import { mergeInsertion } from "../src/insertion/settings.ts";
 import { mergeActions, newAction, newInput, newWrite, presetActions, questionOf, writeWarning, yesNoChoices } from "../src/actions/settings.ts";
 import type { DateAction, PropertyMode } from "../src/actions/settings.ts";
 import { dateSortKey, linkTarget, mergedProperty } from "../src/actions/frontmatter.ts";
@@ -188,7 +188,7 @@ function fakeEditor(line: string): CursorEditor & { inserted: string[] } {
 }
 
 function actionContext(editor?: CursorEditor): ActionContext {
-	return { periods, moment, insertSequence: mergeSequence(undefined), separator: "commaSpace", editor };
+	return { periods, moment, insertion: mergeInsertion(undefined), editor };
 }
 
 test("Add dates asks Dates then Update start and end, and writes dates, start and end, promoting a scalar", async () => {

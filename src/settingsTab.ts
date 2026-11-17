@@ -6,7 +6,7 @@ import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage, DayMonthOrder, NextWeekdayMeaning, WeekStart } from "./settings.ts";
 import {
 	DAY_MONTH_ORDER_KEY,
-	MENTIONS_ALIAS_MODE_KEY,
+	INSERTION_ALIAS_SHAPE_KEY,
 	MENTIONS_ENABLED_KEY,
 	MENTIONS_TRIGGER_KEY,
 	NEXT_WEEKDAY_KEY,
@@ -22,7 +22,7 @@ import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
 import { enabledExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 import { mentionGroups } from "./settings/mentionsPage.ts";
-import { insertSequenceGroups } from "./settings/insertSequencePage.ts";
+import { insertionGroups } from "./settings/insertionPage.ts";
 import { sameTriggerPlugins } from "./mentions/conflicts.ts";
 import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
 import { actionsPage } from "./settings/actionsPage.ts";
@@ -45,7 +45,7 @@ const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
 	monthDay: "dayMonthOrderMonthDay",
 };
 
-const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, MENTIONS_ALIAS_MODE_KEY];
+const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, INSERTION_ALIAS_SHAPE_KEY];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -103,7 +103,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 				items: [
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
-					sectionPage("insertSequenceSection", "insertSequenceSectionDesc", insertSequenceGroups()),
+					sectionPage("insertionSection", "insertionSectionDesc", insertionGroups(() => this.plugin.settings.insertion)),
 					actionsPage({
 						actions: () => this.plugin.settings.actions,
 						write: (key, value) => void this.setControlValue(key, value),

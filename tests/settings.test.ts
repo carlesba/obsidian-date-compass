@@ -2,10 +2,12 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
 import {
-	MENTIONS_ALIAS_FORMAT_KEY,
-	MENTIONS_ALIAS_MODE_KEY,
+	INSERTION_ALIAS_BY_DEFAULT_KEY,
+	INSERTION_ALIAS_FORMAT_KEY,
+	INSERTION_ALIAS_SHAPE_KEY,
+	INSERTION_LINK_TEMPLATE_KEY,
+	INSERTION_SEPARATOR_KEY,
 	MENTIONS_ENABLED_KEY,
-	MENTIONS_SEPARATOR_KEY,
 	MENTIONS_TRIGGER_KEY,
 	TEMPLATE_RUNNER_KEY,
 	mentionPeriodKey,
@@ -14,7 +16,8 @@ import {
 	writeControl,
 } from "../src/settings/controlKeys.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
-import { mergeSequence } from "../src/sequence/settings.ts";
+import { mergeInsertion } from "../src/insertion/settings.ts";
+import { insertionGroups } from "../src/settings/insertionPage.ts";
 import { presetActions } from "../src/actions/settings.ts";
 import { sameTriggerWarning } from "../src/settings/mentionsPage.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
@@ -40,11 +43,8 @@ test("a fresh install gets the defaults, with English as the only parser languag
 			enabled: true,
 			trigger: "@",
 			periods: { day: true, week: true, month: true, quarter: true, year: true },
-			aliasMode: "none",
-			aliasFormat: "ddd D MMM",
-			separator: "commaSpace",
 		},
-		insertSequence: { layout: "inline", itemTemplate: "{{link}}" },
+		insertion: { linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false },
 		actions: presetActions(),
 	});
 });
@@ -62,7 +62,7 @@ test("stored partial settings merge over the defaults", () => {
 		dayMonthOrder: "monthDay",
 		dateNotes: defaultDateNotes(),
 		mentions: mergeMentions(undefined),
-		insertSequence: mergeSequence(undefined),
+		insertion: mergeInsertion(undefined),
 		actions: presetActions(),
 	});
 });
@@ -112,7 +112,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: mergeMentions(undefined), insertSequence: mergeSequence(undefined), actions: presetActions() });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: mergeMentions(undefined), insertion: mergeInsertion(undefined), actions: presetActions() });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });
@@ -137,16 +137,26 @@ test("every Mentions control reads and writes its setting and refuses bad values
 	assert.equal(writeControl(settings, mentionPeriodKey("week"), false), true);
 	assert.equal(readControl(settings, mentionPeriodKey("week")), false);
 	assert.equal(writeControl(settings, mentionPeriodKey("week"), "no"), false);
-	assert.equal(writeControl(settings, MENTIONS_ALIAS_MODE_KEY, "format"), true);
-	assert.equal(readControl(settings, MENTIONS_ALIAS_MODE_KEY), "format");
-	assert.equal(writeControl(settings, MENTIONS_ALIAS_MODE_KEY, "bogus"), false);
-	assert.equal(writeControl(settings, MENTIONS_ALIAS_FORMAT_KEY, " D MMM "), true);
-	assert.equal(readControl(settings, MENTIONS_ALIAS_FORMAT_KEY), "D MMM");
-	assert.equal(writeControl(settings, MENTIONS_ALIAS_FORMAT_KEY, " "), false);
-	assert.equal(writeControl(settings, MENTIONS_SEPARATOR_KEY, "bulletLines"), true);
-	assert.equal(readControl(settings, MENTIONS_SEPARATOR_KEY), "bulletLines");
-	assert.equal(writeControl(settings, MENTIONS_SEPARATOR_KEY, "tab"), false);
-	assert.equal(mergeSettings(JSON.parse(JSON.stringify(settings))).mentions.separator, "bulletLines");
+});
+
+test("every Insertion control reads and writes its setting and refuses bad values", () => {
+	const settings = defaultSettings();
+	const keys = insertionGroups(() => settings.insertion).flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
+	assert.deepEqual(keys, [INSERTION_LINK_TEMPLATE_KEY, INSERTION_SEPARATOR_KEY, INSERTION_ALIAS_BY_DEFAULT_KEY, INSERTION_ALIAS_SHAPE_KEY, INSERTION_ALIAS_FORMAT_KEY]);
+	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "- [ ] {{name}}"), true);
+	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "  "), false);
+	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, 3), false);
+	assert.equal(writeControl(settings, INSERTION_SEPARATOR_KEY, "bulletLines"), true);
+	assert.equal(writeControl(settings, INSERTION_SEPARATOR_KEY, "tab"), false);
+	assert.equal(writeControl(settings, INSERTION_ALIAS_BY_DEFAULT_KEY, true), true);
+	assert.equal(writeControl(settings, INSERTION_ALIAS_BY_DEFAULT_KEY, "yes"), false);
+	assert.equal(writeControl(settings, INSERTION_ALIAS_SHAPE_KEY, "typed"), true);
+	assert.equal(writeControl(settings, INSERTION_ALIAS_SHAPE_KEY, "none"), false);
+	assert.equal(writeControl(settings, INSERTION_ALIAS_FORMAT_KEY, " D MMM "), true);
+	assert.equal(writeControl(settings, INSERTION_ALIAS_FORMAT_KEY, " "), false);
+	assert.deepEqual(settings.insertion, { linkTemplate: "- [ ] {{name}}", separator: "bulletLines", aliasShape: "typed", aliasFormat: "D MMM", aliasByDefault: true });
+	assert.equal(readControl(settings, INSERTION_LINK_TEMPLATE_KEY), "- [ ] {{name}}");
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).insertion, settings.insertion);
 });
 
 test("the Mentions page warns only when another plugin shares the trigger", () => {

@@ -1,4 +1,5 @@
 import type { App, TFile } from "obsidian";
+import type { NoteRef } from "./rows.ts";
 import type { EnabledPlugin } from "./conflicts.ts";
 import { PLUGINS_WITH_TRIGGERS } from "./conflicts.ts";
 
@@ -24,6 +25,10 @@ export function enabledPluginsWithTriggers(app: App): EnabledPlugin[] {
 export function markdownLinkTo(app: App, path: string, sourcePath: string, alias: string | undefined): string {
 	const target = app.vault.getFileByPath(path) ?? unsavedFile(path);
 	return app.fileManager.generateMarkdownLink(target, sourcePath, undefined, alias);
+}
+
+export function propertyLinkTo(app: App, note: NoteRef, sourcePath: string): string {
+	return `[[${app.metadataCache.fileToLinktext(app.vault.getFileByPath(note.path) ?? unsavedFile(note.path), sourcePath, true)}]]`;
 }
 
 export function unsavedFile(path: string): TFile {

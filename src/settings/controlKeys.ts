@@ -3,8 +3,8 @@ import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, WEEK_STARTS } from "../setting
 import type { DateCompassSettings } from "../settings.ts";
 import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } from "../dateNotes/periods.ts";
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
-import { ALIAS_MODES, LINK_SEPARATORS, withoutWhitespace } from "../mentions/settings.ts";
-import { SEQUENCE_LAYOUTS, isItemTemplate } from "../sequence/settings.ts";
+import { withoutWhitespace } from "../mentions/settings.ts";
+import { ALIAS_SHAPES, LINK_SEPARATORS, isLinkTemplate } from "../insertion/settings.ts";
 import { ACTION_FIELDS, INPUT_FIELDS, INPUT_TYPES, PROPERTY_MODES, VALUE_FORMATS, WRITE_FIELDS, WRITE_TARGETS, WRITE_VALUES } from "../actions/settings.ts";
 import type { ActionField, ActionInput, ActionWrite, DateAction, InputField, WriteField } from "../actions/settings.ts";
 
@@ -20,15 +20,17 @@ export const MENTIONS_ENABLED_KEY = "mentions/enabled";
 
 export const MENTIONS_TRIGGER_KEY = "mentions/trigger";
 
-export const MENTIONS_ALIAS_MODE_KEY = "mentions/aliasMode";
+export const INSERTION_LINK_TEMPLATE_KEY = "insertion/linkTemplate";
 
-export const MENTIONS_ALIAS_FORMAT_KEY = "mentions/aliasFormat";
+export const INSERTION_SEPARATOR_KEY = "insertion/separator";
 
-export const MENTIONS_SEPARATOR_KEY = "mentions/separator";
+export const INSERTION_ALIAS_BY_DEFAULT_KEY = "insertion/aliasByDefault";
 
-export const SEQUENCE_LAYOUT_KEY = "insertSequence/layout";
+export const INSERTION_ALIAS_SHAPE_KEY = "insertion/aliasShape";
 
-export const SEQUENCE_ITEM_TEMPLATE_KEY = "insertSequence/itemTemplate";
+export const INSERTION_ALIAS_FORMAT_KEY = "insertion/aliasFormat";
+
+const INSERTION_KEY_PREFIX = "insertion/";
 
 const MENTION_PERIOD_KEY_PREFIX = "mentions/periods/";
 
@@ -172,13 +174,13 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
 	if (key === MENTIONS_ENABLED_KEY) return settings.mentions.enabled;
 	if (key === MENTIONS_TRIGGER_KEY) return settings.mentions.trigger;
-	if (key === MENTIONS_ALIAS_MODE_KEY) return settings.mentions.aliasMode;
-	if (key === MENTIONS_ALIAS_FORMAT_KEY) return settings.mentions.aliasFormat;
-	if (key === MENTIONS_SEPARATOR_KEY) return settings.mentions.separator;
+	if (key === INSERTION_LINK_TEMPLATE_KEY) return settings.insertion.linkTemplate;
+	if (key === INSERTION_SEPARATOR_KEY) return settings.insertion.separator;
+	if (key === INSERTION_ALIAS_BY_DEFAULT_KEY) return settings.insertion.aliasByDefault;
+	if (key === INSERTION_ALIAS_SHAPE_KEY) return settings.insertion.aliasShape;
+	if (key === INSERTION_ALIAS_FORMAT_KEY) return settings.insertion.aliasFormat;
 	const mentionPeriod = mentionPeriodOfKey(key);
 	if (mentionPeriod) return settings.mentions.periods[mentionPeriod];
-	if (key === SEQUENCE_LAYOUT_KEY) return settings.insertSequence.layout;
-	if (key === SEQUENCE_ITEM_TEMPLATE_KEY) return settings.insertSequence.itemTemplate;
 	return undefined;
 }
 
@@ -191,19 +193,12 @@ export function writeControl(settings: DateCompassSettings, key: string, value: 
 	if (key === TEMPLATE_RUNNER_KEY) return writeChoice(TEMPLATE_RUNNER_CHOICES, value, (choice) => (settings.dateNotes.templateRunner = choice));
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return writePeriodField(settings, periodField.period, periodField.field, value);
-	if (key === SEQUENCE_LAYOUT_KEY) return writeChoice(SEQUENCE_LAYOUTS, value, (choice) => (settings.insertSequence.layout = choice));
-	if (key === SEQUENCE_ITEM_TEMPLATE_KEY) {
-		if (typeof value !== "string" || itemTemplateError(value)) return false;
-		settings.insertSequence.itemTemplate = value;
-		return true;
-	}
+	if (key.startsWith(INSERTION_KEY_PREFIX)) return writeInsertionControl(settings, key, value);
 	return writeMentionControl(settings, key, value);
 }
 
 function writeMentionControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
 	const { mentions } = settings;
-	if (key === MENTIONS_ALIAS_MODE_KEY) return writeChoice(ALIAS_MODES, value, (choice) => (mentions.aliasMode = choice));
-	if (key === MENTIONS_SEPARATOR_KEY) return writeChoice(LINK_SEPARATORS, value, (choice) => (mentions.separator = choice));
 	const mentionPeriod = mentionPeriodOfKey(key);
 	if (key === MENTIONS_ENABLED_KEY || mentionPeriod) {
 		if (typeof value !== "boolean") return false;
@@ -217,9 +212,22 @@ function writeMentionControl(settings: DateCompassSettings, key: string, value: 
 		mentions.trigger = withoutWhitespace(value);
 		return true;
 	}
-	if (key === MENTIONS_ALIAS_FORMAT_KEY) {
-		if (formatError(value)) return false;
-		mentions.aliasFormat = value.trim();
+	return false;
+}
+
+function writeInsertionControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
+	const { insertion } = settings;
+	if (key === INSERTION_SEPARATOR_KEY) return writeChoice(LINK_SEPARATORS, value, (choice) => (insertion.separator = choice));
+	if (key === INSERTION_ALIAS_SHAPE_KEY) return writeChoice(ALIAS_SHAPES, value, (choice) => (insertion.aliasShape = choice));
+	if (key === INSERTION_ALIAS_BY_DEFAULT_KEY) return writeBoolean(value, (checked) => (insertion.aliasByDefault = checked));
+	if (key === INSERTION_LINK_TEMPLATE_KEY) {
+		if (typeof value !== "string" || linkTemplateError(value)) return false;
+		insertion.linkTemplate = value;
+		return true;
+	}
+	if (key === INSERTION_ALIAS_FORMAT_KEY) {
+		if (typeof value !== "string" || formatError(value)) return false;
+		insertion.aliasFormat = value.trim();
 		return true;
 	}
 	return false;
@@ -244,8 +252,8 @@ function writePeriodField(settings: DateCompassSettings, period: Period, field: 
 	return true;
 }
 
-export function itemTemplateError(value: string): string | undefined {
-	return isItemTemplate(value) ? undefined : t("itemTemplateNeedsLink");
+export function linkTemplateError(value: string): string | undefined {
+	return isLinkTemplate(value) ? undefined : t("linkTemplateRequired");
 }
 
 export function formatError(value: string): string | undefined {

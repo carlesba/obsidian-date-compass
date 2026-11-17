@@ -1,13 +1,12 @@
 import type { Moment } from "moment";
-import type { Editor } from "obsidian";
+import type { Editor, EditorPosition } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { parseWithRefusals } from "../parse/index.ts";
 import type { Analysis, ParseOptions } from "../parse/index.ts";
-import { PHRASE_PARSER, bulletLinesText, buildRows, indentOf, insertionText, isListMarkerOnly, noteCount, rangeDescription, rowLabel } from "../mentions/rows.ts";
+import { PHRASE_PARSER, buildRows, noteCount, rangeDescription, rowLabel } from "../mentions/rows.ts";
 import type { DateRow, NoteRef, RowContext } from "../mentions/rows.ts";
-import type { LinkSeparator } from "../mentions/settings.ts";
-import { LINK_PLACEHOLDER } from "./settings.ts";
-import type { SequenceSettings } from "./settings.ts";
+import { insertionText } from "../insertion/render.ts";
+import type { LinkSeparator } from "../insertion/settings.ts";
 
 export type Analyzer = (text: string, now: Date, options: ParseOptions) => Analysis;
 
@@ -41,37 +40,23 @@ function invalidReason(text: string, context: SequenceContext): string {
 	return t("sequenceNotADate");
 }
 
-export function sequenceInsertion(links: readonly string[], sequence: SequenceSettings, separator: LinkSeparator, textBeforeCursor: string): string {
-	const items = links.map((link) => sequence.itemTemplate.split(LINK_PLACEHOLDER).join(link));
-	switch (sequence.layout) {
-		case "inline":
-			return insertionText(items, separator, textBeforeCursor);
-		case "bulletList":
-			return bulletLinesText(items, textBeforeCursor);
-		case "linePerItem":
-			return linesText(items, textBeforeCursor);
-	}
-}
-
-function linesText(items: readonly string[], textBeforeCursor: string): string {
-	const indent = indentOf(textBeforeCursor);
-	const continuesLine = textBeforeCursor.trim() === "" || isListMarkerOnly(textBeforeCursor);
-	const lines = items.join(`\n${indent}`);
-	return continuesLine ? lines : `\n${indent}${lines}`;
-}
-
 export type CursorEditor = Pick<Editor, "getCursor" | "getLine" | "replaceSelection">;
 
-export function insertAtCursor(
-	editor: CursorEditor,
-	preview: SequencePreview,
-	linkTo: (note: NoteRef) => string,
-	sequence: SequenceSettings,
-	separator: LinkSeparator,
-): boolean {
-	if (preview.kind !== "dates") return false;
+export type InsertionEditor = CursorEditor & Pick<Editor, "replaceRange">;
+
+export interface InsertionRange {
+	start: EditorPosition;
+	end: EditorPosition;
+}
+
+export function insertAtCursor(editor: CursorEditor, links: readonly string[], separator: LinkSeparator): void {
 	const cursor = editor.getCursor("from");
 	const textBeforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
-	editor.replaceSelection(sequenceInsertion(preview.notes.map(linkTo), sequence, separator, textBeforeCursor));
-	return true;
+	editor.replaceSelection(insertionText(links, separator, textBeforeCursor));
+}
+
+export function insertLinks(editor: InsertionEditor, links: readonly string[], separator: LinkSeparator, range?: InsertionRange): void {
+	if (!range) return insertAtCursor(editor, links, separator);
+	const textBeforeRange = editor.getLine(range.start.line).slice(0, range.start.ch);
+	editor.replaceRange(insertionText(links, separator, textBeforeRange), range.start, range.end);
 }

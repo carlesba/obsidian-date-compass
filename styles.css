@@ -21,3 +21,30 @@
 	min-width: 44px;
 	min-height: 44px;
 }
+
+.date-compass-dates-modal {
+	width: min(40rem, 94vw);
+}
+
+.date-compass-dates-input {
+	width: 100%;
+	min-height: 3rem;
+	padding: var(--size-4-3) var(--size-4-4);
+	font-size: var(--font-ui-large);
+}
+
+.date-compass-dates-reading {
+	margin-top: var(--size-4-4);
+	min-height: 1.5em;
+	color: var(--text-muted);
+}
+
+.date-compass-dates-links {
+	margin-top: var(--size-4-2);
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-family: var(--font-monospace);
+	font-size: var(--font-smaller);
+	color: var(--text-faint);
+}

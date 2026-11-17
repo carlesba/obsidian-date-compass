@@ -3,7 +3,7 @@ import type { App, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { ChoosingSuggestModal, DateNotePickerModal } from "../dateNotes/phraseModal.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
-import { markdownLinkTo, unsavedFile } from "../mentions/obsidianHost.ts";
+import { markdownLinkTo, propertyLinkTo } from "../mentions/obsidianHost.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import { DatesModal } from "../sequence/modal.ts";
 import type { DateCompassSettings } from "../settings.ts";
@@ -82,7 +82,7 @@ export function obsidianActionHost(app: App, settings: () => DateCompassSettings
 	return {
 		ask: (input) => ask(app, settings, input),
 		linkTo: (note: NoteRef) => markdownLinkTo(app, note.path, file.path, undefined),
-		propertyLinkTo: (note: NoteRef) => `[[${app.metadataCache.fileToLinktext(app.vault.getFileByPath(note.path) ?? unsavedFile(note.path), file.path, true)}]]`,
+		propertyLinkTo: (note: NoteRef) => propertyLinkTo(app, note, file.path),
 		processFrontMatter: (change) => app.fileManager.processFrontMatter(file, change),
 		notify: (message) => new Notice(message),
 	};
@@ -103,13 +103,12 @@ export async function runActionInActiveNote(app: App, settings: () => DateCompas
 	const file = view?.file;
 	if (!view || !file) return;
 	const host = obsidianActionHost(app, settings, file);
-	const { dateNotes, insertSequence, mentions } = settings();
+	const { dateNotes, insertion } = settings();
 	try {
 		const outcome = await runAction(action, host, {
 			periods: dateNotes.periods,
 			moment: obsidianMoment,
-			insertSequence,
-			separator: mentions.separator,
+			insertion,
 			editor: view.editor,
 		});
 		const notice = OUTCOME_NOTICES[outcome];
