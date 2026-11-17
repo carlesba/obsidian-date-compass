@@ -26,7 +26,7 @@ export function markdownLinkTo(app: App, path: string, sourcePath: string, alias
 	return app.fileManager.generateMarkdownLink(target, sourcePath, undefined, alias);
 }
 
-function unsavedFile(path: string): TFile {
+export function unsavedFile(path: string): TFile {
 	const name = path.split("/").pop() ?? path;
 	const extension = name.includes(".") ? (name.split(".").pop() ?? "") : "";
 	const basename = extension === "" ? name : name.slice(0, -extension.length - 1);

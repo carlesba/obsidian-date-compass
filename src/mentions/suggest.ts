@@ -5,7 +5,7 @@ import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { localeParseOptions } from "../obsidianParseOptions.ts";
 import { markdownLinkTo } from "./obsidianHost.ts";
-import { aliasOf, buildRows, joinLinks, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
+import { aliasOf, buildRows, insertionText, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
 import type { DateRow, RowContext } from "./rows.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "./trigger.ts";
 import type { Dismissal } from "./trigger.ts";
@@ -94,7 +94,8 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext): void {
 		const { mentions } = this.settings();
 		const links = row.notes.map((note) => markdownLinkTo(this.app, note.path, file.path, aliasOf(row, note, mentions)));
-		editor.replaceRange(joinLinks(links, mentions.separator), start, end);
+		const textBeforeMention = editor.getLine(start.line).slice(0, start.ch);
+		editor.replaceRange(insertionText(links, mentions.separator, textBeforeMention), start, end);
 	}
 
 	private showInstructions(): void {

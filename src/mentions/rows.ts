@@ -150,3 +150,14 @@ export function joinLinks(links: readonly string[], separator: LinkSeparator): s
 	if (separator === "bulletLines") return links.map((link) => `- ${link}`).join("\n");
 	return links.join(", ");
 }
+
+const LIST_MARKER_ONLY = /^\s*([-*+]|\d+[.)])\s+$/;
+
+export function insertionText(links: readonly string[], separator: LinkSeparator, textBeforeMention: string): string {
+	if (links.length < 2 || separator !== "bulletLines") return joinLinks(links, separator);
+	const indent = /^\s*/.exec(textBeforeMention)?.[0] ?? "";
+	const bullets = links.map((link) => `${indent}- ${link}`);
+	if (LIST_MARKER_ONLY.test(textBeforeMention)) return [links[0], ...bullets.slice(1)].join("\n");
+	if (textBeforeMention.trim() === "") return [`- ${links[0]}`, ...bullets.slice(1)].join("\n");
+	return `\n${bullets.join("\n")}`;
+}

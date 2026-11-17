@@ -4,11 +4,12 @@ import { moment } from "./moment.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { Period } from "../src/dateNotes/periods.ts";
 import type { Completion, Interpretation, ParseOptions, Unit } from "../src/parse/index.ts";
-import { aliasOf, buildRows, joinLinks, mayStillMatch, mentionAllows, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
+import { aliasOf, buildRows, insertionText, joinLinks, mayStillMatch, mentionAllows, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
 import type { DateParser, RowContext } from "../src/mentions/rows.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "../src/mentions/trigger.ts";
 import { sameTriggerPlugins } from "../src/mentions/conflicts.ts";
+import { unsavedFile } from "../src/mentions/obsidianHost.ts";
 import { parseOptionsOf, parserWeekStart } from "../src/parseOptions.ts";
 import { defaultSettings } from "../src/settings.ts";
 
@@ -225,4 +226,43 @@ test("mention settings merge with defaults", () => {
 		separator: "bulletLines",
 	});
 	assert.equal(mergeMentions({ aliasMode: "bogus", separator: 3 }).aliasMode, "none");
+});
+
+test("range links in bullets keep the list they are typed in", () => {
+	const links = ["[[a]]", "[[b]]"];
+	assert.equal(insertionText(links, "bulletLines", ""), "- [[a]]\n- [[b]]");
+	assert.equal(insertionText(links, "bulletLines", "  "), "- [[a]]\n  - [[b]]");
+	assert.equal(insertionText(links, "bulletLines", "  - "), "[[a]]\n  - [[b]]");
+	assert.equal(insertionText(links, "bulletLines", "1. "), "[[a]]\n- [[b]]");
+	assert.equal(insertionText(links, "bulletLines", "meet "), "\n- [[a]]\n- [[b]]");
+	assert.equal(insertionText(links, "commaSpace", "meet "), "[[a]], [[b]]");
+	assert.equal(insertionText(["[[a]]"], "bulletLines", "meet "), "[[a]]");
+});
+
+test("labels name the year when it is not the current one", () => {
+	const parser = fakeParser({
+		q: [
+			interpretation("day", "2027-01-05"),
+			interpretation("quarter", "2027-01-01", "2027-03-31"),
+			sequence("day", ["2026-12-31", "2027-01-01"]),
+		],
+	});
+	const dateNotes = defaultDateNotes();
+	dateNotes.periods.quarter.enabled = true;
+	assert.deepEqual(buildRows("q", context({ parser, periods: dateNotes.periods })).map((row) => rowLabel(row, now)), [
+		"Tue 5 Jan 2027 → [[2027-01-05]]",
+		"Q1 2027 → [[2027-Q1]]",
+		"Thu 31 Dec → Fri 1 Jan 2027 · 2 dates",
+	]);
+});
+
+test("a link to a note that does not exist yet names its path, base name and extension", () => {
+	assert.deepEqual({ ...unsavedFile("Daily/2026-11-11.md") }, { path: "Daily/2026-11-11.md", name: "2026-11-11.md", basename: "2026-11-11", extension: "md" });
+	assert.deepEqual({ ...unsavedFile("2026") }, { path: "2026", name: "2026", basename: "2026", extension: "" });
+});
+
+test("stored triggers fall back to the default when empty, and plugins without settings use their own default", () => {
+	assert.equal(mergeMentions({ trigger: "  " }).trigger, "@");
+	assert.deepEqual(sameTriggerPlugins("@", [{ id: "date-list", name: "Date List", settings: undefined }]), ["Date List"]);
+	assert.deepEqual(sameTriggerPlugins("", [{ id: "date-list", name: "Date List", settings: undefined }]), []);
 });

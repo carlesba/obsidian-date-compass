@@ -29,7 +29,7 @@ export function mergeMentions(stored: unknown): MentionSettings {
 	const periods = isRecord(data.periods) ? data.periods : {};
 	return {
 		enabled: typeof data.enabled === "boolean" ? data.enabled : true,
-		trigger: typeof data.trigger === "string" ? withoutWhitespace(data.trigger) : DEFAULT_MENTION_TRIGGER,
+		trigger: typeof data.trigger === "string" && withoutWhitespace(data.trigger) !== "" ? withoutWhitespace(data.trigger) : DEFAULT_MENTION_TRIGGER,
 		periods: Object.fromEntries(PERIODS.map((period) => [period, periods[period] !== false])) as Record<Period, boolean>,
 		aliasMode: ALIAS_MODES.find((mode) => mode === data.aliasMode) ?? "none",
 		aliasFormat: typeof data.aliasFormat === "string" && data.aliasFormat.trim() !== "" ? data.aliasFormat.trim() : DEFAULT_ALIAS_FORMAT,
