@@ -311,3 +311,21 @@ test("the One date picker asks the question as placeholder and keeps the replace
 		setLanguage(DEFAULT_LANGUAGE);
 	}
 });
+
+test("the One date picker renders the replace sentence and the phrase picker renders no text", async () => {
+	const { setLanguage, DEFAULT_LANGUAGE } = await import("../src/i18n/index.ts");
+	const { pickerTextOf, pickerNoteTextOf, phrasePickerTextOf } = await import("../src/actions/pickerText.ts");
+	const action = { ...newAction([]), property: "due", asks: "date" as const };
+	try {
+		setLanguage("en");
+		const options = pickerTextOf(action);
+		assert.ok(!options.placeholder.includes(options.note));
+		assert.equal(pickerNoteTextOf(options), "The date will replace the value of the property due.");
+		assert.equal(pickerNoteTextOf(phrasePickerTextOf()), undefined);
+		setLanguage("es");
+		assert.equal(pickerNoteTextOf(pickerTextOf(action)), "La fecha sustituirá el valor de la propiedad «due».");
+		assert.equal(pickerNoteTextOf(phrasePickerTextOf()), undefined);
+	} finally {
+		setLanguage(DEFAULT_LANGUAGE);
+	}
+});

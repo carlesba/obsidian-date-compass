@@ -1,5 +1,6 @@
 import { SuggestModal } from "obsidian";
 import type { App } from "obsidian";
+import { phrasePickerTextOf, pickerNoteTextOf } from "../actions/pickerText.ts";
 import { t } from "../i18n/index.ts";
 import { buildRows, rowLabel, singleNoteRows } from "../mentions/rows.ts";
 import type { DateRow } from "../mentions/rows.ts";
@@ -50,7 +51,8 @@ export class DateNotePickerModal extends ChoosingSuggestModal<DateRow> {
 		this.settings = settings;
 		this.options = options;
 		this.setPlaceholder(options.placeholder);
-		if (options.note) this.resultContainerEl.before(createDiv({ cls: "date-compass-picker-note", text: options.note }));
+		const noteText = pickerNoteTextOf(options);
+		if (noteText) this.resultContainerEl.before(createDiv({ cls: "date-compass-picker-note", text: noteText }));
 		this.emptyStateText = t("phraseNoMatch");
 	}
 
@@ -70,7 +72,7 @@ export class DateNotePickerModal extends ChoosingSuggestModal<DateRow> {
 export class OpenDateNoteByPhraseModal extends DateNotePickerModal {
 	constructor(app: App, settings: () => DateCompassSettings) {
 		super(app, settings, {
-			placeholder: t("phrasePlaceholder"),
+			...phrasePickerTextOf(),
 			choose: (row) => {
 				const [note] = row.notes;
 				void openDateNote(app, settings().dateNotes, note.date, note.period);
