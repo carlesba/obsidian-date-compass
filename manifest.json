@@ -1,0 +1,10 @@
+{
+	"id": "date-compass",
+	"name": "Date Compass",
+	"version": "0.1.0",
+	"minAppVersion": "1.13.0",
+	"description": "Type dates the way you say them and link them to your date notes.",
+	"author": "Carles Ballester",
+	"authorUrl": "https://github.com/carlesba",
+	"isDesktopOnly": false
+}
