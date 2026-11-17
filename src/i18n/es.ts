@@ -89,6 +89,8 @@ export const es: Translation = {
 	separatorCommaSpace: "Coma y espacio",
 	separatorSpace: "Espacio",
 	separatorBulletLines: "Una viñeta por línea",
+	dateCount: "{count} fechas",
+	noteCount: "{count} notas",
 	weekOf: "Semana del {start}",
 	instructionInsertLink: "insertar enlace",
 	instructionDismiss: "descartar",

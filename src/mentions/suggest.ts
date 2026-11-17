@@ -5,8 +5,8 @@ import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { localeParseOptions } from "../obsidianParseOptions.ts";
 import { markdownLinkTo } from "./obsidianHost.ts";
-import { aliasOf, buildRows, joinLinks, mentionAllows, rowLabel } from "./rows.ts";
-import type { DateRow } from "./rows.ts";
+import { aliasOf, buildRows, joinLinks, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
+import type { DateRow, RowContext } from "./rows.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "./trigger.ts";
 import type { Dismissal } from "./trigger.ts";
 
@@ -36,7 +36,7 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 		if (isDismissed(this.dismissal, position, match.query)) return null;
 		if (isInCode(linesAbove(editor, cursor.line), lineBeforeCaret)) return null;
 		const rows = this.rowsFor(match.query);
-		if (isDeadEnd(match.query, (text) => (text === match.query ? rows : this.rowsFor(text)).length > 0)) {
+		if (rows.length === 0 && isDeadEnd(match.query, (text) => mayStillMatch(text, this.rowContext()))) {
 			this.dismissal = { position, deadEndQuery: match.query };
 			return null;
 		}
@@ -55,7 +55,7 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 	selectSuggestion(row: DateRow): void {
 		const context = this.context;
 		this.finish();
-		if (context) this.insertLinks([row], context);
+		if (context) this.insertLinks(row, context);
 	}
 
 	close(): void {
@@ -70,14 +70,18 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 	}
 
 	private rowsFor(query: string): DateRow[] {
+		return buildRows(query, this.rowContext());
+	}
+
+	private rowContext(): RowContext {
 		const settings = this.settings();
-		return buildRows(query, {
+		return {
 			now: obsidianMoment(),
 			moment: obsidianMoment,
 			options: localeParseOptions(settings),
 			periods: settings.dateNotes.periods,
 			allows: mentionAllows(settings.mentions),
-		});
+		};
 	}
 
 	private isStillTyped({ editor, file, start }: EditorSuggestContext): boolean {
@@ -87,9 +91,9 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 		return match?.start === start.ch;
 	}
 
-	private insertLinks(rows: readonly DateRow[], { editor, file, start, end }: EditorSuggestContext): void {
+	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext): void {
 		const { mentions } = this.settings();
-		const links = rows.map((row) => markdownLinkTo(this.app, row.path, file.path, aliasOf(row, mentions)));
+		const links = row.notes.map((note) => markdownLinkTo(this.app, note.path, file.path, aliasOf(row, note, mentions)));
 		editor.replaceRange(joinLinks(links, mentions.separator), start, end);
 	}
 

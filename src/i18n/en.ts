@@ -87,6 +87,8 @@ export const en = {
 	separatorCommaSpace: "Comma and space",
 	separatorSpace: "Space",
 	separatorBulletLines: "One bullet per line",
+	dateCount: "{count} dates",
+	noteCount: "{count} notes",
 	weekOf: "Week of {start}",
 	instructionInsertLink: "insert link",
 	instructionDismiss: "dismiss",

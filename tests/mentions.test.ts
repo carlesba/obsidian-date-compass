@@ -4,7 +4,7 @@ import { moment } from "./moment.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { Period } from "../src/dateNotes/periods.ts";
 import type { Completion, Interpretation, ParseOptions, Unit } from "../src/parse/index.ts";
-import { aliasOf, buildRows, joinLinks, mentionAllows, rowLabel } from "../src/mentions/rows.ts";
+import { aliasOf, buildRows, joinLinks, mayStillMatch, mentionAllows, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
 import type { DateParser, RowContext } from "../src/mentions/rows.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "../src/mentions/trigger.ts";
@@ -77,7 +77,7 @@ test("a mention closes when a space follows a query with no interpretation and n
 test("rows show what they resolve to before acceptance", () => {
 	const [row] = buildRows("last wed", context());
 	assert.equal(rowLabel(row, now), "Wed 11 Nov → [[2026-11-11]]");
-	assert.equal(row.path, "2026-11-11.md");
+	assert.equal(row.notes[0].path, "2026-11-11.md");
 	const [month] = buildRows("last month", context());
 	assert.equal(rowLabel(month, now), "October 2026 → [[2026-10]]");
 	const [week] = buildRows("next week", context());
@@ -98,7 +98,7 @@ test("rows list the best interpretation, then the others, then completions, each
 	);
 	const rows = buildRows("mar", context({ parser }));
 	assert.deepEqual(
-		rows.map((row) => [row.source, row.text, row.language, row.name]),
+		rows.map((row) => [row.source, row.text, row.language, row.notes[0].name]),
 		[
 			["interpretation", "mar", "en", "2026-03"],
 			["interpretation", "mar", "es", "2026-11-24"],
@@ -118,27 +118,63 @@ test("rows keep only the periods mentions allow and Date notes enable", () => {
 	});
 	const mentions = mergeMentions({ periods: { week: false } });
 	const rows = buildRows("q", context({ parser, allows: mentionAllows(mentions) }));
-	assert.deepEqual(rows.map((row) => row.period), ["day", "year"]);
+	assert.deepEqual(rows.map((row) => row.notes[0].period), ["day", "year"]);
 	const dateNotes = defaultDateNotes();
 	dateNotes.periods.quarter.enabled = true;
 	const withQuarter = buildRows("q", context({ parser, periods: dateNotes.periods, allows: mentionAllows(mentions) }));
-	assert.deepEqual(withQuarter.map((row) => row.period), ["day", "quarter", "year"]);
+	assert.deepEqual(withQuarter.map((row) => row.notes[0].period), ["day", "quarter", "year"]);
 });
 
 test("a week that starts on Sunday is named after the ISO week of its weekdays", () => {
 	const parser = fakeParser({ q: [interpretation("week", "2026-11-15", "2026-11-21")] });
 	const [row] = buildRows("q", context({ parser }));
-	assert.equal(row.name, "2026-W47");
-	assert.equal(row.start.format("YYYY-MM-DD"), "2026-11-15");
+	assert.equal(row.notes[0].name, "2026-W47");
+	assert.equal(row.notes[0].start.format("YYYY-MM-DD"), "2026-11-15");
 });
 
 test("the link text is the note name, the typed phrase, or a moment format", () => {
 	const [row] = buildRows("last wed", context());
-	assert.equal(aliasOf(row, { aliasMode: "none", aliasFormat: "ddd D MMM" }), undefined);
-	assert.equal(aliasOf(row, { aliasMode: "typed", aliasFormat: "ddd D MMM" }), "last wed");
-	assert.equal(aliasOf(row, { aliasMode: "format", aliasFormat: "ddd D MMM" }), "Wed 11 Nov");
-	const completion = buildRows("last we", context()).find((candidate) => candidate.period === "day");
-	assert.equal(completion && aliasOf(completion, { aliasMode: "typed", aliasFormat: "" }), "last wed");
+	assert.equal(aliasOf(row, row.notes[0], { aliasMode: "none", aliasFormat: "ddd D MMM" }), undefined);
+	assert.equal(aliasOf(row, row.notes[0], { aliasMode: "typed", aliasFormat: "ddd D MMM" }), "last wed");
+	assert.equal(aliasOf(row, row.notes[0], { aliasMode: "format", aliasFormat: "ddd D MMM" }), "Wed 11 Nov");
+	const completion = buildRows("last we", context()).find((candidate) => candidate.notes[0].period === "day");
+	assert.equal(completion && aliasOf(completion, completion.notes[0], { aliasMode: "typed", aliasFormat: "" }), "last wed");
+});
+
+function sequence(unit: Unit, starts: string[]): Interpretation {
+	const items = starts.map((start) => ({ unit, start, end: start }));
+	return { language: "en", node: { kind: "day", amount: 0, unit: "day" }, result: { kind: "sequence", span: { unit, start: starts[0], end: starts[starts.length - 1] }, items } };
+}
+
+test("a range is one row that names every date it inserts", () => {
+	const [range] = buildRows("today to fri", context());
+	assert.equal(rowLabel(range, now), "Tue 17 → Fri 20 Nov · 4 dates");
+	assert.deepEqual(range.notes.map((note) => note.name), ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]);
+	const parser = fakeParser({
+		q: [sequence("day", ["2026-11-30", "2026-12-01"]), sequence("week", ["2026-11-23", "2026-11-30"]), interpretation("day", "2026-11-17")],
+	});
+	const rows = buildRows("q", context({ parser }));
+	assert.deepEqual(rows.map((row) => rowLabel(row, now)), [
+		"Mon 30 Nov → Tue 1 Dec · 2 dates",
+		"Week of Mon 23 Nov → Week of Mon 30 Nov · 2 notes",
+		"Tue 17 Nov → [[2026-11-17]]",
+	]);
+	const withoutWeeks = buildRows("q", context({ parser, allows: (period) => period !== "week" }));
+	assert.equal(withoutWeeks.length, 2);
+	assert.deepEqual(singleNoteRows(rows).map((row) => row.notes[0].name), ["2026-11-17"]);
+	const [days] = rows;
+	assert.equal(aliasOf(days, days.notes[1], { aliasMode: "typed", aliasFormat: "" }), undefined);
+	assert.equal(aliasOf(days, days.notes[1], { aliasMode: "format", aliasFormat: "D MMM" }), "1 Dec");
+});
+
+test("a query may still match while the parser expects more words", () => {
+	assert.equal(mayStillMatch("today t", context()), true);
+	assert.equal(mayStillMatch("last wed", context()), true);
+	assert.equal(mayStillMatch("hello world", context()), false);
+	assert.equal(isDeadEnd("today to", (text) => mayStillMatch(text, context())), false);
+	assert.equal(isDeadEnd("today to ", (text) => mayStillMatch(text, context())), false);
+	assert.equal(isDeadEnd("next ", (text) => mayStillMatch(text, context())), false);
+	assert.equal(isDeadEnd("hello ", (text) => mayStillMatch(text, context())), true);
 });
 
 test("range links are joined with the chosen separator", () => {

@@ -46,9 +46,9 @@ function isInFrontmatter(linesAbove: readonly string[]): boolean {
 
 const CONTINUATIONS = "abcdefghijklmnopqrstuvwxyz0123456789".split("");
 
-export function isDeadEnd(query: string, hasRows: (text: string) => boolean): boolean {
+export function isDeadEnd(query: string, mayMatch: (text: string) => boolean): boolean {
 	if (!WHITESPACE.test(query)) return false;
-	if (hasRows(query)) return false;
-	if (!WHITESPACE.test(query[query.length - 1] ?? "")) return true;
-	return !CONTINUATIONS.some((next) => hasRows(query + next));
+	if (mayMatch(query)) return false;
+	const continuations = WHITESPACE.test(query[query.length - 1] ?? "") ? CONTINUATIONS : CONTINUATIONS.map((next) => ` ${next}`);
+	return !continuations.some((next) => mayMatch(query + next));
 }
