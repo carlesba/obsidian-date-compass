@@ -1,4 +1,4 @@
-import { PluginSettingTab } from "obsidian";
+import { PluginSettingTab, debounce } from "obsidian";
 import type { App, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
 import { t, translatedLabels } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
@@ -9,6 +9,7 @@ import {
 	DAY_MONTH_ORDER_KEY,
 	MENTIONS_ALIAS_MODE_KEY,
 	MENTIONS_ENABLED_KEY,
+	MENTIONS_TRIGGER_KEY,
 	NEXT_WEEKDAY_KEY,
 	WEEK_START_KEY,
 	languageKey,
@@ -47,12 +48,15 @@ const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
 
 const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, MENTIONS_ALIAS_MODE_KEY];
 
+const TYPING_PAUSE_MS = 800;
+
 function sectionPage(name: TranslationKey, desc: TranslationKey, items: SettingDefinitionItem[] = []): SettingDefinitionPage {
 	return { type: "page", name: t(name), desc: t(desc), items };
 }
 
 export class DateCompassSettingTab extends PluginSettingTab {
 	private readonly plugin: DateCompassPlugin;
+	private readonly updateAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
 
 	constructor(app: App, plugin: DateCompassPlugin) {
 		super(app, plugin);
@@ -143,6 +147,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		if (!writeControl(this.plugin.settings, key, value)) return;
 		await this.plugin.saveSettings();
 		if (CONTROLS_THAT_SHOW_OR_HIDE_ITEMS.includes(key)) this.update();
+		else if (key === MENTIONS_TRIGGER_KEY) this.updateAfterTyping();
 	}
 
 	private async resetSettings(): Promise<void> {

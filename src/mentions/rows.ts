@@ -109,6 +109,7 @@ export function aliasOf(row: DateRow, mention: Pick<MentionSettings, "aliasMode"
 }
 
 export function joinLinks(links: readonly string[], separator: LinkSeparator): string {
+	if (links.length < 2) return links.join("");
 	if (separator === "space") return links.join(" ");
 	if (separator === "bulletLines") return links.map((link) => `- ${link}`).join("\n");
 	return links.join(", ");

@@ -7,7 +7,7 @@ import type { Completion, Interpretation, ParseOptions, Unit } from "../src/pars
 import { aliasOf, buildRows, joinLinks, mentionAllows, rowLabel } from "../src/mentions/rows.ts";
 import type { DateParser, RowContext } from "../src/mentions/rows.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
-import { isDeadEnd, isInCode, mentionAt } from "../src/mentions/trigger.ts";
+import { isDeadEnd, isDismissed, isInCode, mentionAt } from "../src/mentions/trigger.ts";
 import { sameTriggerPlugins } from "../src/mentions/conflicts.ts";
 import { parseOptionsOf, parserWeekStart } from "../src/parseOptions.ts";
 import { defaultSettings } from "../src/settings.ts";
@@ -33,10 +33,22 @@ test("a mention opens right after the trigger and its query may contain spaces",
 	assert.deepEqual(mentionAt("meet @last wed", "@"), { start: 5, query: "last wed" });
 	assert.deepEqual(mentionAt("@today to fri", "@"), { start: 0, query: "today to fri" });
 	assert.deepEqual(mentionAt("see ;;next w", ";;"), { start: 4, query: "next w" });
+	assert.deepEqual(mentionAt("@today mail me@home", "@"), { start: 0, query: "today mail me@home" });
+	assert.deepEqual(mentionAt("a @b c@d", "@"), { start: 2, query: "b c@d" });
+});
+
+test("Escape keeps a mention closed while it is typed, a dead end only until the query is shortened", () => {
+	assert.equal(isDismissed(undefined, "a.md:0:0", "wed"), false);
+	assert.equal(isDismissed({ position: "a.md:0:0" }, "a.md:0:0", "w"), true);
+	assert.equal(isDismissed({ position: "a.md:0:0" }, "a.md:0:4", "w"), false);
+	const deadEnd = { position: "a.md:0:0", deadEndQuery: "hello " };
+	assert.equal(isDismissed(deadEnd, "a.md:0:0", "hello world"), true);
+	assert.equal(isDismissed(deadEnd, "a.md:0:0", "hello"), false);
 });
 
 test("a mention does not open inside a word, before a space, or without a trigger", () => {
 	assert.equal(mentionAt("mail me@home", "@"), undefined);
+	assert.deepEqual(mentionAt("@", "@"), { start: 0, query: "" });
 	assert.equal(mentionAt("meet @ wed", "@"), undefined);
 	assert.equal(mentionAt("meet wed", "@"), undefined);
 	assert.equal(mentionAt("meet @wed", ""), undefined);
@@ -134,7 +146,8 @@ test("range links are joined with the chosen separator", () => {
 	assert.equal(joinLinks(links, "commaSpace"), "[[2026-11-17]], [[2026-11-18]]");
 	assert.equal(joinLinks(links, "space"), "[[2026-11-17]] [[2026-11-18]]");
 	assert.equal(joinLinks(links, "bulletLines"), "- [[2026-11-17]]\n- [[2026-11-18]]");
-	assert.equal(joinLinks(["[[2026-11-17]]"], "bulletLines"), "- [[2026-11-17]]");
+	assert.equal(joinLinks(["[[2026-11-17]]"], "bulletLines"), "[[2026-11-17]]");
+	assert.equal(joinLinks(["[[2026-11-17]]"], "commaSpace"), "[[2026-11-17]]");
 });
 
 test("the locale week start maps to Monday or Sunday for the parser", () => {

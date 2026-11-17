@@ -11,13 +11,24 @@ const FRONTMATTER_FENCE = "---";
 
 export function mentionAt(lineBeforeCaret: string, trigger: string): MentionMatch | undefined {
 	if (!trigger) return undefined;
-	const start = lineBeforeCaret.lastIndexOf(trigger);
-	if (start < 0) return undefined;
-	const query = lineBeforeCaret.slice(start + trigger.length);
-	if (WHITESPACE.test(query[0] ?? "")) return undefined;
-	const before = lineBeforeCaret[start - 1];
-	if (before !== undefined && !WHITESPACE.test(before)) return undefined;
-	return { start, query };
+	for (let start = lineBeforeCaret.lastIndexOf(trigger); start >= 0; start = lineBeforeCaret.lastIndexOf(trigger, start - 1)) {
+		const query = lineBeforeCaret.slice(start + trigger.length);
+		const before = lineBeforeCaret[start - 1];
+		if (WHITESPACE.test(query[0] ?? "")) return undefined;
+		if (before === undefined || WHITESPACE.test(before)) return { start, query };
+		if (start === 0) return undefined;
+	}
+	return undefined;
+}
+
+export interface Dismissal {
+	position: string;
+	deadEndQuery?: string;
+}
+
+export function isDismissed(dismissal: Dismissal | undefined, position: string, query: string): boolean {
+	if (!dismissal || dismissal.position !== position) return false;
+	return dismissal.deadEndQuery === undefined || query.startsWith(dismissal.deadEndQuery);
 }
 
 export function isInCode(linesAbove: readonly string[], lineBeforeCaret: string): boolean {

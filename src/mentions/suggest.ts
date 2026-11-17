@@ -7,11 +7,12 @@ import { localeParseOptions } from "../obsidianParseOptions.ts";
 import { markdownLinkTo } from "./obsidianHost.ts";
 import { aliasOf, buildRows, joinLinks, mentionAllows, rowLabel } from "./rows.ts";
 import type { DateRow } from "./rows.ts";
-import { isDeadEnd, isInCode, mentionAt } from "./trigger.ts";
+import { isDeadEnd, isDismissed, isInCode, mentionAt } from "./trigger.ts";
+import type { Dismissal } from "./trigger.ts";
 
 export class DateMentionSuggest extends EditorSuggest<DateRow> {
 	private readonly settings: () => DateCompassSettings;
-	private dismissedAt: string | undefined;
+	private dismissal: Dismissal | undefined;
 	private rows: DateRow[] = [];
 
 	constructor(app: App, settings: () => DateCompassSettings) {
@@ -25,17 +26,18 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 		if (!mentions.enabled || !file) return null;
 		const lineBeforeCaret = editor.getLine(cursor.line).slice(0, cursor.ch);
 		const match = mentionAt(lineBeforeCaret, mentions.trigger);
+		this.rows = [];
 		if (!match) {
-			this.dismissedAt = undefined;
+			this.dismissal = undefined;
 			return null;
 		}
 		const start = { line: cursor.line, ch: match.start };
 		const position = positionKey(file, start);
-		if (position === this.dismissedAt) return null;
+		if (isDismissed(this.dismissal, position, match.query)) return null;
 		if (isInCode(linesAbove(editor, cursor.line), lineBeforeCaret)) return null;
 		const rows = this.rowsFor(match.query);
 		if (isDeadEnd(match.query, (text) => (text === match.query ? rows : this.rowsFor(text)).length > 0)) {
-			this.dismissedAt = position;
+			this.dismissal = { position, deadEndQuery: match.query };
 			return null;
 		}
 		this.rows = rows;
@@ -58,7 +60,7 @@ export class DateMentionSuggest extends EditorSuggest<DateRow> {
 
 	close(): void {
 		const context = this.context;
-		if (context && this.isStillTyped(context)) this.dismissedAt = positionKey(context.file, context.start);
+		if (context && this.rows.length > 0 && this.isStillTyped(context)) this.dismissal = { position: positionKey(context.file, context.start) };
 		this.finish();
 	}
 
