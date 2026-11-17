@@ -3,6 +3,7 @@ import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, PARSER_LANGUAGES, WEEK_STARTS 
 import type { DateCompassSettings, ParserLanguage } from "../settings.ts";
 import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } from "../dateNotes/periods.ts";
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
+import { ALIAS_MODES, LINK_SEPARATORS, withoutWhitespace } from "../mentions/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
 
@@ -11,6 +12,28 @@ export const NEXT_WEEKDAY_KEY = "nextWeekday";
 export const DAY_MONTH_ORDER_KEY = "dayMonthOrder";
 
 export const TEMPLATE_RUNNER_KEY = "dateNotes/templateRunner";
+
+export const MENTIONS_ENABLED_KEY = "mentions/enabled";
+
+export const MENTIONS_TRIGGER_KEY = "mentions/trigger";
+
+export const MENTIONS_ALIAS_MODE_KEY = "mentions/aliasMode";
+
+export const MENTIONS_ALIAS_FORMAT_KEY = "mentions/aliasFormat";
+
+export const MENTIONS_SEPARATOR_KEY = "mentions/separator";
+
+const MENTION_PERIOD_KEY_PREFIX = "mentions/periods/";
+
+export function mentionPeriodKey(period: Period): string {
+	return `${MENTION_PERIOD_KEY_PREFIX}${period}`;
+}
+
+function mentionPeriodOfKey(key: string): Period | undefined {
+	if (!key.startsWith(MENTION_PERIOD_KEY_PREFIX)) return undefined;
+	const period = key.slice(MENTION_PERIOD_KEY_PREFIX.length);
+	return isPeriod(period) ? period : undefined;
+}
 
 const LANGUAGE_KEY_PREFIX = "languages/";
 
@@ -46,6 +69,13 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === TEMPLATE_RUNNER_KEY) return settings.dateNotes.templateRunner;
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
+	if (key === MENTIONS_ENABLED_KEY) return settings.mentions.enabled;
+	if (key === MENTIONS_TRIGGER_KEY) return settings.mentions.trigger;
+	if (key === MENTIONS_ALIAS_MODE_KEY) return settings.mentions.aliasMode;
+	if (key === MENTIONS_ALIAS_FORMAT_KEY) return settings.mentions.aliasFormat;
+	if (key === MENTIONS_SEPARATOR_KEY) return settings.mentions.separator;
+	const mentionPeriod = mentionPeriodOfKey(key);
+	if (mentionPeriod) return settings.mentions.periods[mentionPeriod];
 	return undefined;
 }
 
@@ -62,7 +92,36 @@ export function writeControl(settings: DateCompassSettings, key: string, value: 
 	if (key === TEMPLATE_RUNNER_KEY) return writeChoice(TEMPLATE_RUNNER_CHOICES, value, (choice) => (settings.dateNotes.templateRunner = choice));
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return writePeriodField(settings, periodField.period, periodField.field, value);
+	return writeMentionControl(settings, key, value);
+}
+
+function writeMentionControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
+	const { mentions } = settings;
+	if (key === MENTIONS_ALIAS_MODE_KEY) return writeChoice(ALIAS_MODES, value, (choice) => (mentions.aliasMode = choice));
+	if (key === MENTIONS_SEPARATOR_KEY) return writeChoice(LINK_SEPARATORS, value, (choice) => (mentions.separator = choice));
+	const mentionPeriod = mentionPeriodOfKey(key);
+	if (key === MENTIONS_ENABLED_KEY || mentionPeriod) {
+		if (typeof value !== "boolean") return false;
+		if (mentionPeriod) mentions.periods[mentionPeriod] = value;
+		else mentions.enabled = value;
+		return true;
+	}
+	if (typeof value !== "string") return false;
+	if (key === MENTIONS_TRIGGER_KEY) {
+		if (triggerError(value)) return false;
+		mentions.trigger = withoutWhitespace(value);
+		return true;
+	}
+	if (key === MENTIONS_ALIAS_FORMAT_KEY) {
+		if (formatError(value)) return false;
+		mentions.aliasFormat = value.trim();
+		return true;
+	}
 	return false;
+}
+
+export function triggerError(value: string): string | undefined {
+	return withoutWhitespace(value) === "" ? t("triggerRequired") : undefined;
 }
 
 function writePeriodField(settings: DateCompassSettings, period: Period, field: PeriodField, value: unknown): boolean {

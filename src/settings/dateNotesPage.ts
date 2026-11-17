@@ -6,7 +6,7 @@ import { PERIODS } from "../dateNotes/periods.ts";
 import type { Period, TemplateRunnerChoice } from "../dateNotes/periods.ts";
 import { TEMPLATE_RUNNER_KEY, formatError, periodKey } from "./controlKeys.ts";
 
-const PERIOD_LABELS: Record<Period, TranslationKey> = {
+export const PERIOD_LABELS: Record<Period, TranslationKey> = {
 	day: "periodDay",
 	week: "periodWeek",
 	month: "periodMonth",

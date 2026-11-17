@@ -1,5 +1,5 @@
 import { Notice } from "obsidian";
-import type { Plugin } from "obsidian";
+import type { App, Plugin } from "obsidian";
 import { t } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { ensureDateNote } from "./create.ts";
@@ -17,17 +17,19 @@ const CURRENT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey
 	year: { id: "open-this-year", name: "openThisYearNote" },
 };
 
+export async function openDateNote(app: App, settings: DateNotesSettings, date: Moment, period: Period): Promise<void> {
+	try {
+		const path = await ensureDateNote(createDateNoteHost(app), settings, date, period);
+		const file = path ? app.vault.getFileByPath(path) : null;
+		if (file) await app.workspace.getLeaf(false).openFile(file);
+	} catch (error) {
+		new Notice(t("openDateNoteFailed", { error: error instanceof Error ? error.message : String(error) }));
+	}
+}
+
 export function registerDateNoteCommands(plugin: Plugin, settings: () => DateNotesSettings): void {
 	const { app } = plugin;
-	const openNote = async (date: Moment, period: Period) => {
-		try {
-			const path = await ensureDateNote(createDateNoteHost(app), settings(), date, period);
-			const file = path ? app.vault.getFileByPath(path) : null;
-			if (file) await app.workspace.getLeaf(false).openFile(file);
-		} catch (error) {
-			new Notice(t("openDateNoteFailed", { error: error instanceof Error ? error.message : String(error) }));
-		}
-	};
+	const openNote = (date: Moment, period: Period) => openDateNote(app, settings(), date, period);
 	for (const period of PERIODS) {
 		const { id, name } = CURRENT_PERIOD_COMMANDS[period];
 		plugin.addCommand({

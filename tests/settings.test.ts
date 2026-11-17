@@ -1,7 +1,21 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
-import { TEMPLATE_RUNNER_KEY, languageKey, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import {
+	MENTIONS_ALIAS_FORMAT_KEY,
+	MENTIONS_ALIAS_MODE_KEY,
+	MENTIONS_ENABLED_KEY,
+	MENTIONS_SEPARATOR_KEY,
+	MENTIONS_TRIGGER_KEY,
+	TEMPLATE_RUNNER_KEY,
+	languageKey,
+	mentionPeriodKey,
+	periodKey,
+	readControl,
+	writeControl,
+} from "../src/settings/controlKeys.ts";
+import { mergeMentions } from "../src/mentions/settings.ts";
+import { sameTriggerWarning } from "../src/settings/mentionsPage.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
 
 test("a fresh install gets the defaults, with English as the only parser language", () => {
@@ -21,6 +35,14 @@ test("a fresh install gets the defaults, with English as the only parser languag
 				year: { enabled: true, folder: "", format: "YYYY", template: "" },
 			},
 		},
+		mentions: {
+			enabled: true,
+			trigger: "@",
+			periods: { day: true, week: true, month: true, quarter: true, year: true },
+			aliasMode: "none",
+			aliasFormat: "ddd D MMM",
+			separator: "commaSpace",
+		},
 	});
 });
 
@@ -36,6 +58,7 @@ test("stored partial settings merge over the defaults", () => {
 		nextWeekday: "nextWeek",
 		dayMonthOrder: "monthDay",
 		dateNotes: defaultDateNotes(),
+		mentions: mergeMentions(undefined),
 	});
 });
 
@@ -84,7 +107,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes() });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: mergeMentions(undefined) });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });
@@ -101,4 +124,32 @@ test("settings controls read and write the settings they name", () => {
 	assert.equal(writeControl(settings, "weekStart", "friday"), false);
 	assert.equal(writeControl(settings, "unknown", "x"), false);
 	assert.equal(readControl(settings, "weekStart"), "monday");
+});
+
+test("every Mentions control reads and writes its setting and refuses bad values", () => {
+	const settings = defaultSettings();
+	assert.equal(writeControl(settings, MENTIONS_ENABLED_KEY, false), true);
+	assert.equal(readControl(settings, MENTIONS_ENABLED_KEY), false);
+	assert.equal(writeControl(settings, MENTIONS_TRIGGER_KEY, " ; ; "), true);
+	assert.equal(readControl(settings, MENTIONS_TRIGGER_KEY), ";;");
+	assert.equal(writeControl(settings, MENTIONS_TRIGGER_KEY, "  "), false);
+	assert.equal(settings.mentions.trigger, ";;");
+	assert.equal(writeControl(settings, mentionPeriodKey("week"), false), true);
+	assert.equal(readControl(settings, mentionPeriodKey("week")), false);
+	assert.equal(writeControl(settings, mentionPeriodKey("week"), "no"), false);
+	assert.equal(writeControl(settings, MENTIONS_ALIAS_MODE_KEY, "format"), true);
+	assert.equal(readControl(settings, MENTIONS_ALIAS_MODE_KEY), "format");
+	assert.equal(writeControl(settings, MENTIONS_ALIAS_MODE_KEY, "bogus"), false);
+	assert.equal(writeControl(settings, MENTIONS_ALIAS_FORMAT_KEY, " D MMM "), true);
+	assert.equal(readControl(settings, MENTIONS_ALIAS_FORMAT_KEY), "D MMM");
+	assert.equal(writeControl(settings, MENTIONS_ALIAS_FORMAT_KEY, " "), false);
+	assert.equal(writeControl(settings, MENTIONS_SEPARATOR_KEY, "bulletLines"), true);
+	assert.equal(readControl(settings, MENTIONS_SEPARATOR_KEY), "bulletLines");
+	assert.equal(writeControl(settings, MENTIONS_SEPARATOR_KEY, "tab"), false);
+	assert.equal(mergeSettings(JSON.parse(JSON.stringify(settings))).mentions.separator, "bulletLines");
+});
+
+test("the Mentions page warns only when another plugin shares the trigger", () => {
+	assert.equal(sameTriggerWarning([]), undefined);
+	assert.match(sameTriggerWarning(["Natural Language Dates", "Date List"]) ?? "", /Natural Language Dates, Date List also suggests/);
 });

@@ -5,12 +5,24 @@ import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import { PARSER_LANGUAGES } from "./settings.ts";
 import type { DayMonthOrder, NextWeekdayMeaning, ParserLanguage, WeekStart } from "./settings.ts";
-import { DAY_MONTH_ORDER_KEY, NEXT_WEEKDAY_KEY, WEEK_START_KEY, languageKey, readControl, writeControl } from "./settings/controlKeys.ts";
+import {
+	DAY_MONTH_ORDER_KEY,
+	MENTIONS_ALIAS_MODE_KEY,
+	MENTIONS_ENABLED_KEY,
+	NEXT_WEEKDAY_KEY,
+	WEEK_START_KEY,
+	languageKey,
+	readControl,
+	writeControl,
+} from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup } from "./settings/dateNotesPage.ts";
 import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
 import { enabledExternalDateNotes } from "./dateNotes/obsidianHost.ts";
+import { mentionGroups } from "./settings/mentionsPage.ts";
+import { sameTriggerPlugins } from "./mentions/conflicts.ts";
+import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
 
 const LANGUAGE_NAMES: Record<ParserLanguage, TranslationKey> = {
 	en: "languageEnglish",
@@ -32,6 +44,8 @@ const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
 	dayMonth: "dayMonthOrderDayMonth",
 	monthDay: "dayMonthOrderMonthDay",
 };
+
+const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, MENTIONS_ALIAS_MODE_KEY];
 
 function sectionPage(name: TranslationKey, desc: TranslationKey, items: SettingDefinitionItem[] = []): SettingDefinitionPage {
 	return { type: "page", name: t(name), desc: t(desc), items };
@@ -80,7 +94,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 				type: "group",
 				items: [
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
-					sectionPage("mentionsSection", "mentionsSectionDesc"),
+					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
 					sectionPage("insertSequenceSection", "insertSequenceSectionDesc"),
 					sectionPage("actionsSection", "actionsSectionDesc"),
 				],
@@ -110,6 +124,11 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		return [...mismatchGroups(mismatches, (source) => void this.copyDateNotesFrom(source)), templateRunnerGroup(), ...periodGroups()];
 	}
 
+	private mentionsItems(): SettingDefinitionItem[] {
+		const sameTrigger = sameTriggerPlugins(this.plugin.settings.mentions.trigger, enabledPluginsWithTriggers(this.app));
+		return mentionGroups(() => this.plugin.settings.mentions, sameTrigger);
+	}
+
 	private async copyDateNotesFrom(source: DateNoteSource): Promise<void> {
 		if (!copyFromSource(this.plugin.settings.dateNotes, source, enabledExternalDateNotes(this.app))) return;
 		await this.plugin.saveSettings();
@@ -123,6 +142,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		if (!writeControl(this.plugin.settings, key, value)) return;
 		await this.plugin.saveSettings();
+		if (CONTROLS_THAT_SHOW_OR_HIDE_ITEMS.includes(key)) this.update();
 	}
 
 	private async resetSettings(): Promise<void> {
