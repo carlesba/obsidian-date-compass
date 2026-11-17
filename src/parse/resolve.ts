@@ -102,19 +102,26 @@ function resolveEvery(node: EveryNode, today: CivilDate, options: ParseOptions):
 	}
 	const weekdays = new Set(pattern.weekdays);
 	const weekStep = pattern.weekStep ?? 1;
+	const firstWeek = startOfWeek(today, options);
 	let day = today;
 	return sequenceOf(collect((index) => {
-		while (!weekdays.has(weekdayOf(day)) || Math.floor(daysBetween(today, day) / 7) % weekStep !== 0) day = addDays(day, 1);
+		while (!weekdays.has(weekdayOf(day)) || Math.floor(daysBetween(firstWeek, day) / 7) % weekStep !== 0) day = addDays(day, 1);
 		const date = day;
 		day = addDays(day, 1);
 		return accepts(date, index) ? daySpan(date) : undefined;
 	}));
 }
 
+function untilDate(node: DateNode, today: CivilDate, options: ParseOptions): CivilDate | undefined {
+	const end = resolveDate(node, today, options);
+	if (!end || daysBetween(today, end) >= 0 || !(node.kind === "calendar" || node.kind === "numeric") || node.year !== undefined) return end;
+	return resolveDate({ ...node, year: today.year + 1 }, today, options);
+}
+
 function acceptance(bound: EveryNode["bound"], today: CivilDate, options: ParseOptions): ((date: CivilDate, index: number) => boolean) | undefined {
 	if ("times" in bound) return (_date, index) => index < bound.times;
 	if ("until" in bound) {
-		const end = resolveDate(bound.until, today, options);
+		const end = untilDate(bound.until, today, options);
 		return end && ((date) => daysBetween(date, end) >= 0);
 	}
 	const windowEnd = addUnits(today, bound.for.amount, bound.for.unit);

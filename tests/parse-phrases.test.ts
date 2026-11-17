@@ -101,3 +101,15 @@ test("typing a weekday and a count offers the units", () => {
 test("a phrase that already parses gets no hints", () => {
 	assert.deepEqual(complete("every wed for 5 weeks", NOW, optionsFor("en")), []);
 });
+
+test("a yearless end date already past this year ends next year", () => {
+	const lateDecember = new Date(2026, 11, 25, 12, 0);
+	for (const [language, input] of [["en", "every wed until jan 10"], ["es", "cada miércoles hasta el 10 de enero"]]) {
+		const dates = parse(input, lateDecember, optionsFor(language)).map((interpretation) => itemsOf(interpretation.result).map((item) => item.start));
+		assert.deepEqual(dates, [["2026-12-30", "2027-01-06"]], input);
+	}
+});
+
+test("every other counts weeks from the start of the current week", () => {
+	assert.deepEqual(starts("every other mon, wed for 4 weeks", "en"), [["2026-11-18", "2026-11-30", "2026-12-02", "2026-12-14"]]);
+});
