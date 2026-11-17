@@ -1,4 +1,4 @@
-import { dateOf, fourDigitNumber, monthOf, numberOf, phrase, relativeDayOf, token, unitOf, weekdayOf } from "../shape.ts";
+import { dateOf, fourDigitNumber, monthOf, numberOf, phrase, relativeDayOf, symbol, token, unitOf, weekdayOf } from "../shape.ts";
 import type { Language, LexiconEntry, Shape, Weekday } from "../types.ts";
 
 const weekdays: Array<[Weekday, string[]]> = [
@@ -98,6 +98,16 @@ const shapes: Shape[] = [
 		produces: "date",
 		elements: [token("number"), token("unit")],
 		build: ([amount, unit]) => ({ kind: "day", amount: numberOf(amount), unit: unitOf(unit) }),
+	},
+	{
+		produces: "date",
+		elements: [symbol("+"), token("number"), token("unit")],
+		build: ([, amount, unit]) => ({ kind: "day", amount: numberOf(amount), unit: unitOf(unit) }),
+	},
+	{
+		produces: "date",
+		elements: [symbol("-"), token("number"), token("unit")],
+		build: ([, amount, unit]) => ({ kind: "day", amount: -numberOf(amount), unit: unitOf(unit) }),
 	},
 	{
 		produces: "date",

@@ -180,3 +180,20 @@ test("nothing completes after a space or a digit", () => {
 	assert.deepEqual(completions("next "), []);
 	assert.deepEqual(completions("dec 3"), []);
 });
+
+const unitSpellings: Array<[string[], string]> = [
+	[["d", "day", "days"], "2026-11-18"],
+	[["w", "wk", "week", "weeks"], "2026-11-24"],
+	[["m", "mo", "month", "months"], "2026-12-17"],
+	[["q", "quarter", "quarters"], "2027-02-17"],
+	[["y", "yr", "year", "years"], "2027-11-17"],
+];
+
+for (const [spellings, expected] of unitSpellings) {
+	test(`units: ${spellings.join(" ")} each shift one unit to ${expected}`, () => {
+		for (const spelling of spellings) {
+			assert.deepEqual(results(`1 ${spelling}`), [expected], `1 ${spelling}`);
+			assert.deepEqual(results(`+1${spelling}`), [expected], `+1${spelling}`);
+		}
+	});
+}
