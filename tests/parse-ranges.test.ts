@@ -56,7 +56,8 @@ const variants: Row[] = [
 	{ input: "fri to today", unit: "day", starts: todayToFriday },
 	{ input: "dec 3 to nov 20", unit: "day", starts: days("2026-11-20", 14) },
 	{ input: "2026-11-20 - 2026-11-17", unit: "day", starts: todayToFriday },
-	{ input: "W50 to W48", unit: "week", starts: ["2026-11-23", "2026-11-30", "2026-12-07"] },
+	{ input: "W50 to W48", unit: "week", starts: ["2026-11-23", "2026-11-30", "2026-12-07"], options: MONDAY },
+	{ input: "W50 to W48", unit: "week", starts: ["2026-11-22", "2026-11-29", "2026-12-06"], options: SUNDAY },
 	{ input: "from march to may", unit: "month", starts: ["2026-03-01", "2026-04-01", "2026-05-01"] },
 	{ input: "Q1..Q2", unit: "quarter", starts: ["2026-01-01", "2026-04-01"] },
 	{ input: "today to tue", unit: "day", starts: days("2026-11-17", 8) },
@@ -94,6 +95,8 @@ test("a range carries its envelope span and every item", () => {
 	const [weeks] = parse("W48 to W50", NOW);
 	assert.deepEqual(weeks.result.span, { unit: "week", start: "2026-11-23", end: "2026-12-13" });
 	assert.deepEqual(itemsOf(weeks.result)[0], { unit: "week", start: "2026-11-23", end: "2026-11-29" });
+	const [sundayWeeks] = parse("W48 to W50", NOW, { ...DEFAULT_PARSE_OPTIONS, ...SUNDAY });
+	assert.deepEqual(sundayWeeks.result.span, { unit: "week", start: "2026-11-22", end: "2026-12-12" });
 });
 
 test("single dates and periods stay single results", () => {
@@ -121,7 +124,7 @@ test(`a sequence of up to ${SEQUENCE_LIMIT} items is produced`, () => {
 	assert.equal(itemsOf(parse("today to 2027-11-17", NOW)[0].result).length, 366);
 });
 
-for (const input of ["next 367 days", "every day 400 times", "every mon for 10 years", "every day for 2 years", "today to 2027-11-18", "2027-11-18 to today"]) {
+for (const input of ["next 367 days", "every day 400 times", "every mon for 10 years", "every day for 2 years", "today to 2027-11-18", "2027-11-18 to today", "2019-W01 to 2026-W48", "2026-W48 to 2019-W01", "from 1990 to 2400"]) {
 	test(`a sequence longer than ${SEQUENCE_LIMIT} items is refused: ${input}`, () => {
 		assert.deepEqual(parse(input, NOW), []);
 		const analysis = parseWithRefusals(input, NOW);
