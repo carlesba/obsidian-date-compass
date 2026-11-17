@@ -7,6 +7,10 @@ import { PARSER_LANGUAGES } from "./settings.ts";
 import type { DayMonthOrder, NextWeekdayMeaning, ParserLanguage, WeekStart } from "./settings.ts";
 import { DAY_MONTH_ORDER_KEY, NEXT_WEEKDAY_KEY, WEEK_START_KEY, languageKey, readControl, writeControl } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
+import { mismatchGroups, periodGroups, templateRunnerGroup } from "./settings/dateNotesPage.ts";
+import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
+import type { DateNoteSource } from "./dateNotes/import.ts";
+import { enabledExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 
 const LANGUAGE_NAMES: Record<ParserLanguage, TranslationKey> = {
 	en: "languageEnglish",
@@ -29,8 +33,8 @@ const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
 	monthDay: "dayMonthOrderMonthDay",
 };
 
-function sectionPage(name: TranslationKey, desc: TranslationKey): SettingDefinitionPage {
-	return { type: "page", name: t(name), desc: t(desc), items: [] };
+function sectionPage(name: TranslationKey, desc: TranslationKey, items: SettingDefinitionItem[] = []): SettingDefinitionPage {
+	return { type: "page", name: t(name), desc: t(desc), items };
 }
 
 export class DateCompassSettingTab extends PluginSettingTab {
@@ -75,7 +79,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 			{
 				type: "group",
 				items: [
-					sectionPage("dateNotesSection", "dateNotesSectionDesc"),
+					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc"),
 					sectionPage("insertSequenceSection", "insertSequenceSectionDesc"),
 					sectionPage("actionsSection", "actionsSectionDesc"),
@@ -99,6 +103,17 @@ export class DateCompassSettingTab extends PluginSettingTab {
 				],
 			},
 		];
+	}
+
+	private dateNotesItems(): SettingDefinitionItem[] {
+		const mismatches = dateNoteMismatches(this.plugin.settings.dateNotes, enabledExternalDateNotes(this.app));
+		return [...mismatchGroups(mismatches, (source) => void this.copyDateNotesFrom(source)), templateRunnerGroup(), ...periodGroups()];
+	}
+
+	private async copyDateNotesFrom(source: DateNoteSource): Promise<void> {
+		if (!copyFromSource(this.plugin.settings.dateNotes, source, enabledExternalDateNotes(this.app))) return;
+		await this.plugin.saveSettings();
+		this.update();
 	}
 
 	getControlValue(key: string): unknown {

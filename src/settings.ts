@@ -1,3 +1,6 @@
+import { mergeDateNotes } from "./dateNotes/periods.ts";
+import type { DateNotesSettings } from "./dateNotes/periods.ts";
+
 export const PARSER_LANGUAGES = ["en", "es"] as const;
 export type ParserLanguage = (typeof PARSER_LANGUAGES)[number];
 
@@ -15,6 +18,7 @@ export interface DateCompassSettings {
 	weekStart: WeekStart;
 	nextWeekday: NextWeekdayMeaning;
 	dayMonthOrder: DayMonthOrder;
+	dateNotes: DateNotesSettings;
 }
 
 export function isParserLanguage(value: unknown): value is ParserLanguage {
@@ -36,6 +40,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		weekStart: oneOf(WEEK_STARTS, data.weekStart, "locale"),
 		nextWeekday: oneOf(NEXT_WEEKDAY_MEANINGS, data.nextWeekday, "nextWeek"),
 		dayMonthOrder: oneOf(DAY_MONTH_ORDERS, data.dayMonthOrder, "dayMonth"),
+		dateNotes: mergeDateNotes(data.dateNotes),
 	};
 }
 
