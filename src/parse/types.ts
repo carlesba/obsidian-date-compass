@@ -110,7 +110,7 @@ export interface Language {
 	id: string;
 	lexicon: LexiconEntry[];
 	shapes: Shape[];
-	hintWords: HintWords;
+	hintWords?: HintWords;
 }
 
 export interface ParseOptions {

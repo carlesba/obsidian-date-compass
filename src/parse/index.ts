@@ -23,7 +23,7 @@ interface Parser {
 
 function parserFor(options: ParseOptions): Parser {
 	const languages = options.languages.map((id) => LANGUAGES[id]).filter((language): language is Language => language !== undefined);
-	return { grammar: { shared, languages }, index: indexLexicons([shared, ...languages]), hintWords: languages.map((language) => language.hintWords) };
+	return { grammar: { shared, languages }, index: indexLexicons([shared, ...languages]), hintWords: languages.flatMap((language) => (language.hintWords ? [language.hintWords] : [])) };
 }
 
 export function parse(text: string, now: Date, options: ParseOptions = DEFAULT_PARSE_OPTIONS): Interpretation[] {
