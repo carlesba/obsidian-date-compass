@@ -36,6 +36,7 @@ export abstract class ChoosingSuggestModal<Choice> extends SuggestModal<Choice> 
 
 export interface NotePickerOptions {
 	placeholder: string;
+	note?: string;
 	choose: (row: DateRow) => void;
 	dismissed?: () => void;
 }
@@ -49,6 +50,7 @@ export class DateNotePickerModal extends ChoosingSuggestModal<DateRow> {
 		this.settings = settings;
 		this.options = options;
 		this.setPlaceholder(options.placeholder);
+		if (options.note) this.resultContainerEl.before(createDiv({ cls: "date-compass-picker-note", text: options.note }));
 		this.emptyStateText = t("phraseNoMatch");
 	}
 

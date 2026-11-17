@@ -113,3 +113,19 @@ test("a yearless end date already past this year ends next year", () => {
 test("every other counts weeks from the start of the current week", () => {
 	assert.deepEqual(starts("every other mon, wed for 4 weeks", "en"), [["2026-11-18", "2026-11-30", "2026-12-02", "2026-12-14"]]);
 });
+
+test("every other counts weeks from the start of the week the settings name", () => {
+	const sundayStart = { ...optionsFor("en"), weekStart: "sunday" };
+	const dates = parse("every other sun, mon for 5 weeks", NOW, sundayStart).map((interpretation) => itemsOf(interpretation.result).map((item) => item.start));
+	assert.deepEqual(dates, [["2026-11-29", "2026-11-30", "2026-12-13", "2026-12-14"]]);
+});
+
+test("a numeric end date already past this year ends next year", () => {
+	const dayFirst = { ...optionsFor("en"), dayMonthOrder: "dayMonth" };
+	const [dates] = parse("every wed until 10/11", NOW, dayFirst).map((interpretation) => itemsOf(interpretation.result).map((item) => item.start));
+	assert.equal(dates[dates.length - 1], "2027-11-10");
+});
+
+test("an end date that is today does not roll to next year", () => {
+	assert.deepEqual(starts("every day until nov 17", "en"), [["2026-11-17"]]);
+});

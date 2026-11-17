@@ -243,7 +243,8 @@ como comando y un lápiz para editarla. Arrastra una fila para reordenarla, bór
 - **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta. Su valor se
   sustituye.
 - **Qué pide**: **Una fecha** admite una frase de una nota de cualquier periodo activado y muestra
-  en su cuadro "La fecha sustituirá el valor de la propiedad «{name}»." **Fechas** abre un
+  en su cuadro la pregunta «¿Qué fecha para {name}?» como texto de ayuda, y encima de los resultados
+  la frase "La fecha sustituirá el valor de la propiedad «{name}».", que no desaparece al escribir. **Fechas** abre un
   cuadro como el de Insertar fechas, «¿Qué fechas para {name}?», para cualquier rango, secuencia o
   lista, dice "Las fechas sustituirán el
   valor de la propiedad «{name}»." y escribe todas las fechas.

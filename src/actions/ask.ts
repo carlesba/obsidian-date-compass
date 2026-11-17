@@ -8,6 +8,7 @@ import { DatesModal } from "../sequence/modal.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { actionWarning, questionOf } from "./settings.ts";
 import type { DateAction } from "./settings.ts";
+import { pickerTextOf } from "./pickerText.ts";
 import { propertyWidgetOf } from "./propertyType.ts";
 import { propertyKind, valueToWrite } from "./value.ts";
 
@@ -35,7 +36,7 @@ function askForNotes(app: App, settings: () => DateCompassSettings, action: Date
 			return;
 		}
 		new DateNotePickerModal(app, settings, {
-			placeholder: `${questionOf(action)} ${t("dateReplacesProperty", { name: action.property.trim() })}`,
+			...pickerTextOf(action),
 			choose: (row) => answer(row.notes),
 			dismissed,
 		}).openWithQuery("");

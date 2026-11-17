@@ -297,3 +297,17 @@ test("only the stored v1 preset is renamed, not a custom action that shares its 
 	const custom = { ...v1AddDates, id: "mine" };
 	assert.deepEqual(mergeActions([custom]).map((action) => action.name), ["Add dates"]);
 });
+
+test("the One date picker asks the question as placeholder and keeps the replace sentence as its own text", async () => {
+	const { setLanguage, DEFAULT_LANGUAGE } = await import("../src/i18n/index.ts");
+	const { pickerTextOf } = await import("../src/actions/pickerText.ts");
+	const action = { ...newAction([]), property: " due ", asks: "date" as const };
+	try {
+		setLanguage("en");
+		assert.deepEqual(pickerTextOf(action), { placeholder: "Which date for due?", note: "The date will replace the value of the property due." });
+		setLanguage("es");
+		assert.deepEqual(pickerTextOf(action), { placeholder: "¿Qué fecha para due?", note: "La fecha sustituirá el valor de la propiedad «due»." });
+	} finally {
+		setLanguage(DEFAULT_LANGUAGE);
+	}
+});

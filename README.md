@@ -233,7 +233,8 @@ creates one. An action page has:
 - **Property to set**: the property of the current note that receives the answer. Its value is
   replaced.
 - **What it asks for**: **One date** takes a phrase for one note of any enabled period, and shows
-  the sentence "The date will replace the value of the property {name}." in its box. **Dates**
+  its question, "Which date for {name}?", as the box's placeholder, and the sentence "The date will replace the value of the property {name}."
+  as text above the results, which stays while you type. **Dates**
   opens a box like Insert dates, "Which dates for {name}?", for any range, sequence or list, says "Dates will replace the value of
   the property {name}." and writes every date.
 - **Each date as link**: on writes each date as a link. Off writes plain text in the format of the

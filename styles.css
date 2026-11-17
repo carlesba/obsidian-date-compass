@@ -48,3 +48,10 @@
 	font-size: var(--font-smaller);
 	color: var(--text-faint);
 }
+
+.date-compass-picker-note {
+	padding: var(--size-4-2) var(--size-4-4);
+	color: var(--text-muted);
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
