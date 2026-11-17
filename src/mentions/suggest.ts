@@ -4,6 +4,7 @@ import { t } from "../i18n/index.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
+import { addDatesToProperty, destinationInActiveEditor, noticeNoProperty } from "../insertion/obsidianHost.ts";
 import { insertionLinks, usesAlias } from "../insertion/render.ts";
 import { insertLinks } from "../sequence/preview.ts";
 import { openInsertDatesModal } from "../sequence/modal.ts";
@@ -102,13 +103,18 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 	}
 
 	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext, flippingAlias: boolean): void {
+		const destination = destinationInActiveEditor(editor);
+		if (destination.kind === "frontmatterWithoutProperty") return noticeNoProperty();
+		if (destination.kind === "property") return addDatesToProperty(this.app, editor, file, destination.name, row.notes, { start, end });
 		const { insertion } = this.settings();
 		const links = insertionLinks(row.notes, row.text, insertion, usesAlias(insertion, flippingAlias), (note, alias) => markdownLinkTo(this.app, note.path, file.path, alias));
 		insertLinks(editor, links, insertion.separator, { start, end });
 	}
 
 	private openDatesModal({ editor, file, start, end, query }: EditorSuggestContext): void {
-		openInsertDatesModal(this.settings, { app: this.app, editor, file, destination: { kind: "body" }, range: { start, end } }, query);
+		const destination = destinationInActiveEditor(editor);
+		if (destination.kind === "frontmatterWithoutProperty") return noticeNoProperty();
+		openInsertDatesModal(this.settings, { app: this.app, editor, file, destination, range: { start, end } }, query);
 	}
 
 	private showInstructions(): void {

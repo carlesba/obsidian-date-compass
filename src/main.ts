@@ -47,11 +47,9 @@ export default class DateCompassPlugin extends Plugin {
 			id: "insert-date-sequence",
 			name: t("insertDates"),
 			editorCallback: (editor, context) => {
-				const { file } = context;
-				if (!file) return;
 				const destination = destinationInActiveEditor(editor);
 				if (destination.kind === "frontmatterWithoutProperty") noticeNoProperty();
-				else openInsertDatesModal(() => this.settings, { app: this.app, editor, file, destination }, "");
+				else openInsertDatesModal(() => this.settings, { app: this.app, editor, file: context.file ?? undefined, destination }, "");
 			},
 		});
 		this.registerEditorSuggest(new DateMentionSuggest(this.app, () => this.settings));

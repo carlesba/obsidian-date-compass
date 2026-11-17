@@ -106,6 +106,7 @@ export const en = {
 	aliasFormatSetting: "Date format of the link text",
 	aliasFormatSettingDesc: "A moment.js format, such as ddd D MMM.",
 	insertDates: "Insert dates",
+	datesToProperty: "Dates will be added to the property {name}.",
 	withAlias: "With link text",
 	withAliasDesc: "Show a link text instead of the note name.",
 	datesDone: "Done",

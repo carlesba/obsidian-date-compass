@@ -2,7 +2,8 @@ import { Modal, Setting } from "obsidian";
 import type { App, Editor, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
-import { addDatesToProperty, noticePropertyNotWritten, obsidianLinks } from "../insertion/obsidianHost.ts";
+import { addDatesToProperty, obsidianLinks } from "../insertion/obsidianHost.ts";
+import { effectiveDestination } from "../insertion/destination.ts";
 import type { DatesDestination } from "../insertion/destination.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import type { DateCompassSettings } from "../settings.ts";
@@ -13,7 +14,7 @@ export interface DatesQuestion {
 	title: string;
 	initialText: string;
 	optional: boolean;
-	acceptLabel?: string;
+	propertyName?: string;
 	links?: (notes: NoteRef[], phrase: string, withAlias: boolean) => string[];
 	withAliasInitially?: boolean;
 }
@@ -41,6 +42,7 @@ export class DatesModal extends Modal {
 		this.setTitle(this.question.title);
 		this.modalEl.addClass("date-compass-dates-modal");
 		const input = this.contentEl.createEl("input", { type: "text", cls: "date-compass-dates-input", attr: { placeholder: t("sequencePlaceholder") } });
+		if (this.question.propertyName !== undefined) this.contentEl.createDiv({ cls: "date-compass-dates-property", text: t("datesToProperty", { name: this.question.propertyName }) });
 		const previewEl = this.contentEl.createDiv({ cls: "date-compass-dates-reading" });
 		const linksEl = this.contentEl.createDiv({ cls: "date-compass-dates-links" });
 		const showPreview = () => {
@@ -56,7 +58,7 @@ export class DatesModal extends Modal {
 				}),
 			);
 		}
-		new Setting(this.contentEl).addButton((button) => button.setButtonText(this.question.acceptLabel ?? t("datesDone")).setCta().onClick(() => this.submit(input.value, this.withAlias)));
+		new Setting(this.contentEl).addButton((button) => button.setButtonText(t("datesDone")).setCta().onClick(() => this.submit(input.value, this.withAlias)));
 		input.value = this.question.initialText;
 		showPreview();
 		input.addEventListener("input", showPreview);
@@ -86,25 +88,26 @@ export class DatesModal extends Modal {
 export interface InsertDatesTarget {
 	app: App;
 	editor: Editor;
-	file: TFile;
+	file?: TFile;
 	destination: DatesDestination;
 	range?: InsertionRange;
 }
 
 export function openInsertDatesModal(settings: () => DateCompassSettings, target: InsertDatesTarget, initialText: string): void {
-	const { app, editor, file, destination, range } = target;
-	const linksOf = (notes: NoteRef[], phrase: string, withAlias: boolean) => obsidianLinks(app, file.path, settings())(notes, phrase, withAlias);
+	const { app, editor, file, range } = target;
+	const destination = effectiveDestination(target.destination, file !== undefined);
+	const linksOf = (notes: NoteRef[], phrase: string, withAlias: boolean) => obsidianLinks(app, file?.path ?? "", settings())(notes, phrase, withAlias);
+	const propertyTarget = destination.kind === "property" && file ? { name: destination.name, file } : undefined;
 	new DatesModal(
 		app,
 		settings,
-		{ title: t("insertDates"), initialText, optional: false, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
+		propertyTarget
+			? { title: t("insertDates"), initialText, optional: false, propertyName: propertyTarget.name }
+			: { title: t("insertDates"), initialText, optional: false, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
 		(preview, withAlias, phrase) => {
 			if (preview.kind !== "dates") return false;
-			if (destination.kind === "property") {
-				addDatesToProperty(app, file, destination.name, preview.notes, settings().dateNotes.periods).catch(noticePropertyNotWritten);
-				return true;
-			}
-			insertLinks(editor, linksOf(preview.notes, phrase, withAlias), settings().insertion.separator, range);
+			if (propertyTarget) addDatesToProperty(app, editor, propertyTarget.file, propertyTarget.name, preview.notes, range);
+			else insertLinks(editor, linksOf(preview.notes, phrase, withAlias), settings().insertion.separator, range);
 			return true;
 		},
 	).open();

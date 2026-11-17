@@ -5,7 +5,8 @@ import type { NoteRef } from "../src/mentions/rows.ts";
 import { MORE_ROW, selectionIntent, withMoreRow } from "../src/mentions/selection.ts";
 import { aliasFor, formattedItems, insertionLinks, insertionText, renderLink, usesAlias } from "../src/insertion/render.ts";
 import { mergeInsertion } from "../src/insertion/settings.ts";
-import { chooseDestination, propertyAtLine } from "../src/insertion/destination.ts";
+import { chooseDestination, effectiveDestination, propertyAtLine } from "../src/insertion/destination.ts";
+import { propertyWithLinks } from "../src/insertion/property.ts";
 import { mergeSettings } from "../src/settings.ts";
 import { v1AliasOf, v1InsertionText, v1SequenceInsertion } from "./v1Insertion.ts";
 import type { V1AliasMode, V1Layout, V1Separator } from "./v1Insertion.ts";
@@ -177,4 +178,66 @@ test("the More row is always last and Enter, Alt+Enter and Shift+Enter pick what
 	assert.equal(selectionIntent(row, { altKey: true, shiftKey: false }), "insertFlippingAlias");
 	assert.equal(selectionIntent(row, { altKey: false, shiftKey: true }), "openDatesModal");
 	assert.equal(selectionIntent(MORE_ROW, { altKey: true, shiftKey: false }), "openDatesModal");
+});
+
+test("a nested key is not a property destination, and a list under it is not either", () => {
+	const nested = ["---", "meta:", "  due: x", "  days:", "    - a", "top: y", "---", "Body"];
+	assert.equal(propertyAtLine(nested, 1), "meta");
+	assert.equal(propertyAtLine(nested, 2), undefined);
+	assert.equal(propertyAtLine(nested, 4), undefined);
+	assert.equal(propertyAtLine(nested, 5), "top");
+	assert.deepEqual(chooseDestination({ lines: nested, cursorLine: 2, focusedProperty: undefined }), { kind: "frontmatterWithoutProperty" });
+});
+
+test("a property destination without a file becomes body insertion", () => {
+	assert.deepEqual(effectiveDestination({ kind: "property", name: "dates" }, false), { kind: "body" });
+	assert.deepEqual(effectiveDestination({ kind: "property", name: "dates" }, true), { kind: "property", name: "dates" });
+	assert.deepEqual(effectiveDestination({ kind: "frontmatterWithoutProperty" }, false), { kind: "frontmatterWithoutProperty" });
+});
+
+test("the property write appends only the missing links and keeps what was there in its order", () => {
+	const links = ["[[2026-11-23]]", "[[2026-11-24]]"];
+	assert.deepEqual(propertyWithLinks(undefined, links), links);
+	assert.deepEqual(propertyWithLinks("", links), links);
+	assert.deepEqual(propertyWithLinks("[[2026-12-01]]", links), ["[[2026-12-01]]", ...links]);
+	assert.deepEqual(propertyWithLinks(["[[2026-12-01]]", "b", "[[2026-12-01]]", "[[2026-11-24|Tue]]"], links), ["[[2026-12-01]]", "b", "[[2026-12-01]]", "[[2026-11-24|Tue]]", "[[2026-11-23]]"]);
+	assert.deepEqual(propertyWithLinks(["z"], ["[[a]]", "[[a]]"]), ["z", "[[a]]"]);
+	const mapping = { due: "x" };
+	assert.deepEqual(propertyWithLinks(mapping, links), [mapping, ...links]);
+});
+
+const TWO = NOTES.slice(0, 2);
+const aliasedLink = (note: NoteRef, alias: string | undefined) => (alias === undefined ? `[[${note.name}]]` : `[[${note.name}|${alias}]]`);
+const v2Text = (stored: object, notes: NoteRef[], textBefore: string, withAlias: boolean) => {
+	const { insertion } = mergeSettings(stored);
+	return insertionText(insertionLinks(notes, "mon to wed", insertion, withAlias, aliasedLink), insertion.separator, textBefore);
+};
+
+test("known difference from v1: a stored format alias now also shows in the modal", () => {
+	const stored = { mentions: { aliasMode: "format", aliasFormat: "ddd D MMM" } };
+	const v1 = v1SequenceInsertion(TWO.map((note) => aliasedLink(note, undefined)), { layout: "inline", itemTemplate: "{{link}}" }, "commaSpace", "Due ");
+	const aliasByDefault = mergeSettings(stored).insertion.aliasByDefault;
+	assert.equal(v1, "[[2026-11-23]], [[2026-11-24]]");
+	assert.equal(v2Text(stored, TWO, "Due ", aliasByDefault), "[[2026-11-23|Mon 23 Nov]], [[2026-11-24|Tue 24 Nov]]");
+});
+
+test("known difference from v1: a stored bullet layout and item template now also shape the popup", () => {
+	const stored = { insertSequence: { layout: "bulletList", itemTemplate: "Review {{link}}" } };
+	const v1 = v1InsertionText(TWO.map((note) => aliasedLink(note, undefined)), "commaSpace", "Due ");
+	assert.equal(v1, "[[2026-11-23]], [[2026-11-24]]");
+	assert.equal(v2Text(stored, TWO, "Due ", false), "\n- Review [[2026-11-23]]\n- Review [[2026-11-24]]");
+});
+
+test("known difference from v1: the {{name}} placeholder in a stored item template now renders", () => {
+	const stored = { insertSequence: { layout: "inline", itemTemplate: "{{name}} {{link}}" } };
+	const v1 = v1SequenceInsertion([aliasedLink(NOTES[0], undefined)], { layout: "inline", itemTemplate: "{{name}} {{link}}" }, "commaSpace", "");
+	assert.equal(v1, "{{name}} [[2026-11-23]]");
+	assert.equal(v2Text(stored, NOTES.slice(0, 1), "", false), "2026-11-23 [[2026-11-23]]");
+});
+
+test("known difference from v1: a stored bullet list with one date writes a bare link", () => {
+	const stored = { insertSequence: { layout: "bulletList", itemTemplate: "{{link}}" } };
+	const v1 = v1SequenceInsertion([aliasedLink(NOTES[0], undefined)], { layout: "bulletList", itemTemplate: "{{link}}" }, "commaSpace", "");
+	assert.equal(v1, "- [[2026-11-23]]");
+	assert.equal(v2Text(stored, NOTES.slice(0, 1), "", false), "[[2026-11-23]]");
 });

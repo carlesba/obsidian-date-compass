@@ -108,6 +108,7 @@ export const es: Translation = {
 	aliasFormatSetting: "Formato de fecha del texto del enlace",
 	aliasFormatSettingDesc: "Un formato de moment.js, como ddd D MMM.",
 	insertDates: "Insertar fechas",
+	datesToProperty: "Las fechas se añadirán a la propiedad «{name}».",
 	withAlias: "Con texto en el enlace",
 	withAliasDesc: "Muestra un texto en lugar del nombre de la nota.",
 	datesDone: "Hecho",

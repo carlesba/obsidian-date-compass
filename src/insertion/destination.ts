@@ -8,6 +8,12 @@ export interface EditorState {
 
 const FRONTMATTER_FENCE = /^---\s*$/;
 
+const NESTED_KEY_LINE = /^\s+([^\s#:'"-][^:]*|"[^"]+"|'[^']+'):(\s|$)/;
+
+export function effectiveDestination(destination: DatesDestination, hasFile: boolean): DatesDestination {
+	return destination.kind === "property" && !hasFile ? { kind: "body" } : destination;
+}
+
 const PROPERTY_LINE = /^([^\s#:'"-][^:]*|"[^"]+"|'[^']+'):(\s|$)/;
 
 export function frontmatterRange(lines: readonly string[]): { first: number; last: number } | undefined {
@@ -20,6 +26,7 @@ export function propertyAtLine(lines: readonly string[], cursorLine: number): st
 	const range = frontmatterRange(lines);
 	if (!range || cursorLine < range.first || cursorLine > range.last) return undefined;
 	for (let index = cursorLine; index >= range.first; index--) {
+		if (NESTED_KEY_LINE.test(lines[index])) return undefined;
 		const match = PROPERTY_LINE.exec(lines[index]);
 		if (match) return match[1].trim().replace(/^(["'])(.*)\1$/, "$2");
 	}

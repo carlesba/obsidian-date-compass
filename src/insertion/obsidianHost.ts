@@ -1,17 +1,16 @@
 import { Notice } from "obsidian";
 import type { App, Editor, TFile } from "obsidian";
 import { t } from "../i18n/index.ts";
-import { dateSortKey, applyPropertyWrites } from "../actions/frontmatter.ts";
-import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import { markdownLinkTo, propertyLinkTo } from "../mentions/obsidianHost.ts";
 import type { NoteRef } from "../mentions/rows.ts";
-import type { PeriodSettingsByPeriod } from "../dateNotes/periods.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { insertionLinks } from "./render.ts";
+import { propertyWithLinks } from "./property.ts";
 import { chooseDestination } from "./destination.ts";
 import type { DatesDestination } from "./destination.ts";
+import type { InsertionRange } from "../sequence/preview.ts";
 
-export function focusedPropertyName(doc: Document = document): string | undefined {
+export function focusedPropertyName(doc: Document = activeDocument): string | undefined {
 	try {
 		const property = doc.activeElement?.closest(".metadata-property");
 		const name = property?.getAttribute("data-property-key");
@@ -31,10 +30,15 @@ export function destinationInActiveEditor(editor: Editor): DatesDestination {
 	return chooseDestination({ lines, cursorLine: editor.getCursor("from").line, focusedProperty: focusedPropertyName() });
 }
 
-export async function addDatesToProperty(app: App, file: TFile, name: string, notes: readonly NoteRef[], periods: PeriodSettingsByPeriod): Promise<void> {
-	const values = notes.map((note) => propertyLinkTo(app, note, file.path));
-	const sortKeyOf = dateSortKey(periods, obsidianMoment);
-	await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => applyPropertyWrites(frontmatter, [{ property: name, values, mode: "dedupeSort" }], sortKeyOf));
+export function addDatesToProperty(app: App, editor: Editor, file: TFile, name: string, notes: readonly NoteRef[], range?: InsertionRange): void {
+	if (range) editor.replaceRange("", range.start, range.end);
+	const write = async () => {
+		const links = notes.map((note) => propertyLinkTo(app, note, file.path));
+		await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
+			frontmatter[name] = propertyWithLinks(frontmatter[name], links);
+		});
+	};
+	write().catch(noticePropertyNotWritten);
 }
 
 export function noticePropertyNotWritten(): void {
