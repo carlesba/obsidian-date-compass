@@ -353,7 +353,8 @@ first day falls in.
 **Header.** The title shows the month, the quarter (`Q4`, only when quarterly notes are enabled)
 and the year. Each part opens its own note with the same clicks as a day, when its period is
 enabled; a part whose period is off is plain text. The arrows move one month, and **Today**
-returns to the current month. At midnight a calendar showing the current month moves on by itself.
+returns to the current month; on a phone or tablet **Today** is a dot between the arrows. At
+midnight a calendar showing the current month moves on by itself.
 
 **Week column.** With **Show week numbers** on, the first column shows each week's number. The
 number opens the weekly note when weekly notes are enabled, and is plain text when they are off.

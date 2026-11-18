@@ -1,4 +1,4 @@
-import { setIcon } from "obsidian";
+import { Platform, setIcon } from "obsidian";
 import { t } from "../i18n/index.ts";
 import type { Dot, DotPosition } from "./decorators.ts";
 import { dayClasses, dotClasses, titlePartClasses, weekClasses } from "./model.ts";
@@ -34,7 +34,7 @@ function renderNav(root: HTMLElement, model: CalendarModel, handlers: CalendarHa
 	});
 	const rightNav = nav.createDiv({ cls: "right-nav" });
 	renderArrow(rightNav, ["arrow"], t("calendarPreviousMonth"), () => handlers.previousMonth());
-	rightNav.createDiv({ cls: "reset-button", text: t("calendarToday") }).addEventListener("click", () => handlers.currentMonth());
+	rightNav.createDiv({ cls: "reset-button", text: t("calendarToday"), attr: Platform.isMobile ? { "aria-label": t("calendarToday") } : {} }).addEventListener("click", () => handlers.currentMonth());
 	renderArrow(rightNav, ["arrow", "right"], t("calendarNextMonth"), () => handlers.nextMonth());
 }
 

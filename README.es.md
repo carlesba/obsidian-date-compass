@@ -370,8 +370,8 @@ trimestral o anual muestra el mes en el que cae su primer día.
 **Cabecera.** El título muestra el mes, el trimestre (`Q4`, solo cuando las notas trimestrales
 están activadas) y el año. Cada parte abre su propia nota con los mismos clics que un día, cuando
 su periodo está activado; una parte cuyo periodo está desactivado es texto normal. Las flechas
-mueven un mes, y **Hoy** vuelve al mes actual. A medianoche, un calendario que muestra el mes
-actual avanza solo.
+mueven un mes, y **Hoy** vuelve al mes actual; en un teléfono o tableta **Hoy** es un punto entre
+las flechas. A medianoche, un calendario que muestra el mes actual avanza solo.
 
 **Columna de semanas.** Con **Mostrar números de semana** activado, la primera columna muestra el
 número de cada semana. El número abre la nota semanal cuando las notas semanales están activadas,
