@@ -47,7 +47,7 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 		}
 		const { mention, match } = active;
 		const start = { line: cursor.line, ch: match.start };
-		const position = positionKey(file, start);
+		const position = positionKey(file, start, mention);
 		if (isDismissed(this.dismissal, position, match.query)) return null;
 		if (!mayOpenMentionAt(linesOf(editor), cursor.line, lineBeforeCaret)) return null;
 		const rowContext = this.rowContext(mention);
@@ -81,7 +81,8 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 
 	close(): void {
 		const context = this.context;
-		if (context && this.rows.length > 0 && this.isStillTyped(context)) this.dismissal = { position: positionKey(context.file, context.start) };
+		const mention = this.mention;
+		if (context && mention && this.rows.length > 0 && this.isStillTyped(context, mention)) this.dismissal = { position: positionKey(context.file, context.start, mention) };
 		this.finish();
 	}
 
@@ -95,11 +96,11 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 		return obsidianRowContext(this.settings(), mention.targets);
 	}
 
-	private isStillTyped({ editor, file, start }: EditorSuggestContext): boolean {
+	private isStillTyped({ editor, file, start }: EditorSuggestContext, mention: Mention): boolean {
 		const cursor = editor.getCursor();
 		if (cursor.line !== start.line || this.app.workspace.getActiveFile() !== file) return false;
 		const active = activeMentionAt(editor.getLine(cursor.line).slice(0, cursor.ch), this.settings().mentions);
-		return active?.match.start === start.ch;
+		return active?.match.start === start.ch && active.mention.id === mention.id;
 	}
 
 	private insertLinks(row: DateRow, mention: Mention, { editor, file, start, end }: EditorSuggestContext, withAlias: boolean): void {
@@ -127,8 +128,8 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 	}
 }
 
-function positionKey(file: TFile, { line, ch }: EditorPosition): string {
-	return `${file.path}:${line}:${ch}`;
+function positionKey(file: TFile, { line, ch }: EditorPosition, mention: Mention): string {
+	return `${file.path}:${line}:${ch}:${mention.id}`;
 }
 
 function linesOf(editor: Editor): string[] {
