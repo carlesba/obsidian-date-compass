@@ -5,7 +5,7 @@ import { actionName, actionWarning, moveEntry, newAction } from "../actions/sett
 import type { AskKind, DateAction, WriteMode } from "../actions/settings.ts";
 import { actionKey } from "./controlKeys.ts";
 import type { IdentifiedPage } from "./pages.ts";
-import { LIST_ROW_CLASS, LIST_ROW_EDIT_CLASS } from "./listRow.ts";
+import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
 
 export interface ActionsPageContext {
 	actions: () => DateAction[];
@@ -73,7 +73,7 @@ function actionRow(action: DateAction, context: ActionsPageContext): SettingDefi
 		name: actionName(action),
 		desc: actionWarning(action) ?? actionSummary(action),
 		render: (setting) => {
-			setting.settingEl.addClass(LIST_ROW_CLASS);
+			leadWithListControls(setting);
 			setting.setName(actionName(action));
 			setting.setDesc(actionWarning(action) ?? actionSummary(action));
 			setting.addExtraButton((button) =>

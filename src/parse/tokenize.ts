@@ -38,12 +38,15 @@ export function indexLexicons(languages: Language[]): LexiconIndex {
 }
 
 export function rawTokens(normalized: string): RawToken[] {
-	return Array.from(normalized.matchAll(RAW_TOKEN), (match) => {
+	const pattern = new RegExp(RAW_TOKEN.source, RAW_TOKEN.flags);
+	const tokens: RawToken[] = [];
+	for (let match = pattern.exec(normalized); match !== null; match = pattern.exec(normalized)) {
 		const text = match[0];
-		const start = match.index ?? 0;
+		const start = match.index;
 		const kind = /^\d/.test(text) ? "digits" : /^\p{L}/u.test(text) ? "letters" : "symbol";
-		return { kind, text, start, end: start + text.length };
-	});
+		tokens.push({ kind, text, start, end: start + text.length });
+	}
+	return tokens;
 }
 
 export function touchesDigits(tokens: RawToken[], position: number): boolean {

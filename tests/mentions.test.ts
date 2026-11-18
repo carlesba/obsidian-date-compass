@@ -9,7 +9,7 @@ import type { DateParser, RowContext } from "../src/mentions/rows.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
 import { isDeadEnd, isDismissed, isInCode, mentionAt } from "../src/mentions/trigger.ts";
 import { sameTriggerPlugins } from "../src/mentions/conflicts.ts";
-import { unsavedFile } from "../src/mentions/obsidianHost.ts";
+import { fileNameParts } from "../src/dateNotes/paths.ts";
 import { parseOptionsOf, parserWeekStart } from "../src/parseOptions.ts";
 import { defaultSettings } from "../src/settings.ts";
 
@@ -221,8 +221,8 @@ test("labels name the year when it is not the current one", () => {
 });
 
 test("a link to a note that does not exist yet names its path, base name and extension", () => {
-	assert.deepEqual({ ...unsavedFile("Daily/2026-11-11.md") }, { path: "Daily/2026-11-11.md", name: "2026-11-11.md", basename: "2026-11-11", extension: "md" });
-	assert.deepEqual({ ...unsavedFile("2026") }, { path: "2026", name: "2026", basename: "2026", extension: "" });
+	assert.deepEqual(fileNameParts("Daily/2026-11-11.md"), { path: "Daily/2026-11-11.md", name: "2026-11-11.md", basename: "2026-11-11", extension: "md" });
+	assert.deepEqual(fileNameParts("2026"), { path: "2026", name: "2026", basename: "2026", extension: "" });
 });
 
 test("stored triggers fall back to the default when empty, and plugins without settings use their own default", () => {

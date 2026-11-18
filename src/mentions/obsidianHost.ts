@@ -1,4 +1,6 @@
-import type { App, TFile } from "obsidian";
+import { TFile } from "obsidian";
+import type { App } from "obsidian";
+import { fileNameParts } from "../dateNotes/paths.ts";
 import type { NoteRef } from "./rows.ts";
 import type { EnabledPlugin } from "./conflicts.ts";
 import { PLUGINS_WITH_TRIGGERS } from "./conflicts.ts";
@@ -31,9 +33,8 @@ export function propertyLinkTo(app: App, note: NoteRef, sourcePath: string): str
 	return `[[${app.metadataCache.fileToLinktext(app.vault.getFileByPath(note.path) ?? unsavedFile(note.path), sourcePath, true)}]]`;
 }
 
-export function unsavedFile(path: string): TFile {
-	const name = path.split("/").pop() ?? path;
-	const extension = name.includes(".") ? (name.split(".").pop() ?? "") : "";
-	const basename = extension === "" ? name : name.slice(0, -extension.length - 1);
-	return { path, name, basename, extension } as unknown as TFile;
+function unsavedFile(path: string): TFile {
+	const file: unknown = Object.create(TFile.prototype);
+	if (!(file instanceof TFile)) throw new Error(`Cannot build a link to ${path}`);
+	return Object.assign(file, fileNameParts(path));
 }

@@ -17,6 +17,13 @@ const MOMENT_UNITS: Record<Period, "day" | "isoWeek" | "month" | "quarter" | "ye
 	year: "year",
 };
 
+export function fileNameParts(path: string): { path: string; name: string; basename: string; extension: string } {
+	const name = path.split("/").pop() ?? path;
+	const extension = name.includes(".") ? (name.split(".").pop() ?? "") : "";
+	const basename = extension === "" ? name : name.slice(0, -extension.length - 1);
+	return { path, name, basename, extension };
+}
+
 export function noteName(date: Moment, period: Period, periods: PeriodSettingsByPeriod): string {
 	return date.format(periods[period].format);
 }
