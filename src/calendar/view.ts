@@ -18,6 +18,7 @@ import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "./paths.
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
 import { singleFlight } from "./singleFlight.ts";
+import { rootIdOf } from "./themeCompatibility.ts";
 import { weekRuleOf } from "./weeks.ts";
 
 export const CALENDAR_VIEW_TYPE = "date-compass-calendar";
@@ -81,6 +82,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		const shownObserver = new ResizeObserver(() => this.renderIfAwaited());
 		shownObserver.observe(this.contentEl);
 		this.register(() => shownObserver.disconnect());
+		this.identifyRoot();
 		this.renderWhenShown();
 	}
 
@@ -93,7 +95,14 @@ export class CalendarView extends ItemView implements HoverParent {
 	}
 
 	refresh(): void {
+		this.identifyRoot();
 		this.requestRender();
+	}
+
+	private identifyRoot(): void {
+		const id = rootIdOf(this.settings().calendar);
+		if (id === undefined) this.root.removeAttribute("id");
+		else this.root.id = id;
 	}
 
 	showMonth(month: CivilMonth): void {

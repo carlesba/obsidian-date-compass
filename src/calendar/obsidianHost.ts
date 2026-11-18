@@ -12,6 +12,18 @@ export interface NoteDotsReader {
 	dotsOfNote(path: string, wordsPerDot: number): Dot[];
 }
 
+interface PluginRegistry {
+	plugins?: { enabledPlugins?: ReadonlySet<string> };
+}
+
+export function enabledPluginIds(app: App): ReadonlySet<string> {
+	try {
+		return (app as App & PluginRegistry).plugins?.enabledPlugins ?? new Set<string>();
+	} catch {
+		return new Set<string>();
+	}
+}
+
 export function localeWeekRule(): WeekRule {
 	const locale = moment.localeData();
 	return { firstDayOfWeek: locale.firstDayOfWeek(), firstDayOfYear: locale.firstDayOfYear() };

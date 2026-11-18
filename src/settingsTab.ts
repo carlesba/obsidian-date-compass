@@ -4,12 +4,13 @@ import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage } from "./settings.ts";
-import { commandPageRefresh, mentionKeyParts, periodKey, readControl, writeControl } from "./settings/controlKeys.ts";
+import { CALENDAR_THEME_COMPATIBILITY_KEY, commandPageRefresh, mentionKeyParts, periodKey, readControl, writeControl } from "./settings/controlKeys.ts";
 import type { MentionControlField, PageRefresh } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup, weekStartMismatchGroup } from "./settings/dateNotesPage.ts";
 import { calendarGroups } from "./settings/calendarPage.ts";
-import { localeWeekRule } from "./calendar/obsidianHost.ts";
+import { enabledPluginIds, localeWeekRule } from "./calendar/obsidianHost.ts";
+import { sharesRootIdWithOriginalCalendar } from "./calendar/themeCompatibility.ts";
 import { weekRuleOf, weekStartDisagreesWithFormat } from "./calendar/weeks.ts";
 import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
@@ -71,7 +72,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						notify: (message) => new Notice(message),
 					}),
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
-					sectionPage("calendarSection", "calendarSectionDesc", calendarGroups()),
+					sectionPage("calendarSection", "calendarSectionDesc", calendarGroups(() => this.sharesRootIdWithOriginalCalendar())),
 					mentionsPage({
 						...this.linkStyleHost(),
 						mentions: () => this.plugin.settings.mentions,
@@ -126,6 +127,10 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		const { enabled, format } = dateNotes.periods.week;
 		const locale = localeWeekRule();
 		return enabled && weekStartDisagreesWithFormat(weekRuleOf(weekStart, locale), format, locale);
+	}
+
+	private sharesRootIdWithOriginalCalendar(): boolean {
+		return sharesRootIdWithOriginalCalendar(this.plugin.settings.calendar, enabledPluginIds(this.app));
 	}
 
 	private linkStyleHost(): LinkStyleHost {
@@ -196,7 +201,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		const mentionKey = mentionKeyParts(key);
 		if (mentionKey?.field === "trigger") this.showTriggerAfterTyping(mentionKey.mentionId);
 		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
-		else if (key === WEEK_ENABLED_KEY) this.update();
+		else if (key === WEEK_ENABLED_KEY || key === CALENDAR_THEME_COMPATIBILITY_KEY) this.update();
 		else if (key === WEEK_FORMAT_KEY) this.updateAfterTyping();
 		else this.refreshCommandPage(commandPageRefresh(key));
 	}

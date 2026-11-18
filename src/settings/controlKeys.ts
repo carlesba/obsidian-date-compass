@@ -26,6 +26,8 @@ export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate"
 
 export const CALENDAR_WORDS_PER_DOT_KEY = "calendar/wordsPerDot";
 
+export const CALENDAR_THEME_COMPATIBILITY_KEY = "calendar/themeCompatibility";
+
 const CALENDAR_KEY_PREFIX = "calendar/";
 
 const MENTION_KEY_PREFIX = "mentions/";
@@ -214,6 +216,7 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return settings.calendar.showWeekNumbers;
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
 	if (key === CALENDAR_WORDS_PER_DOT_KEY) return settings.calendar.wordsPerDot;
+	if (key === CALENDAR_THEME_COMPATIBILITY_KEY) return settings.calendar.themeCompatibility;
 	const mentionControl = mentionControlOfKey(settings, key);
 	return mentionControl ? mentionControl.mention[mentionControl.field] : undefined;
 }
@@ -241,6 +244,7 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 		calendar.wordsPerDot = value;
 		return true;
 	}
+	if (key === CALENDAR_THEME_COMPATIBILITY_KEY) return writeBoolean(value, (compatible) => (calendar.themeCompatibility = compatible));
 	return false;
 }
 

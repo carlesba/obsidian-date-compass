@@ -35,7 +35,7 @@ test("a fresh install gets the defaults, with English as the only parser languag
 				year: { enabled: false, folder: "", format: "YYYY", template: "" },
 			},
 		},
-		calendar: { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250 },
+		calendar: { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250, themeCompatibility: false },
 		mentions: [
 			{ id: "mention-1", trigger: "@", targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" },
 		],
@@ -57,7 +57,7 @@ test("stored partial settings merge over the defaults", () => {
 		nextWeekday: "nextWeek",
 		dayMonthOrder: "monthDay",
 		dateNotes: defaultDateNotes(),
-		calendar: { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250 },
+		calendar: { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250, themeCompatibility: false },
 		mentions: defaultMentions(),
 		commands: presetCommands(),
 	});
@@ -108,7 +108,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), calendar: { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250 }, mentions: defaultMentions(), commands: presetCommands() });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), calendar: { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250, themeCompatibility: false }, mentions: defaultMentions(), commands: presetCommands() });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });

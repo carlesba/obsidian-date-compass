@@ -2,13 +2,13 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultCalendar, mergeCalendar } from "../src/calendar/settings.ts";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_WORDS_PER_DOT_KEY, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_THEME_COMPATIBILITY_KEY, CALENDAR_WORDS_PER_DOT_KEY, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { calendarGroups } from "../src/settings/calendarPage.ts";
 import { weekStartMismatchGroup } from "../src/settings/dateNotesPage.ts";
 
-const DEFAULTS = { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250 };
+const DEFAULTS = { showWeekNumbers: true, confirmBeforeCreate: true, wordsPerDot: 250, themeCompatibility: false };
 
-test("the calendar shows week numbers, confirms before creating and counts 250 words per dot by default", () => {
+test("the calendar shows week numbers, confirms before creating, counts 250 words per dot and leaves theme compatibility off by default", () => {
 	assert.deepEqual(defaultCalendar(), DEFAULTS);
 	assert.deepEqual(mergeCalendar(undefined), DEFAULTS);
 	assert.deepEqual(mergeCalendar("broken"), DEFAULTS);
@@ -17,7 +17,9 @@ test("the calendar shows week numbers, confirms before creating and counts 250 w
 
 test("stored calendar settings merge over the defaults field by field", () => {
 	assert.deepEqual(mergeCalendar({ showWeekNumbers: false }), { ...DEFAULTS, showWeekNumbers: false });
-	assert.deepEqual(mergeCalendar({ confirmBeforeCreate: false, wordsPerDot: 100 }), { showWeekNumbers: true, confirmBeforeCreate: false, wordsPerDot: 100 });
+	assert.deepEqual(mergeCalendar({ confirmBeforeCreate: false, wordsPerDot: 100 }), { ...DEFAULTS, confirmBeforeCreate: false, wordsPerDot: 100 });
+	assert.deepEqual(mergeCalendar({ themeCompatibility: true }), { ...DEFAULTS, themeCompatibility: true });
+	assert.deepEqual(mergeCalendar({ themeCompatibility: "yes" }), DEFAULTS);
 	assert.deepEqual(mergeCalendar({ showWeekNumbers: "no", confirmBeforeCreate: 0 }), DEFAULTS);
 	assert.deepEqual(mergeSettings({ calendar: { wordsPerDot: 40 } }).calendar, { ...DEFAULTS, wordsPerDot: 40 });
 });
@@ -32,8 +34,8 @@ test("words per dot is a whole number from 0 up, and anything else falls back to
 
 test("every Calendar control reads and writes its setting and refuses bad values", () => {
 	const settings = defaultSettings();
-	const keys = calendarGroups().flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
-	assert.deepEqual(keys, [CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_WORDS_PER_DOT_KEY]);
+	const keys = calendarGroups(() => false).flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
+	assert.deepEqual(keys, [CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_WORDS_PER_DOT_KEY, CALENDAR_THEME_COMPATIBILITY_KEY]);
 	assert.equal(writeControl(settings, CALENDAR_SHOW_WEEK_NUMBERS_KEY, false), true);
 	assert.equal(writeControl(settings, CALENDAR_SHOW_WEEK_NUMBERS_KEY, "no"), false);
 	assert.equal(writeControl(settings, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, false), true);
@@ -44,8 +46,12 @@ test("every Calendar control reads and writes its setting and refuses bad values
 	assert.equal(writeControl(settings, CALENDAR_WORDS_PER_DOT_KEY, -5), false);
 	assert.equal(writeControl(settings, CALENDAR_WORDS_PER_DOT_KEY, 1.5), false);
 	assert.equal(writeControl(settings, CALENDAR_WORDS_PER_DOT_KEY, "120"), false);
+	assert.equal(readControl(settings, CALENDAR_THEME_COMPATIBILITY_KEY), false);
+	assert.equal(writeControl(settings, CALENDAR_THEME_COMPATIBILITY_KEY, true), true);
+	assert.equal(writeControl(settings, CALENDAR_THEME_COMPATIBILITY_KEY, "yes"), false);
+	assert.equal(readControl(settings, CALENDAR_THEME_COMPATIBILITY_KEY), true);
 	assert.equal(writeControl(settings, "calendar/unknown", true), false);
-	assert.deepEqual(settings.calendar, { showWeekNumbers: false, confirmBeforeCreate: false, wordsPerDot: 120 });
+	assert.deepEqual(settings.calendar, { showWeekNumbers: false, confirmBeforeCreate: false, wordsPerDot: 120, themeCompatibility: true });
 	assert.equal(readControl(settings, CALENDAR_SHOW_WEEK_NUMBERS_KEY), false);
 	assert.equal(readControl(settings, CALENDAR_CONFIRM_BEFORE_CREATE_KEY), false);
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).calendar, settings.calendar);
@@ -59,5 +65,16 @@ test("the Date notes page warns about week numbers only while the week start dis
 	assert.deepEqual((group.items ?? []).map((item) => (item as { name: string }).name), ["Week numbers differ between the calendar and weekly notes"]);
 	assert.match((group.items?.[0] as { desc: string }).desc, /Week starts on.*Neither setting is changed automatically/);
 	disagrees = false;
+	assert.equal(visible(), false);
+});
+
+test("the Calendar page warns about the shared id only while it is shared with the original Calendar plugin", () => {
+	let shared = true;
+	const warning = calendarGroups(() => shared).at(-1);
+	const visible = () => (typeof warning?.visible === "function" ? warning.visible() : warning?.visible);
+	assert.equal(visible(), true);
+	assert.deepEqual((warning?.items ?? []).map((item) => (item as { name: string }).name), ["The Calendar plugin is enabled"]);
+	assert.match((warning?.items?.[0] as { desc: string }).desc, /calendar-container.*disable the Calendar plugin/);
+	shared = false;
 	assert.equal(visible(), false);
 });

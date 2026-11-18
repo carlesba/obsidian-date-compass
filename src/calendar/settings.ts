@@ -4,6 +4,7 @@ export interface CalendarSettings {
 	showWeekNumbers: boolean;
 	confirmBeforeCreate: boolean;
 	wordsPerDot: number;
+	themeCompatibility: boolean;
 }
 
 export const DEFAULT_WORDS_PER_DOT = 250;
@@ -22,5 +23,6 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		showWeekNumbers: typeof data.showWeekNumbers === "boolean" ? data.showWeekNumbers : true,
 		confirmBeforeCreate: typeof data.confirmBeforeCreate === "boolean" ? data.confirmBeforeCreate : true,
 		wordsPerDot: isWordsPerDot(data.wordsPerDot) ? data.wordsPerDot : DEFAULT_WORDS_PER_DOT,
+		themeCompatibility: typeof data.themeCompatibility === "boolean" ? data.themeCompatibility : false,
 	};
 }
