@@ -181,7 +181,7 @@ export const en = {
 	calendarSection: "Calendar",
 	calendarSectionDesc: "The month calendar in the sidebar: week numbers, confirmation before creating notes and word dots.",
 	calendarShowWeekNumbers: "Show week numbers",
-	calendarShowWeekNumbersDesc: "Add a column with the number of each week, which opens the weekly note.",
+	calendarShowWeekNumbersDesc: "Add a column with the number of each week. It opens the weekly note when weekly notes are on.",
 	calendarConfirmBeforeCreate: "Confirm before creating a note",
 	calendarConfirmBeforeCreateDesc: "Ask before creating the note of a day, week or other period that does not exist yet.",
 	calendarWordsPerDot: "Words per dot",

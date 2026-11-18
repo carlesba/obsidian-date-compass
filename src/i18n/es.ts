@@ -183,7 +183,7 @@ export const es: Translation = {
 	calendarSection: "Calendario",
 	calendarSectionDesc: "El calendario mensual de la barra lateral: números de semana, confirmación antes de crear notas y puntos de palabras.",
 	calendarShowWeekNumbers: "Mostrar números de semana",
-	calendarShowWeekNumbersDesc: "Añade una columna con el número de cada semana, que abre la nota semanal.",
+	calendarShowWeekNumbersDesc: "Añade una columna con el número de cada semana. Abre la nota semanal cuando las notas semanales están activadas.",
 	calendarConfirmBeforeCreate: "Confirmar antes de crear una nota",
 	calendarConfirmBeforeCreateDesc: "Pregunta antes de crear la nota de un día, una semana u otro periodo que aún no existe.",
 	calendarWordsPerDot: "Palabras por punto",
