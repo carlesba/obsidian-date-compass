@@ -186,7 +186,7 @@ export class CalendarView extends ItemView implements HoverParent {
 			item
 				.setTitle(t("deleteNote"))
 				.setIcon(DELETE_ICON)
-				.onClick(() => void this.app.fileManager.trashFile(file)),
+				.onClick(() => void this.app.fileManager.promptForDeletion(file)),
 		);
 		this.app.workspace.trigger("file-menu", menu, file, CONTEXT_MENU_SOURCE, this.leaf);
 		menu.showAtMouseEvent(event);
