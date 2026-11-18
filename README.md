@@ -150,6 +150,8 @@ Commands:
 - **Open today's note**, **Open this week's note**, **Open this month's note**, **Open this
   quarter's note**, **Open this year's note**: one per enabled period. A note that does not exist
   yet is created.
+- **Open tomorrow's note**, **Open next week's note**, **Open next month's note**, **Open next
+  quarter's note**, **Open next year's note**: the same, one period ahead.
 - **Open next note of the same period** and **Open previous note of the same period**: from the
   date note you are in, jump to the nearest existing note before or after it.
 - **Open a date note by phrase**: type `next month` or `last wed`, see the note it means, press

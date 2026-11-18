@@ -17,6 +17,14 @@ const CURRENT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey
 	year: { id: "open-this-year", name: "openThisYearNote" },
 };
 
+const NEXT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey }> = {
+	day: { id: "open-tomorrow", name: "openTomorrowNote" },
+	week: { id: "open-next-week", name: "openNextWeekNote" },
+	month: { id: "open-next-month", name: "openNextMonthNote" },
+	quarter: { id: "open-next-quarter", name: "openNextQuarterNote" },
+	year: { id: "open-next-year", name: "openNextYearNote" },
+};
+
 export async function openDateNote(app: App, settings: DateNotesSettings, date: Moment, period: Period): Promise<void> {
 	try {
 		const path = await ensureDateNote(createDateNoteHost(app), settings, date, period);
@@ -30,18 +38,18 @@ export async function openDateNote(app: App, settings: DateNotesSettings, date: 
 export function registerDateNoteCommands(plugin: Plugin, settings: () => DateNotesSettings): void {
 	const { app } = plugin;
 	const openNote = (date: Moment, period: Period) => openDateNote(app, settings(), date, period);
-	for (const period of PERIODS) {
-		const { id, name } = CURRENT_PERIOD_COMMANDS[period];
+	const addPeriodCommand = ({ id, name }: { id: string; name: TranslationKey }, period: Period, periodsAhead: number) =>
 		plugin.addCommand({
 			id,
 			name: t(name),
 			checkCallback: (checking) => {
 				if (!settings().periods[period].enabled) return false;
-				if (!checking) void openNote(obsidianMoment(), period);
+				if (!checking) void openNote(obsidianMoment().add(periodsAhead, period), period);
 				return true;
 			},
 		});
-	}
+	for (const period of PERIODS) addPeriodCommand(CURRENT_PERIOD_COMMANDS[period], period, 0);
+	for (const period of PERIODS) addPeriodCommand(NEXT_PERIOD_COMMANDS[period], period, 1);
 	const step = (direction: 1 | -1) => (checking: boolean) => {
 		const active = app.workspace.getActiveFile();
 		const current = active ? dateOf(active.path, settings().periods, obsidianMoment) : undefined;

@@ -68,6 +68,11 @@ export const es: Translation = {
 	openThisMonthNote: "Abrir la nota de este mes",
 	openThisQuarterNote: "Abrir la nota de este trimestre",
 	openThisYearNote: "Abrir la nota de este año",
+	openTomorrowNote: "Abrir la nota de mañana",
+	openNextWeekNote: "Abrir la nota de la semana que viene",
+	openNextMonthNote: "Abrir la nota del mes que viene",
+	openNextQuarterNote: "Abrir la nota del próximo trimestre",
+	openNextYearNote: "Abrir la nota del año que viene",
 	openNextDateNote: "Abrir la nota siguiente del mismo periodo",
 	openPreviousDateNote: "Abrir la nota anterior del mismo periodo",
 

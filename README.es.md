@@ -153,6 +153,9 @@ Comandos:
 - **Abrir la nota de hoy**, **Abrir la nota de esta semana**, **Abrir la nota de este mes**,
   **Abrir la nota de este trimestre**, **Abrir la nota de este año**: uno por periodo activado. Una
   nota que aún no existe se crea.
+- **Abrir la nota de mañana**, **Abrir la nota de la semana que viene**, **Abrir la nota del mes
+  que viene**, **Abrir la nota del próximo trimestre**, **Abrir la nota del año que viene**: lo
+  mismo, un periodo más adelante.
 - **Abrir la nota siguiente del mismo periodo** y **Abrir la nota anterior del mismo periodo**:
   desde la nota de fecha en la que estás, salta a la nota existente más cercana antes o después.
 - **Abrir una nota de fecha escribiendo una frase**: escribe `next month` o `el miércoles pasado`,

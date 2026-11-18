@@ -66,6 +66,11 @@ export const en = {
 	openThisMonthNote: "Open this month's note",
 	openThisQuarterNote: "Open this quarter's note",
 	openThisYearNote: "Open this year's note",
+	openTomorrowNote: "Open tomorrow's note",
+	openNextWeekNote: "Open next week's note",
+	openNextMonthNote: "Open next month's note",
+	openNextQuarterNote: "Open next quarter's note",
+	openNextYearNote: "Open next year's note",
 	openNextDateNote: "Open next note of the same period",
 	openPreviousDateNote: "Open previous note of the same period",
 
