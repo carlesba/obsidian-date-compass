@@ -373,6 +373,11 @@ Settings → **Calendar**:
   default.
 - **Words per dot**: how many words each filled dot stands for. 250 by default; 0 turns word dots
   off and leaves only the task dot.
+- **Compatibility with theme styles for Calendar**: give the calendar the id `calendar-container`
+  that Liam Cain's Calendar plugin uses, so themes and CSS snippets written for that plugin, such
+  as the Minimal theme, style this calendar too. Off by default. Keep it off while the Calendar
+  plugin is open as well: two elements would share that id and the theme would style both. The
+  page warns when the setting is on and the Calendar plugin is enabled.
 
 A note is found only at the path its folder and name format give it. The look follows Liam Cain's
 [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) plugin (MIT).

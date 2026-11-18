@@ -393,6 +393,12 @@ Ajustes → **Calendario**:
   Activado por defecto.
 - **Palabras por punto**: cuántas palabras representa cada punto relleno. 250 por defecto; 0
   desactiva los puntos de palabras y deja solo el punto de tareas.
+- **Compatibilidad con estilos de tema para Calendar**: da al calendario el id
+  `calendar-container` que usa el plugin Calendar de Liam Cain, para que los temas y fragmentos
+  CSS escritos para ese plugin, como el tema Minimal, también den estilo a este calendario.
+  Desactivado por defecto. Déjalo desactivado mientras el plugin Calendar también esté abierto:
+  dos elementos compartirían ese id y el tema daría estilo a ambos. La página avisa cuando el
+  ajuste está activado y el plugin Calendar está habilitado.
 
 Una nota solo se encuentra en la ruta que le dan su carpeta y su formato de nombre. El aspecto
 sigue el del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) de Liam Cain
