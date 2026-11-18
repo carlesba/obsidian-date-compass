@@ -6,6 +6,7 @@ import { mergeDateNotes } from "./dateNotes/periods.ts";
 import type { DateNotesSettings } from "./dateNotes/periods.ts";
 import { mergeMentions } from "./mentions/settings.ts";
 import type { Mention } from "./mentions/settings.ts";
+import { mergeRibbonButtons } from "./ribbon/buttons.ts";
 
 export const PARSER_LANGUAGES = ["en", "es"] as const;
 export type ParserLanguage = (typeof PARSER_LANGUAGES)[number];
@@ -28,6 +29,7 @@ export interface DateCompassSettings {
 	calendar: CalendarSettings;
 	mentions: Mention[];
 	commands: DateCommand[];
+	ribbonButtons: string[];
 }
 
 export function isParserLanguage(value: unknown): value is ParserLanguage {
@@ -53,6 +55,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		calendar: mergeCalendar(data.calendar),
 		mentions: mergeMentions(data.mentions),
 		commands: mergeCommands(data.commands),
+		ribbonButtons: mergeRibbonButtons(data.ribbonButtons),
 	};
 }
 

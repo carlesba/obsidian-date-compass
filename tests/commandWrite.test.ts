@@ -233,6 +233,7 @@ function commandPageOf(command: DateCommand): ItemLike {
 		isEnabledInDateNotes: () => true,
 		chooseTarget: () => undefined,
 		notify: () => undefined,
+		ribbon: { listed: () => [], source: () => defaultSettings(), appliesLive: () => true, change: () => undefined, choose: () => undefined, notify: () => undefined },
 	});
 	const [, hidden] = (page.items ?? []) as unknown as [ItemLike, ItemLike];
 	return (hidden.items ?? [])[0];

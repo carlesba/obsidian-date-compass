@@ -203,6 +203,7 @@ function pageContext(settings: DateCompassSettings): CommandsPageContext {
 		isEnabledInDateNotes: () => true,
 		chooseTarget: () => undefined,
 		notify: () => undefined,
+		ribbon: { listed: () => [], source: () => settings, appliesLive: () => true, change: () => undefined, choose: () => undefined, notify: () => undefined },
 	};
 }
 

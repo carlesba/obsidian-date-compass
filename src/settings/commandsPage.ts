@@ -10,11 +10,14 @@ import { linkStyleItems } from "./linkStylePage.ts";
 import type { LinkStyleHost } from "./linkStylePage.ts";
 import type { IdentifiedPage } from "./pages.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
+import { ribbonButtonItems } from "./ribbonList.ts";
+import type { RibbonListContext } from "./ribbonList.ts";
 
 export interface CommandsPageContext extends LinkStyleHost {
 	commands: () => DateCommand[];
 	openPage: (pageId: string) => void;
 	change: (mutate: () => unknown) => Promise<void>;
+	ribbon: RibbonListContext;
 }
 
 export const COMMANDS_PAGE_ID = "commands";
@@ -55,7 +58,7 @@ export function commandsPage(context: CommandsPageContext): IdentifiedPage {
 		id: COMMANDS_PAGE_ID,
 		name: t("commandsSection"),
 		desc: t("commandsSectionDesc"),
-		items: [commandsList(commands, context), { type: "group", visible: false, items: commands.map((command) => commandPage(command, context)) }],
+		items: [commandsList(commands, context), { type: "group", visible: false, items: commands.map((command) => commandPage(command, context)) }, ...ribbonButtonItems(context.ribbon)],
 	};
 }
 

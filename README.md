@@ -329,6 +329,23 @@ Mentions and commands share these settings:
 - **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`. Below
   it, "Today: Tue 17 Nov" shows today in the format as you type.
 
+### Ribbon buttons
+
+Below the commands, **Ribbon buttons** lists the Date Compass commands that get their own button in
+the ribbon; on a phone they are in the ribbon menu. It starts empty. **+** opens a list of the
+commands that are not there yet: the commands that open date notes (today's, this week's,
+tomorrow's, next week's and so on, for the periods that are enabled), **Open next note of the same
+period**, **Open previous note of the same period**, **Open a date note by phrase** and your own
+commands from the list above. Each row has a handle to drag it into a new order and a ✕ that
+removes it. The buttons follow the order of the list and change as soon as you edit it.
+
+A button shows the icon of its command and the command name as its tooltip; clicking it runs the
+command. The same icons show in the mobile toolbar. Your own commands share one icon.
+
+A row stays in the list when its command cannot run, and says why: the period is turned off in
+Date notes, the command still needs a property, or the command was deleted. It has no button
+until that is fixed. The calendar keeps its own ribbon icon and is not in this list.
+
 ## Calendar
 
 A month calendar for the sidebar, built on the same date notes as everything else: each day, week

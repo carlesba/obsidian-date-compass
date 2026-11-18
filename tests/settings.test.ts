@@ -43,6 +43,7 @@ test("a fresh install gets the defaults, with English as the only parser languag
 		commands: [
 			{ id: "insert-dates", name: "Insert dates", destination: "cursor", property: "", mode: "add", asks: "dates", link: true, targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" },
 		],
+		ribbonButtons: [],
 	});
 });
 
@@ -61,6 +62,7 @@ test("stored partial settings merge over the defaults", () => {
 		calendar: { showWeekNumbers: true, confirmBeforeCreate: true, decorators: defaultDecorators(), themeCompatibility: false },
 		mentions: defaultMentions(),
 		commands: presetCommands(),
+		ribbonButtons: [],
 	});
 });
 
@@ -109,7 +111,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), calendar: { showWeekNumbers: true, confirmBeforeCreate: true, decorators: defaultDecorators(), themeCompatibility: false }, mentions: defaultMentions(), commands: presetCommands() });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), calendar: { showWeekNumbers: true, confirmBeforeCreate: true, decorators: defaultDecorators(), themeCompatibility: false }, mentions: defaultMentions(), commands: presetCommands(), ribbonButtons: [] });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });

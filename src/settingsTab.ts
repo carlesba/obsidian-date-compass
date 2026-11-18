@@ -16,6 +16,7 @@ import { weekRuleOf, weekStartDisagreesWithFormat } from "./calendar/weeks.ts";
 import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
 import { enabledExternalDateNotes, obsidianMoment } from "./dateNotes/obsidianHost.ts";
+import { PERIODS } from "./dateNotes/periods.ts";
 import { mentionsPage } from "./settings/mentionsPage.ts";
 import type { LinkStyleHost } from "./settings/linkStylePage.ts";
 import type { SampleHost } from "./settings/todaySample.ts";
@@ -32,7 +33,7 @@ import type { PropertySuggestion } from "./filters/obsidianVault.ts";
 
 const MENTION_FIELDS_THAT_CHANGE_THE_PAGE: readonly MentionControlField[] = ["targets", "aliasShape"];
 
-const WEEK_ENABLED_KEY = periodKey("week", "enabled");
+const PERIOD_ENABLED_KEYS: readonly string[] = PERIODS.map((period) => periodKey(period, "enabled"));
 
 const WEEK_FORMAT_KEY = periodKey("week", "format");
 
@@ -108,6 +109,14 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						commands: () => this.plugin.settings.commands,
 						openPage: (pageId) => this.openPage(pageId),
 						change: (mutate) => this.changeEntries(mutate),
+						ribbon: {
+							listed: () => this.plugin.settings.ribbonButtons,
+							source: () => this.plugin.settings,
+							appliesLive: () => this.plugin.ribbonAppliesLive(),
+							change: (listed) => void this.changeEntries(() => (this.plugin.settings.ribbonButtons = listed)),
+							choose: (anchor, choices, pick) => this.choose(anchor, choices, pick),
+							notify: (message) => new Notice(message),
+						},
 					}),
 				],
 			},
@@ -231,7 +240,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		const mentionKey = mentionKeyParts(key);
 		if (mentionKey?.field === "trigger") this.showTriggerAfterTyping(mentionKey.mentionId);
 		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
-		else if (key === WEEK_ENABLED_KEY || key === CALENDAR_THEME_COMPATIBILITY_KEY) this.update();
+		else if (PERIOD_ENABLED_KEYS.includes(key) || key === CALENDAR_THEME_COMPATIBILITY_KEY) this.update();
 		else if (key === WEEK_FORMAT_KEY) this.updateAfterTyping();
 		else this.refreshCommandPage(commandPageRefresh(key) ?? decoratorPageRefresh(key));
 	}

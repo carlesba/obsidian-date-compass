@@ -1,29 +1,14 @@
 import { Notice } from "obsidian";
 import type { App, Plugin } from "obsidian";
 import { t } from "../i18n/index.ts";
-import type { TranslationKey } from "../i18n/index.ts";
+import { CURRENT_PERIOD_COMMANDS, NEXT_DATE_NOTE_COMMAND, NEXT_PERIOD_COMMANDS, PREVIOUS_DATE_NOTE_COMMAND } from "./commandList.ts";
+import type { ListedCommand } from "./commandList.ts";
 import { ensureDateNote } from "./create.ts";
 import { createDateNoteHost, obsidianMoment } from "./obsidianHost.ts";
 import { dateOf, nearestDateNote } from "./paths.ts";
 import { PERIODS } from "./periods.ts";
 import type { DateNotesSettings, Period } from "./periods.ts";
 import type { Moment } from "moment";
-
-const CURRENT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey }> = {
-	day: { id: "open-today", name: "openTodayNote" },
-	week: { id: "open-this-week", name: "openThisWeekNote" },
-	month: { id: "open-this-month", name: "openThisMonthNote" },
-	quarter: { id: "open-this-quarter", name: "openThisQuarterNote" },
-	year: { id: "open-this-year", name: "openThisYearNote" },
-};
-
-const NEXT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey }> = {
-	day: { id: "open-tomorrow", name: "openTomorrowNote" },
-	week: { id: "open-next-week", name: "openNextWeekNote" },
-	month: { id: "open-next-month", name: "openNextMonthNote" },
-	quarter: { id: "open-next-quarter", name: "openNextQuarterNote" },
-	year: { id: "open-next-year", name: "openNextYearNote" },
-};
 
 export type DateNotePane = "current" | "split";
 
@@ -40,10 +25,11 @@ export async function openDateNote(app: App, settings: DateNotesSettings, date: 
 export function registerDateNoteCommands(plugin: Plugin, settings: () => DateNotesSettings): void {
 	const { app } = plugin;
 	const openNote = (date: Moment, period: Period) => openDateNote(app, settings(), date, period);
-	const addPeriodCommand = ({ id, name }: { id: string; name: TranslationKey }, period: Period, periodsAhead: number) =>
+	const addPeriodCommand = ({ id, name, icon }: ListedCommand, period: Period, periodsAhead: number) =>
 		plugin.addCommand({
 			id,
 			name: t(name),
+			icon,
 			checkCallback: (checking) => {
 				if (!settings().periods[period].enabled) return false;
 				if (!checking) void openNote(obsidianMoment().add(periodsAhead, period), period);
@@ -64,7 +50,8 @@ export function registerDateNoteCommands(plugin: Plugin, settings: () => DateNot
 		else new Notice(t(direction === 1 ? "noNextDateNote" : "noPreviousDateNote"));
 		return true;
 	};
-	plugin.addCommand({ id: "open-next-date-note", name: t("openNextDateNote"), checkCallback: step(1) });
-	plugin.addCommand({ id: "open-previous-date-note", name: t("openPreviousDateNote"), checkCallback: step(-1) });
+	const addStepCommand = ({ id, name, icon }: ListedCommand, direction: 1 | -1) => plugin.addCommand({ id, name: t(name), icon, checkCallback: step(direction) });
+	addStepCommand(NEXT_DATE_NOTE_COMMAND, 1);
+	addStepCommand(PREVIOUS_DATE_NOTE_COMMAND, -1);
 }
 

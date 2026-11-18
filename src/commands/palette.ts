@@ -14,8 +14,12 @@ export interface PaletteCommand {
 	command: DateCommand;
 }
 
+export const PALETTE_COMMAND_ID_PREFIX = "command-";
+
+export const PALETTE_COMMAND_ICON = "text-cursor-input";
+
 export function paletteCommandId(command: DateCommand): string {
-	return `command-${command.id}`;
+	return `${PALETTE_COMMAND_ID_PREFIX}${command.id}`;
 }
 
 export function paletteCommands(commands: readonly DateCommand[]): PaletteCommand[] {

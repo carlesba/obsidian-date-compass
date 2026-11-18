@@ -344,6 +344,26 @@ Las menciones y los comandos comparten estos ajustes:
   defecto `ddd D MMM`. Debajo, «Hoy: mar. 17 nov.» muestra el día de hoy en el formato mientras
   escribes.
 
+### Botones de la barra de herramientas
+
+Debajo de los comandos, **Botones de la barra de herramientas** lista los comandos de Date Compass
+que tienen su propio botón en la barra de herramientas; en un teléfono están en el menú de esa
+barra. Empieza vacía. **+** abre una lista con los comandos que aún no están: los que abren notas
+de fecha (la de hoy, la de esta semana, la de mañana, la de la semana que viene, etc., de los
+periodos activados), **Abrir la nota siguiente del mismo periodo**, **Abrir la nota anterior del
+mismo periodo**, **Abrir una nota de fecha escribiendo una frase** y tus propios comandos de la
+lista de arriba. Cada fila tiene un asa para arrastrarla a otro lugar y una ✕ que la quita. Los
+botones siguen el orden de la lista y cambian en cuanto la editas.
+
+Un botón muestra el icono de su comando y el nombre del comando como descripción emergente; al
+hacer clic se ejecuta el comando. Los mismos iconos se ven en la barra de herramientas móvil. Tus
+propios comandos comparten un icono.
+
+Una fila se queda en la lista cuando su comando no se puede ejecutar, y dice por qué: el periodo
+está desactivado en Notas de fecha, al comando le falta una propiedad o el comando se borró. No
+tiene botón hasta que eso se arregle. El calendario conserva su propio icono y no está en esta
+lista.
+
 ## Calendario
 
 Un calendario mensual para la barra lateral, construido sobre las mismas notas de fecha que todo
