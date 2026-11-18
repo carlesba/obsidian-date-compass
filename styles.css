@@ -9,6 +9,10 @@
 	font-size: var(--font-ui-large);
 }
 
+.date-compass-dates-property {
+	margin-top: var(--size-4-4);
+}
+
 .date-compass-dates-reading {
 	margin-top: var(--size-4-4);
 	min-height: 1.5em;
