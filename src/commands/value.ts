@@ -20,10 +20,12 @@ export interface ValueRequest {
 
 const TEXT_FORMATS: Record<"date" | "datetime", string> = { date: "YYYY-MM-DD", datetime: "YYYY-MM-DDTHH:mm" };
 
+export function plainItem(note: NoteRef, kind: PropertyKind): string {
+	return kind === "date" || kind === "datetime" ? note.date.format(TEXT_FORMATS[kind]) : note.name;
+}
+
 function itemOf(note: NoteRef, request: ValueRequest): string {
-	if (request.link) return request.linkTo(note);
-	if (request.kind === "date" || request.kind === "datetime") return note.date.format(TEXT_FORMATS[request.kind]);
-	return note.name;
+	return request.link ? request.linkTo(note) : plainItem(note, request.kind);
 }
 
 export function valueToWrite(request: ValueRequest): string | string[] {

@@ -4,8 +4,8 @@ import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage } from "./settings.ts";
-import { isCommandKey, isTypedCommandKey, mentionKeyParts, readControl, writeControl } from "./settings/controlKeys.ts";
-import type { MentionControlField } from "./settings/controlKeys.ts";
+import { commandPageRefresh, mentionKeyParts, readControl, writeControl } from "./settings/controlKeys.ts";
+import type { MentionControlField, PageRefresh } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup } from "./settings/dateNotesPage.ts";
 import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
@@ -72,6 +72,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						change: (mutate) => this.changeEntries(mutate),
 					}),
 					commandsPage({
+						...this.linkStyleHost(),
 						commands: () => this.plugin.settings.commands,
 						openPage: (pageId) => this.openPage(pageId),
 						change: (mutate) => this.changeEntries(mutate),
@@ -175,8 +176,12 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		const mentionKey = mentionKeyParts(key);
 		if (mentionKey?.field === "trigger") this.showTriggerAfterTyping(mentionKey.mentionId);
 		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
-		else if (isTypedCommandKey(key)) this.updateAfterTyping();
-		else if (isCommandKey(key)) this.update();
+		else this.refreshCommandPage(commandPageRefresh(key));
+	}
+
+	private refreshCommandPage(refresh: PageRefresh | undefined): void {
+		if (refresh === "now") this.update();
+		else if (refresh === "afterTyping") this.updateAfterTyping();
 	}
 
 	private async resetSettings(): Promise<void> {

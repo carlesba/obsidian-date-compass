@@ -9,22 +9,33 @@ import { installedExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 import { OpenDateNoteByPhraseModal } from "./dateNotes/phraseModal.ts";
 import { DateMentionSuggest } from "./mentions/suggest.ts";
 import { PaletteCommands } from "./commands/palette.ts";
-import { canRunCommand, runCommandInActiveNote } from "./commands/ask.ts";
+import { canRunPropertyCommand, runCursorCommand, runPropertyCommand } from "./commands/ask.ts";
 import { createObsidianDateCompassApi } from "./api/obsidianHost.ts";
 
 export default class DateCompassPlugin extends Plugin {
 	settings: DateCompassSettings = defaultSettings();
 	readonly api = createObsidianDateCompassApi(this.app, () => this.settings);
 	private interfaceLanguage = DEFAULT_LANGUAGE;
-	private readonly paletteCommands = new PaletteCommands(this, ({ id, name, command }) => ({
-		id,
-		name,
-		checkCallback: (checking) => {
-			if (!canRunCommand(this.app)) return false;
-			if (!checking) void runCommandInActiveNote(this.app, () => this.settings, command);
-			return true;
-		},
-	}));
+	private readonly paletteCommands = new PaletteCommands(this, ({ id, name, needsEditor, command }) =>
+		needsEditor
+			? {
+					id,
+					name,
+					editorCheckCallback: (checking, editor, context) => {
+						if (!checking) void runCursorCommand(this.app, () => this.settings, command, editor, context.file ?? undefined);
+						return true;
+					},
+				}
+			: {
+					id,
+					name,
+					checkCallback: (checking) => {
+						if (!canRunPropertyCommand(this.app)) return false;
+						if (!checking) void runPropertyCommand(this.app, () => this.settings, command);
+						return true;
+					},
+				},
+	);
 
 	async onload(): Promise<void> {
 		try {

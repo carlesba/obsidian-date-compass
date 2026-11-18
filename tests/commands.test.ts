@@ -14,6 +14,8 @@ import { effectiveMode, propertyKind, valueToWrite, writeToFrontmatter } from ".
 import { propertyWidgetOf } from "../src/commands/propertyType.ts";
 import { PaletteCommands, paletteCommands } from "../src/commands/palette.ts";
 import { commandSummary, commandsPage } from "../src/settings/commandsPage.ts";
+import type { CommandsPageContext } from "../src/settings/commandsPage.ts";
+import type { DateCompassSettings } from "../src/settings.ts";
 import { pagePath } from "../src/settings/pages.ts";
 import { commandKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
@@ -34,12 +36,29 @@ const linkTo = (note: NoteRef) => `[[${note.name}]]`;
 
 const STYLE = defaultLinkStyle();
 
-test("presets are Add dates and Set reminders, both adding dates as links", () => {
+const [INSERT_DATES, ADD_DATES, SET_REMINDERS] = presetCommands();
+
+test("presets are Insert dates at the cursor, then Add dates and Set reminders adding dates as links to a property", () => {
 	assert.deepEqual(presetCommands(), [
-		{ ...STYLE, id: "set-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
-		{ ...STYLE, id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
+		{ ...STYLE, id: "insert-dates", name: "Insert dates", destination: "cursor", property: "", mode: "add", asks: "dates", link: true },
+		{ ...STYLE, id: "set-dates", name: "Add dates", destination: "property", property: "dates", mode: "add", asks: "dates", link: true },
+		{ ...STYLE, id: "set-reminders", name: "Set reminders", destination: "property", property: "reminders", mode: "add", asks: "dates", link: true },
 	]);
 	assert.deepEqual(mergeSettings({ weekStart: "monday" }).commands, presetCommands());
+});
+
+test("stored actions are ignored and commands that are not a list give the presets", () => {
+	const stored = [{ id: "old", name: "Old", property: "p", mode: "replace", asks: "date", link: false }];
+	assert.deepEqual(mergeSettings({ actions: stored }).commands, presetCommands());
+	assert.deepEqual(mergeSettings({ actions: stored, commands: "none" }).commands, presetCommands());
+	assert.deepEqual(mergeSettings({ actions: stored, commands: [] }).commands, []);
+	assert.equal("actions" in mergeSettings({ actions: stored }), false);
+});
+
+test("a stored destination is kept, and a missing or unknown one writes to a property", () => {
+	const stored = (destination?: unknown) => ({ id: "x", name: "X", property: "p", ...(destination === undefined ? {} : { destination }) });
+	assert.deepEqual([stored(), stored("cursor"), stored("property"), stored("clipboard"), stored(3)].map((entry) => mergeCommands([entry])[0].destination), ["property", "cursor", "property", "property", "property"]);
+	assert.equal(newCommand([]).destination, "property");
 });
 
 test("no stored commands gives the presets, an empty list stays empty, unknown keys are dropped", () => {
@@ -47,7 +66,7 @@ test("no stored commands gives the presets, an empty list stays empty, unknown k
 	assert.deepEqual(mergeCommands({ not: "a list" }), presetCommands());
 	assert.deepEqual(mergeCommands([]), []);
 	const [command] = mergeCommands([{ id: "x", name: "X", property: "p", asks: "date", link: false, extra: 1, inputs: "junk" }, "broken", 3]);
-	assert.deepEqual(command, { ...STYLE, id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false });
+	assert.deepEqual(command, { ...STYLE, id: "x", name: "X", destination: "property", property: "p", mode: "add", asks: "date", link: false });
 });
 
 test("stored ids are kept unique, and loading what was saved changes nothing", () => {
@@ -58,9 +77,9 @@ test("stored ids are kept unique, and loading what was saved changes nothing", (
 
 test("stored fields fall back field by field, the link style included", () => {
 	const [styled] = mergeCommands([{ id: "s", linkPath: "fullPath", targets: ["week", "decade"], separator: "tab", template: " " }]);
-	assert.deepEqual(styled, { ...STYLE, id: "s", name: "", property: "", mode: "add", asks: "dates", link: true, linkPath: "fullPath", targets: ["week"] });
+	assert.deepEqual(styled, { ...STYLE, id: "s", name: "", destination: "property", property: "", mode: "add", asks: "dates", link: true, linkPath: "fullPath", targets: ["week"] });
 	const [command] = mergeCommands([{ id: "p", asks: "dates", name: 3, enabled: "yes", property: null, link: "no" }]);
-	assert.deepEqual(command, { ...STYLE, id: "p", name: "", property: "", mode: "add", asks: "dates", link: true });
+	assert.deepEqual(command, { ...STYLE, id: "p", name: "", destination: "property", property: "", mode: "add", asks: "dates", link: true });
 });
 
 const kinds = ["date", "datetime", "other", "list"] as const;
@@ -109,13 +128,16 @@ test("the property type lookup falls back to nothing when the registry is missin
 });
 
 test("the question a command asks names its property and what it takes", () => {
-	assert.equal(questionOf({ ...presetCommands()[0], property: " dates " }), "Which dates for dates?");
-	assert.equal(questionOf({ ...presetCommands()[0], asks: "date", property: "due" }), "Which date for due?");
+	assert.equal(questionOf({ ...ADD_DATES, property: " dates " }), "Which dates for dates?");
+	assert.equal(questionOf({ ...ADD_DATES, asks: "date", property: "due" }), "Which date for due?");
+	assert.equal(questionOf(INSERT_DATES), "Insert dates");
 });
 
 test("a command without a property is flagged", () => {
 	assert.equal(commandWarning(newCommand([])), "Enter the property this command sets.");
-	assert.equal(commandWarning(presetCommands()[0]), undefined);
+	assert.equal(commandWarning(ADD_DATES), undefined);
+	assert.equal(commandWarning({ ...ADD_DATES, property: "  " }), "Enter the property this command sets.");
+	assert.equal(commandWarning({ ...INSERT_DATES, property: "" }), undefined);
 });
 
 test("link targets read wikilinks, aliases, headings and markdown links", () => {
@@ -139,11 +161,11 @@ test("one palette command per command, re-registered when commands are renamed o
 	const { commands: registered, host } = fakeCommandHost();
 	const registry = new PaletteCommands(host, ({ id, name }) => ({ id, name }));
 	registry.sync(commands);
-	assert.deepEqual([...registered], [["command-set-dates", "Add dates"], ["command-set-reminders", "Set reminders"]]);
-	commands[0].name = "Plan trip";
+	assert.deepEqual([...registered], [["command-insert-dates", "Insert dates"], ["command-set-dates", "Add dates"], ["command-set-reminders", "Set reminders"]]);
+	commands[1].name = "Plan trip";
 	registry.sync(commands);
-	assert.deepEqual([...registered].sort(), [["command-set-dates", "Plan trip"], ["command-set-reminders", "Set reminders"]]);
-	commands.splice(0, 1);
+	assert.deepEqual([...registered].sort(), [["command-insert-dates", "Insert dates"], ["command-set-dates", "Plan trip"], ["command-set-reminders", "Set reminders"]]);
+	commands.splice(0, 2);
 	registry.sync(commands);
 	assert.deepEqual([...registered], [["command-set-reminders", "Set reminders"]]);
 	assert.deepEqual(paletteCommands([{ ...newCommand([]), name: "  ", property: "p" }]).map((command) => command.name), ["Untitled command"]);
@@ -160,7 +182,10 @@ test("the command controls read and write every field of a command and refuse ba
 	assert.equal(writeControl(settings, key("asks"), "date"), true);
 	assert.equal(readControl(settings, key("mode")), "add");
 	assert.equal(writeControl(settings, key("mode"), "replace"), true);
-	assert.deepEqual(settings.commands[0], { ...STYLE, id: "set-dates", name: "Mine", property: "when", mode: "replace", asks: "date", link: false });
+	assert.equal(readControl(settings, key("destination")), "property");
+	assert.equal(writeControl(settings, key("destination"), "cursor"), true);
+	assert.equal(writeControl(settings, key("destination"), "clipboard"), false);
+	assert.deepEqual(settings.commands[1], { ...STYLE, id: "set-dates", name: "Mine", destination: "cursor", property: "when", mode: "replace", asks: "date", link: false });
 	assert.equal(writeControl(settings, key("asks"), "periodicNote"), false);
 	assert.equal(writeControl(settings, key("mode"), "append"), false);
 	assert.equal(writeControl(settings, key("link"), "no"), false);
@@ -169,6 +194,19 @@ test("the command controls read and write every field of a command and refuse ba
 	assert.equal(writeControl(settings, commandKey("missing", "name"), "x"), false);
 	assert.equal(writeControl(settings, "commands/set-dates/inputs/x/key", "x"), false);
 });
+
+function pageContext(settings: DateCompassSettings): CommandsPageContext {
+	return {
+		commands: () => settings.commands,
+		openPage: () => undefined,
+		change: () => Promise.resolve(),
+		today: () => now,
+		write: () => undefined,
+		isEnabledInDateNotes: () => true,
+		chooseTarget: () => undefined,
+		notify: () => undefined,
+	};
+}
 
 function controlKeysOf(items: readonly unknown[]): string[] {
 	return items.flatMap((item) => {
@@ -180,11 +218,11 @@ function controlKeysOf(items: readonly unknown[]): string[] {
 
 test("each command has one page with all its fields and nothing nests below it", () => {
 	const settings = defaultSettings();
-	const context = { commands: () => settings.commands, openPage: () => undefined, change: () => Promise.resolve() };
-	const page = commandsPage(context);
+	const page = commandsPage(pageContext(settings));
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { id: string; items: unknown[] }[] }];
-	assert.equal(hidden.items.length, 2);
-	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "property", "mode", "asks", "link"].map((field) => `commands/set-dates/${field}`));
+	assert.equal(hidden.items.length, 3);
+	assert.deepEqual(controlKeysOf(hidden.items[1].items), ["name", "destination", "property", "mode", "asks", "link", "linkPath", "aliasShape"].map((field) => `commands/set-dates/${field}`));
+	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "destination", "asks", "link", "template", "linkPath", "separator", "aliasShape"].map((field) => `commands/insert-dates/${field}`));
 	assert.equal(pagePath([{ type: "group", items: [page] }], "command-set-reminders")?.join("/"), "commands/command-set-reminders");
 	assert.equal(pagePath([page], "nowhere"), undefined);
 });
@@ -192,16 +230,16 @@ test("each command has one page with all its fields and nothing nests below it",
 test("the Commands page adds, reorders and removes commands", async () => {
 	const settings = defaultSettings();
 	const opened: string[] = [];
-	const context = { commands: () => settings.commands, openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => Promise.resolve(void mutate()) };
+	const context = { ...pageContext(settings), openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => Promise.resolve(void mutate()) };
 	type ListLike = { onReorder?: (a: number, b: number) => void; onDelete?: (index: number) => void; addItem?: { action: (el: HTMLElement) => void } };
 	const [commandsList] = (commandsPage(context).items ?? []) as unknown as [ListLike];
 	commandsList.onReorder?.(0, 1);
-	assert.deepEqual(settings.commands.map((command) => command.id), ["set-reminders", "set-dates"]);
+	assert.deepEqual(settings.commands.map((command) => command.id), ["set-dates", "insert-dates", "set-reminders"]);
 	commandsList.addItem?.action({} as HTMLElement);
 	await Promise.resolve();
 	assert.match(opened[0], /^command-command-[a-z0-9]+-1$/);
-	commandsList.onDelete?.(2);
-	assert.deepEqual(settings.commands.map((command) => command.id), ["set-reminders", "set-dates"]);
+	commandsList.onDelete?.(3);
+	assert.deepEqual(settings.commands.map((command) => command.id), ["set-dates", "insert-dates", "set-reminders"]);
 });
 
 test("a new command never reuses the id, and so the command, of a removed one", () => {
@@ -213,20 +251,22 @@ test("a new command never reuses the id, and so the command, of a removed one", 
 	assert.notEqual(newCommand([first], 1).id, first.id);
 });
 
-test("the command row says whether it adds or sets and what it asks", () => {
-	assert.equal(commandSummary(presetCommands()[1]), "Adds to reminders. Asks for Dates.");
-	assert.equal(commandSummary({ ...presetCommands()[1], mode: "replace" }), "Sets reminders. Asks for Dates.");
+test("the command row says where it writes, whether it adds or sets, and what it asks", () => {
+	assert.equal(commandSummary(SET_REMINDERS), "Adds to reminders. Asks for Dates.");
+	assert.equal(commandSummary({ ...SET_REMINDERS, mode: "replace" }), "Sets reminders. Asks for Dates.");
+	assert.equal(commandSummary(INSERT_DATES), "Inserts at the cursor. Asks for Dates.");
+	assert.equal(commandSummary({ ...SET_REMINDERS, destination: "cursor", asks: "date" }), "Inserts at the cursor. Asks for One date.");
 });
 
 test("a command stored as disabled loads as a command and gets its command", () => {
 	const commands = mergeCommands([{ id: "x", name: "X", enabled: false, property: "p", mode: "add", asks: "date", link: false }]);
-	assert.deepEqual(commands, [{ ...STYLE, id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false }]);
+	assert.deepEqual(commands, [{ ...STYLE, id: "x", name: "X", destination: "property", property: "p", mode: "add", asks: "date", link: false }]);
 	assert.deepEqual(paletteCommands(commands).map((command) => command.name), ["X"]);
 });
 
 test("a command with no property is not offered as a command", () => {
 	const unfinished = { ...newCommand([]), name: "Draft" };
-	assert.deepEqual(paletteCommands([unfinished, ...presetCommands()]).map((command) => command.name), ["Add dates", "Set reminders"]);
+	assert.deepEqual(paletteCommands([unfinished, ...presetCommands()]).map((command) => command.name), ["Insert dates", "Add dates", "Set reminders"]);
 });
 
 test("the One date picker asks the question as placeholder and says add or replace in its own text", async () => {
@@ -340,10 +380,10 @@ test("a stored command with no mode adds, a stored mode is kept, and an unknown 
 
 test("the command page offers Add and Replace right after the property", () => {
 	const settings = defaultSettings();
-	const page = commandsPage({ commands: () => settings.commands, openPage: () => undefined, change: () => Promise.resolve() });
+	const page = commandsPage(pageContext(settings));
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { items: { items: { name: string; control: { type: string; key: string; options?: Record<string, string> } }[] }[] }[] }];
-	const fields = hidden.items[0].items[0].items;
-	assert.equal(fields[1].control.key, "commands/set-dates/property");
-	assert.equal(fields[2].name, "When the property already has a value");
-	assert.deepEqual(fields[2].control, { type: "dropdown", key: "commands/set-dates/mode", options: { add: "Add", replace: "Replace" } });
+	const fields = hidden.items[1].items[0].items;
+	assert.equal(fields[2].control.key, "commands/set-dates/property");
+	assert.equal(fields[3].name, "When the property already has a value");
+	assert.deepEqual(fields[3].control, { type: "dropdown", key: "commands/set-dates/mode", options: { add: "Add", replace: "Replace" } });
 });

@@ -23,10 +23,6 @@ export function aliasFor(style: Pick<LinkStyle, "aliasShape" | "aliasFormat">, p
 
 export type ObsidianLink = (note: NoteRef, alias: string | undefined) => string;
 
-export function formattedItems(items: readonly string[], notes: readonly NoteRef[], linkTemplate: string): string[] {
-	return items.map((link, index) => renderLink(linkTemplate, { link, note: notes[index], alias: undefined }));
-}
-
 function joinLinks(links: readonly string[], separator: LinkSeparator): string {
 	if (links.length < 2) return links.join("");
 	if (separator === "space") return links.join(" ");

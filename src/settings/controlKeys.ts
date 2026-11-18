@@ -8,7 +8,7 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
-import { COMMAND_FIELDS, ASK_KINDS, WRITE_MODES } from "../commands/settings.ts";
+import { ASK_KINDS, COMMAND_DESTINATIONS, COMMAND_FIELDS, WRITE_MODES } from "../commands/settings.ts";
 import type { CommandField, DateCommand } from "../commands/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
@@ -110,31 +110,52 @@ function periodFieldOfKey(key: string): { period: Period; field: PeriodField } |
 
 const COMMAND_KEY_PREFIX = "commands/";
 
-const TYPED_COMMAND_FIELDS = ["name", "property"];
+export type CommandControlField = CommandField | LinkStyleField;
 
-export function isCommandKey(key: string): boolean {
-	return key.startsWith(COMMAND_KEY_PREFIX);
+const COMMAND_CONTROL_FIELDS: readonly CommandControlField[] = [...COMMAND_FIELDS, ...LINK_STYLE_FIELDS];
+
+const COMMAND_FIELDS_SHOWN_IN_THE_LIST: readonly CommandControlField[] = ["name", "property"];
+
+const COMMAND_FIELDS_THAT_KEEP_THE_PAGE: readonly CommandControlField[] = ["template", "linkPath", "separator", "aliasFormat"];
+
+export function commandKeyPrefix(commandId: string): string {
+	return `${COMMAND_KEY_PREFIX}${commandId}`;
 }
 
-export function isTypedCommandKey(key: string): boolean {
-	return isCommandKey(key) && TYPED_COMMAND_FIELDS.includes(key.split("/").pop() ?? "");
+export function commandKey(commandId: string, field: CommandControlField): string {
+	return `${commandKeyPrefix(commandId)}/${field}`;
 }
 
-export function commandKey(commandId: string, field: CommandField): string {
-	return `${COMMAND_KEY_PREFIX}${commandId}/${field}`;
+export interface CommandKeyParts {
+	commandId: string;
+	field: CommandControlField;
+}
+
+export function commandKeyParts(key: string): CommandKeyParts | undefined {
+	if (!key.startsWith(COMMAND_KEY_PREFIX)) return undefined;
+	const parts = key.slice(COMMAND_KEY_PREFIX.length).split("/");
+	const field = COMMAND_CONTROL_FIELDS.find((known) => known === parts[1]);
+	return parts.length === 2 && field ? { commandId: parts[0], field } : undefined;
+}
+
+export type PageRefresh = "now" | "afterTyping" | "none";
+
+export function commandPageRefresh(key: string): PageRefresh | undefined {
+	const parts = commandKeyParts(key);
+	if (!parts) return undefined;
+	if (COMMAND_FIELDS_SHOWN_IN_THE_LIST.includes(parts.field)) return "afterTyping";
+	return COMMAND_FIELDS_THAT_KEEP_THE_PAGE.includes(parts.field) ? "none" : "now";
 }
 
 interface CommandControl {
 	command: DateCommand;
-	field: CommandField;
+	field: CommandControlField;
 }
 
 function commandControlOfKey(settings: DateCompassSettings, key: string): CommandControl | undefined {
-	if (!key.startsWith(COMMAND_KEY_PREFIX)) return undefined;
-	const parts = key.slice(COMMAND_KEY_PREFIX.length).split("/");
-	const command = settings.commands.find((candidate) => candidate.id === parts[0]);
-	const field = COMMAND_FIELDS.find((known) => known === parts[1]);
-	return parts.length === 2 && command && field ? { command, field } : undefined;
+	const parts = commandKeyParts(key);
+	const command = parts && settings.commands.find((candidate) => candidate.id === parts.commandId);
+	return parts && command ? { command, field: parts.field } : undefined;
 }
 
 function readCommandControl({ command, field }: CommandControl): unknown {
@@ -149,10 +170,14 @@ function writeCommandControl({ command, field }: CommandControl, value: unknown)
 			return writeChoice(ASK_KINDS, value, (asks) => (command.asks = asks));
 		case "mode":
 			return writeChoice(WRITE_MODES, value, (mode) => (command.mode = mode));
+		case "destination":
+			return writeChoice(COMMAND_DESTINATIONS, value, (destination) => (command.destination = destination));
 		case "name":
 			return writeText(value, (name) => (command.name = name));
 		case "property":
 			return writeText(value, (property) => (command.property = property));
+		default:
+			return writeLinkStyleControl(command, field, value);
 	}
 }
 

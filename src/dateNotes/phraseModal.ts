@@ -1,4 +1,4 @@
-import { SuggestModal } from "obsidian";
+import { Platform, SuggestModal } from "obsidian";
 import type { App } from "obsidian";
 import { phrasePickerTextOf, pickerNoteTextOf } from "../commands/pickerText.ts";
 import { t } from "../i18n/index.ts";
@@ -7,6 +7,7 @@ import type { DateRow } from "../mentions/rows.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { openDateNote } from "./commands.ts";
+import type { Period } from "./periods.ts";
 import { obsidianMoment } from "./obsidianHost.ts";
 
 export abstract class ChoosingSuggestModal<Choice> extends SuggestModal<Choice> {
@@ -38,7 +39,9 @@ export abstract class ChoosingSuggestModal<Choice> extends SuggestModal<Choice> 
 export interface NotePickerOptions {
 	placeholder: string;
 	note?: string;
-	choose: (row: DateRow) => void;
+	targets?: readonly Period[];
+	aliasWithAltEnter?: boolean;
+	choose: (row: DateRow, event: MouseEvent | KeyboardEvent) => void;
 	dismissed?: () => void;
 }
 
@@ -54,18 +57,32 @@ export class DateNotePickerModal extends ChoosingSuggestModal<DateRow> {
 		const noteText = pickerNoteTextOf(options);
 		if (noteText) this.resultContainerEl.before(createDiv({ cls: "date-compass-picker-note", text: noteText }));
 		this.emptyStateText = t("phraseNoMatch");
+		if (options.aliasWithAltEnter) this.chooseWithAliasOnAltEnter();
+	}
+
+	private chooseWithAliasOnAltEnter(): void {
+		this.scope.register(["Alt"], "Enter", (event) => {
+			this.selectActiveSuggestion(event);
+			return false;
+		});
+		if (Platform.isMobile) return;
+		this.setInstructions([
+			{ command: "↵", purpose: t("instructionInsertLink") },
+			{ command: "⌥↵", purpose: t("instructionWithAlias") },
+			{ command: "esc", purpose: t("instructionDismiss") },
+		]);
 	}
 
 	getSuggestions(query: string): DateRow[] {
-		return singleNoteRows(buildRows(query, obsidianRowContext(this.settings())));
+		return singleNoteRows(buildRows(query, obsidianRowContext(this.settings(), this.options.targets)));
 	}
 
 	renderSuggestion(row: DateRow, el: HTMLElement): void {
 		el.setText(rowLabel(row, obsidianMoment()));
 	}
 
-	onChooseSuggestion(row: DateRow): void {
-		this.options.choose(row);
+	onChooseSuggestion(row: DateRow, event: MouseEvent | KeyboardEvent): void {
+		this.options.choose(row, event);
 	}
 }
 

@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert";
 import { moment } from "./moment.ts";
 import type { NoteRef } from "../src/mentions/rows.ts";
 import { MORE_ROW, selectionIntent, withMoreRow } from "../src/mentions/selection.ts";
-import { aliasFor, formattedItems, insertionText, renderLink } from "../src/insertion/render.ts";
+import { aliasFor, insertionText, renderLink } from "../src/insertion/render.ts";
 import { defaultLinkStyle } from "../src/insertion/linkStyle.ts";
 import { linksToWrite } from "../src/insertion/linksToWrite.ts";
 import { chooseDestination, effectiveDestination, propertyAtLine } from "../src/insertion/destination.ts";
@@ -51,10 +51,6 @@ test("links are placed with the chosen separator in the list they are typed in",
 	assert.equal(insertionText(["[[a]]"], "lines", "Due "), "[[a]]");
 	assert.equal(insertionText(links, "lines", ""), "[[a]]\n[[b]]");
 	assert.equal(insertionText(links, "lines", "  Due "), "\n  [[a]]\n  [[b]]");
-});
-
-test("action items go through the link template with the formatted item as the link", () => {
-	assert.deepEqual(formattedItems(["x", "y"], NOTES, "- {{link}} {{name}}"), ["- x 2026-11-23", "- y 2026-11-24"]);
 });
 
 test("the default template and separator write one link and a comma-separated list", () => {

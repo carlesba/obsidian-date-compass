@@ -10,6 +10,7 @@ export interface CommandHost {
 export interface PaletteCommand {
 	id: string;
 	name: string;
+	needsEditor: boolean;
 	command: DateCommand;
 }
 
@@ -18,7 +19,7 @@ export function paletteCommandId(command: DateCommand): string {
 }
 
 export function paletteCommands(commands: readonly DateCommand[]): PaletteCommand[] {
-	return commands.filter((command) => !commandWarning(command)).map((command) => ({ id: paletteCommandId(command), name: commandName(command), command }));
+	return commands.filter((command) => !commandWarning(command)).map((command) => ({ id: paletteCommandId(command), name: commandName(command), needsEditor: command.destination === "cursor", command }));
 }
 
 export class PaletteCommands {

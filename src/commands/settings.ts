@@ -10,14 +10,18 @@ export type AskKind = (typeof ASK_KINDS)[number];
 export const WRITE_MODES = ["add", "replace"] as const;
 export type WriteMode = (typeof WRITE_MODES)[number];
 
+export const COMMAND_DESTINATIONS = ["property", "cursor"] as const;
+export type CommandDestination = (typeof COMMAND_DESTINATIONS)[number];
+
 const COMMAND_ID_PREFIX = "command";
 
-export const COMMAND_FIELDS = ["name", "property", "mode", "asks", "link"] as const;
+export const COMMAND_FIELDS = ["name", "destination", "property", "mode", "asks", "link"] as const;
 export type CommandField = (typeof COMMAND_FIELDS)[number];
 
 export interface DateCommand extends LinkStyle {
 	id: string;
 	name: string;
+	destination: CommandDestination;
 	property: string;
 	mode: WriteMode;
 	asks: AskKind;
@@ -26,8 +30,9 @@ export interface DateCommand extends LinkStyle {
 
 export function presetCommands(): DateCommand[] {
 	return [
-		{ ...defaultLinkStyle(), id: "set-dates", name: t("presetAddDates"), property: "dates", mode: "add", asks: "dates", link: true },
-		{ ...defaultLinkStyle(), id: "set-reminders", name: t("presetSetReminders"), property: "reminders", mode: "add", asks: "dates", link: true },
+		{ ...defaultLinkStyle(), id: "insert-dates", name: t("insertDates"), destination: "cursor", property: "", mode: "add", asks: "dates", link: true },
+		{ ...defaultLinkStyle(), id: "set-dates", name: t("presetAddDates"), destination: "property", property: "dates", mode: "add", asks: "dates", link: true },
+		{ ...defaultLinkStyle(), id: "set-reminders", name: t("presetSetReminders"), destination: "property", property: "reminders", mode: "add", asks: "dates", link: true },
 	];
 }
 
@@ -54,6 +59,7 @@ function mergeCommand(data: Record<string, unknown>, earlier: readonly DateComma
 		...mergeLinkStyle(data),
 		id: uniqueId(data.id, earlier, COMMAND_ID_PREFIX),
 		name: text(data.name),
+		destination: COMMAND_DESTINATIONS.find((destination) => destination === data.destination) ?? "property",
 		property: text(data.property),
 		mode: isWriteMode(data.mode) ? data.mode : "add",
 		asks: isAskKind(data.asks) ? data.asks : "dates",
@@ -62,7 +68,7 @@ function mergeCommand(data: Record<string, unknown>, earlier: readonly DateComma
 }
 
 export function newCommand(commands: readonly DateCommand[], now: number = Date.now()): DateCommand {
-	return { ...defaultLinkStyle(), id: freeId(commands, `${COMMAND_ID_PREFIX}-${now.toString(36)}`), name: "", property: "", mode: "add", asks: "dates", link: true };
+	return { ...defaultLinkStyle(), id: freeId(commands, `${COMMAND_ID_PREFIX}-${now.toString(36)}`), name: "", destination: "property", property: "", mode: "add", asks: "dates", link: true };
 }
 
 export function commandName(command: DateCommand): string {
@@ -70,10 +76,11 @@ export function commandName(command: DateCommand): string {
 }
 
 export function commandWarning(command: DateCommand): string | undefined {
-	return command.property.trim() === "" ? t("commandNeedsProperty") : undefined;
+	return command.destination === "property" && command.property.trim() === "" ? t("commandNeedsProperty") : undefined;
 }
 
 export function questionOf(command: DateCommand): string {
+	if (command.destination === "cursor") return commandName(command);
 	return t(command.asks === "date" ? "commandAsksDate" : "commandAsksDates", { name: command.property.trim() });
 }
 

@@ -4,8 +4,9 @@ import { t } from "../i18n/index.ts";
 import { markdownLinkTo, propertyLinkTo } from "../mentions/obsidianHost.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import { linksToWrite } from "./linksToWrite.ts";
-import type { LinkDestinationKind } from "./linksToWrite.ts";
+import type { LinkBuilders, LinkDestinationKind } from "./linksToWrite.ts";
 import type { LinkStyle } from "./linkStyle.ts";
+import type { LinkPath } from "./linkPath.ts";
 import { propertyWithLinks } from "./property.ts";
 import { chooseDestination } from "./destination.ts";
 import type { DatesDestination } from "./destination.ts";
@@ -23,6 +24,13 @@ export function focusedPropertyName(doc: Document = activeDocument): string | un
 
 export type LinksOf = (destination: LinkDestinationKind, notes: readonly NoteRef[], phrase: string, withAlias: boolean) => string[];
 
+export function obsidianLinkBuilders(app: App, sourcePath: string, linkPath: LinkPath): LinkBuilders {
+	return {
+		body: (note, alias) => markdownLinkTo(app, note, sourcePath, alias, linkPath),
+		property: (note, alias) => propertyLinkTo(app, note, sourcePath, alias, linkPath),
+	};
+}
+
 export function obsidianLinks(app: App, sourcePath: string, style: Pick<LinkStyle, "template" | "linkPath" | "aliasShape" | "aliasFormat">): LinksOf {
 	return (destination, notes, phrase, withAlias) =>
 		linksToWrite({
@@ -31,10 +39,7 @@ export function obsidianLinks(app: App, sourcePath: string, style: Pick<LinkStyl
 			phrase,
 			style,
 			withAlias,
-			links: {
-				body: (note, alias) => markdownLinkTo(app, note, sourcePath, alias, style.linkPath),
-				property: (note, alias) => propertyLinkTo(app, note, sourcePath, alias, style.linkPath),
-			},
+			links: obsidianLinkBuilders(app, sourcePath, style.linkPath),
 		});
 }
 
