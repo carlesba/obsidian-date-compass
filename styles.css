@@ -35,3 +35,21 @@
 	white-space: normal;
 	overflow-wrap: anywhere;
 }
+
+.date-compass-list-row > .setting-item-control {
+	display: contents;
+}
+
+.date-compass-list-row .mod-drag-handle {
+	order: -2;
+	margin-inline-end: var(--size-4-2);
+}
+
+.date-compass-list-row .date-compass-list-row-edit {
+	order: -1;
+	margin-inline-end: var(--size-4-2);
+}
+
+.date-compass-list-row > .setting-item-control > :not(.mod-drag-handle, .date-compass-list-row-edit) {
+	order: 1;
+}

@@ -1,5 +1,5 @@
 import type { Moment } from "moment";
-import type { SettingDefinitionGroup, SettingDefinitionList } from "obsidian";
+import type { Setting, SettingDefinitionGroup, SettingDefinitionList } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { DAY_MONTH_ORDERS } from "../settings.ts";
@@ -7,6 +7,7 @@ import type { DayMonthOrder, NextWeekdayMeaning, ParserLanguage, WeekStart } fro
 import { DAY_MONTH_ORDER_KEY, NEXT_WEEKDAY_KEY, WEEK_START_KEY } from "./controlKeys.ts";
 import { addLanguage, canRemoveLanguage, languagesToAdd, moveLanguage, removeLanguage } from "./languageList.ts";
 import type { IdentifiedPage } from "./pages.ts";
+import { LIST_ROW_CLASS } from "./listRow.ts";
 import { addTodaySample, todayIn } from "./todaySample.ts";
 import type { SampleHost } from "./todaySample.ts";
 
@@ -75,6 +76,7 @@ function languagesList(context: LocalizationPageContext): SettingDefinitionList 
 		items: enabled.map((language, position) => ({
 			name: t(LANGUAGE_NAMES[language]),
 			desc: position === 0 && enabled.length > 1 ? t("firstLanguageDesc") : undefined,
+			render: (setting: Setting) => void setting.settingEl.addClass(LIST_ROW_CLASS),
 		})),
 		onReorder: (from: number, to: number) => context.changeLanguages(moveLanguage(enabled, from, to)),
 		onDelete: (position: number) => {
