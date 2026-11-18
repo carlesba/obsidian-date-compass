@@ -21,6 +21,25 @@ export function mentionAt(lineBeforeCaret: string, trigger: string): MentionMatc
 	return undefined;
 }
 
+export interface ActiveMention<M extends { trigger: string }> {
+	mention: M;
+	match: MentionMatch;
+}
+
+export function activeMentionAt<M extends { trigger: string }>(lineBeforeCaret: string, mentions: readonly M[]): ActiveMention<M> | undefined {
+	let active: ActiveMention<M> | undefined;
+	for (const mention of mentions) {
+		const match = mentionAt(lineBeforeCaret, mention.trigger);
+		if (match && (!active || startsLater(match, mention, active))) active = { mention, match };
+	}
+	return active;
+}
+
+function startsLater(match: MentionMatch, mention: { trigger: string }, active: ActiveMention<{ trigger: string }>): boolean {
+	if (match.start !== active.match.start) return match.start > active.match.start;
+	return mention.trigger.length > active.mention.trigger.length;
+}
+
 export interface Dismissal {
 	position: string;
 	deadEndQuery?: string;
