@@ -319,15 +319,30 @@ test("Add on a list keeps the items and appends the new dates after them, unsort
 	});
 });
 
-test("Add on a list skips dates already there, comparing the trimmed written value", () => {
+test("Add on a list skips dates already there, comparing links by their target and the rest by the trimmed written value", () => {
 	const before = { dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]"] };
 	assert.deepEqual(frontmatterAfter(before, "nov 18 to nov 21", { mode: "add", kind: "list" }), {
-		dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]", "[[2026-11-18]]", "[[2026-11-20]]", "[[2026-11-21]]"],
+		dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]", "[[2026-11-18]]", "[[2026-11-20]]"],
 	});
 	assert.deepEqual(frontmatterAfter(before, "nov 19 to nov 20", { mode: "add", kind: "list", link: false }), {
 		dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]", "2026-11-19"],
 	});
 	assert.deepEqual(frontmatterAfter({ dates: ["[[2026-11-18]]"] }, "nov 18", { mode: "add", kind: "list" }), { dates: ["[[2026-11-18]]"] });
+});
+
+function frontmatterAfterAliased(before: Record<string, unknown>, phrase: string, kind: (typeof kinds)[number]): Record<string, unknown> {
+	const frontmatter = structuredClone(before);
+	const aliased = (note: NoteRef) => `[[${note.name}|${note.date.format("ddd D MMM")}]]`;
+	writeToFrontmatter(frontmatter, "dates", { notes: notesOf(phrase), link: true, kind, mode: "add", linkTo: aliased });
+	return frontmatter;
+}
+
+test("Add skips a note whose link is already in the property, whatever the alias of either", () => {
+	assert.deepEqual(frontmatterAfterAliased({ dates: ["[[2026-02-14]]"] }, "2026-02-14", "list"), { dates: ["[[2026-02-14]]"] });
+	assert.deepEqual(frontmatterAfterAliased({ dates: ["[[2026-02-14|Valentine]]"] }, "2026-02-14", "list"), { dates: ["[[2026-02-14|Valentine]]"] });
+	assert.deepEqual(frontmatterAfterAliased({ dates: ["[[2026-02-14]]"] }, "2026-02-15", "list"), { dates: ["[[2026-02-14]]", "[[2026-02-15|Sun 15 Feb]]"] });
+	assert.deepEqual(frontmatterAfterAliased({ dates: ["2026-02-14"] }, "2026-02-14", "list"), { dates: ["2026-02-14", "[[2026-02-14|Sat 14 Feb]]"] });
+	assert.deepEqual(frontmatterAfterAliased({ dates: "[[2026-02-14]], [[2026-02-16|Mon]]" }, "2026-02-14 to 2026-02-16", "other"), { dates: "[[2026-02-14]], [[2026-02-16|Mon]], [[2026-02-15|Sun 15 Feb]]" });
 });
 
 test("Add on a property that already holds a list appends whatever its type", () => {

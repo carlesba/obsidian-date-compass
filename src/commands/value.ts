@@ -1,3 +1,4 @@
+import { writtenIdentity } from "../insertion/property.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import type { WriteMode } from "./settings.ts";
 
@@ -46,16 +47,16 @@ function isEmpty(value: unknown): boolean {
 	return value === undefined || value === null || (typeof value === "string" && value.trim() === "");
 }
 
-function writtenText(value: unknown): string {
-	return String(value).trim();
+function identityOf(value: unknown): string {
+	return writtenIdentity(String(value).trim());
 }
 
-function missingFrom(present: readonly string[], items: readonly string[]): string[] {
-	const seen = new Set(present);
+function missingFrom(present: readonly unknown[], items: readonly string[]): string[] {
+	const seen = new Set(present.map(identityOf));
 	return items.filter((item) => {
-		const written = writtenText(item);
-		if (seen.has(written)) return false;
-		seen.add(written);
+		const identity = identityOf(item);
+		if (seen.has(identity)) return false;
+		seen.add(identity);
 		return true;
 	});
 }
@@ -63,10 +64,10 @@ function missingFrom(present: readonly string[], items: readonly string[]): stri
 function addedTo(existing: unknown, items: readonly string[], kind: PropertyKind): unknown {
 	if (Array.isArray(existing) || kind === "list") {
 		const kept: unknown[] = Array.isArray(existing) ? existing : [existing];
-		return [...kept, ...missingFrom(kept.map(writtenText), items)];
+		return [...kept, ...missingFrom(kept, items)];
 	}
 	const text = String(existing);
-	return [text, ...missingFrom(text.split(TEXT_SEPARATOR).map(writtenText), items)].join(TEXT_SEPARATOR);
+	return [text, ...missingFrom(text.split(TEXT_SEPARATOR), items)].join(TEXT_SEPARATOR);
 }
 
 function canBeAddedTo(existing: unknown): boolean {

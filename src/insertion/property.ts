@@ -21,9 +21,12 @@ function safeDecode(text: string): string {
 
 const LINK_START = /^\s*(\[\[|\[[^\]]*\]\()/;
 
+export function writtenIdentity(text: string): string {
+	return LINK_START.test(text) ? `link:${linkTarget(text)}` : `text:${text}`;
+}
+
 function identityOf(item: unknown): string {
-	if (typeof item !== "string") return JSON.stringify(item);
-	return LINK_START.test(item) ? `link:${linkTarget(item)}` : `text:${item}`;
+	return typeof item === "string" ? writtenIdentity(item) : JSON.stringify(item);
 }
 
 export function propertyWithLinks(existing: unknown, links: readonly string[]): unknown[] | undefined {
