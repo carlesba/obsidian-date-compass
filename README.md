@@ -14,6 +14,7 @@ The examples below assume today is **Tuesday 17 November 2026** and weeks start 
 - [Date notes and templates](#date-notes-and-templates)
 - [Mentions while typing](#mentions-while-typing)
 - [Commands](#commands)
+- [Calendar](#calendar)
 - [Public API for Templater](#public-api-for-templater)
 - [Settings layout](#settings-layout)
 - [Not yet](#not-yet)
@@ -328,6 +329,53 @@ Mentions and commands share these settings:
 - **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`. Below
   it, "Today: Tue 17 Nov" shows today in the format as you type.
 
+## Calendar
+
+A month calendar for the sidebar, built on the same date notes as everything else: each day, week
+number, month, quarter and year points at the note Date Compass would open for it.
+
+**Opening it.** Run the command **Open calendar** or click the calendar icon in the ribbon; the
+calendar appears in the right sidebar, and a calendar that is already open is brought to the
+front. It is never opened for you. On a phone or tablet the same command and ribbon icon open it
+in the right drawer. **Reveal active note in calendar** opens the calendar on the month of the
+date note you are in, whatever its period; a weekly, quarterly or yearly note shows the month its
+first day falls in.
+
+**Clicks.**
+
+- Click a day to open its daily note. A note that does not exist yet is created, after a
+  confirmation unless you turn that off.
+- Cmd-click on macOS, or Ctrl-click elsewhere, does the same in a new split.
+- Hold Cmd or Ctrl and hover over a day that has a note to preview it. The settings of the core
+  Page preview plugin have a **Calendar** toggle that drops the need for the key.
+- Right-click a day that has a note for **Delete** and the usual file menu.
+
+**Header.** The title shows the month, the quarter (`Q4`, only when quarterly notes are enabled)
+and the year. Each part opens its own note with the same clicks as a day, when its period is
+enabled; a part whose period is off is plain text. The arrows move one month, and **Today**
+returns to the current month. At midnight a calendar showing the current month moves on by itself.
+
+**Week column.** With **Show week numbers** on and weekly notes enabled, the first column shows
+each week's number and opens the weekly note. The first weekday and the week numbers follow
+**Week starts on** in Localization. When that setting and the name format of weekly notes number
+weeks differently, for example weeks starting on Sunday with the ISO format `GGGG-[W]WW`, a week
+can show one number in the calendar and another in its note; the Date notes page warns about it
+and changes neither setting.
+
+**Dots.** A day or week that has a note shows one filled dot per **Words per dot** words in the
+note, at least one and at most five, plus one hollow dot when the note has an unfinished task.
+
+Settings → **Calendar**:
+
+- **Show week numbers**: add the week column. On by default.
+- **Confirm before creating a note**: ask before creating a note that does not exist yet. On by
+  default.
+- **Words per dot**: how many words each filled dot stands for. 250 by default; 0 turns word dots
+  off and leaves only the task dot.
+
+A note is found only at the path its folder and name format give it. The look follows Liam Cain's
+[Calendar](https://github.com/liamcain/obsidian-calendar-plugin) plugin (MIT).
+
 ## Public API for Templater
 
 Other plugins and Templater scripts reach Date Compass through
@@ -405,8 +453,8 @@ single date, or an empty list.
 
 ## Settings layout
 
-On the main page, click a row to open its page: **Localization**, **Date notes**, **Mentions** and
-**Commands**. Last is **Reset all settings**, which puts every option back to the
+On the main page, click a row to open its page: **Localization**, **Date notes**, **Calendar**,
+**Mentions** and **Commands**. Last is **Reset all settings**, which puts every option back to the
 defaults after you confirm.
 
 The **Localization** page has:
@@ -425,6 +473,5 @@ Nothing is hidden: every behaviour that picks or hides something is a setting ab
 
 ## Not yet
 
-- A calendar view; it is planned for a later version.
 - Times of day.
 - Languages other than English and Spanish.

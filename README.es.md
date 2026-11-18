@@ -16,6 +16,7 @@ Los nombres de los ajustes son los que muestra Obsidian con la interfaz en espa�
 - [Notas de fecha y plantillas](#notas-de-fecha-y-plantillas)
 - [Menciones mientras escribes](#menciones-mientras-escribes)
 - [Comandos](#comandos)
+- [Calendario](#calendario)
 - [API pública para Templater](#api-pública-para-templater)
 - [Organización de los ajustes](#organización-de-los-ajustes)
 - [Todavía no](#todavía-no)
@@ -343,6 +344,59 @@ Las menciones y los comandos comparten estos ajustes:
   defecto `ddd D MMM`. Debajo, «Hoy: mar. 17 nov.» muestra el día de hoy en el formato mientras
   escribes.
 
+## Calendario
+
+Un calendario mensual para la barra lateral, construido sobre las mismas notas de fecha que todo
+lo demás: cada día, número de semana, mes, trimestre y año apunta a la nota que Date Compass
+abriría para él.
+
+**Cómo abrirlo.** Ejecuta el comando **Abrir calendario** o haz clic en el icono de calendario de
+la barra de herramientas; el calendario aparece en la barra lateral derecha, y si ya estaba abierto
+pasa al frente. Nunca se abre solo. En un teléfono o una tableta, el mismo comando y el mismo
+icono lo abren en el panel derecho. **Mostrar la nota activa en el calendario** abre el calendario
+en el mes de la nota de fecha en la que estás, sea del periodo que sea; una nota semanal,
+trimestral o anual muestra el mes en el que cae su primer día.
+
+**Clics.**
+
+- Haz clic en un día para abrir su nota diaria. Una nota que aún no existe se crea, tras una
+  confirmación salvo que la desactives.
+- Cmd-clic en macOS, o Ctrl-clic en el resto, hace lo mismo en una división nueva.
+- Mantén pulsado Cmd o Ctrl y pasa el cursor sobre un día que tiene nota para previsualizarla.
+  Los ajustes del plugin del núcleo de vista previa de páginas tienen un interruptor
+  **Calendario** que quita la necesidad de la tecla.
+- Haz clic derecho en un día que tiene nota para ver **Eliminar** y el menú habitual de archivo.
+
+**Cabecera.** El título muestra el mes, el trimestre (`Q4`, solo cuando las notas trimestrales
+están activadas) y el año. Cada parte abre su propia nota con los mismos clics que un día, cuando
+su periodo está activado; una parte cuyo periodo está desactivado es texto normal. Las flechas
+mueven un mes, y **Hoy** vuelve al mes actual. A medianoche, un calendario que muestra el mes
+actual avanza solo.
+
+**Columna de semanas.** Con **Mostrar números de semana** activado y las notas semanales
+activadas, la primera columna muestra el número de cada semana y abre la nota semanal. El primer
+día de la semana y los números de semana siguen **La semana empieza el** de Localización. Cuando
+ese ajuste y el formato de nombre de las notas semanales numeran las semanas de forma distinta,
+por ejemplo semanas que empiezan en domingo con el formato ISO `GGGG-[W]WW`, una semana puede
+mostrar un número en el calendario y otro en su nota; la página Notas de fecha lo avisa
+y no cambia ninguno de los dos ajustes.
+
+**Puntos.** Un día o una semana que tiene nota muestra un punto relleno por cada **Palabras por
+punto** palabras de la nota, como mínimo uno y como máximo cinco, más un punto hueco cuando la
+nota tiene una tarea sin terminar.
+
+Ajustes → **Calendario**:
+
+- **Mostrar números de semana**: añade la columna de semanas. Activado por defecto.
+- **Confirmar antes de crear una nota**: pregunta antes de crear una nota que aún no existe.
+  Activado por defecto.
+- **Palabras por punto**: cuántas palabras representa cada punto relleno. 250 por defecto; 0
+  desactiva los puntos de palabras y deja solo el punto de tareas.
+
+Una nota solo se encuentra en la ruta que le dan su carpeta y su formato de nombre. El aspecto
+sigue el del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) de Liam Cain
+(MIT).
+
 ## API pública para Templater
 
 Otros plugins y los scripts de Templater llegan a Date Compass con
@@ -422,7 +476,7 @@ para una fecha suelta, o una lista vacía.
 ## Organización de los ajustes
 
 En la página principal, haz clic en una fila para abrir su página: **Localización**, **Notas de
-fecha**, **Menciones** y **Comandos**. Al final está **Restablecer todos los
+fecha**, **Calendario**, **Menciones** y **Comandos**. Al final está **Restablecer todos los
 ajustes**, que devuelve cada opción a los valores predeterminados tras confirmarlo.
 
 La página **Localización** tiene:
@@ -443,6 +497,5 @@ No hay nada oculto: todo comportamiento que elige u oculta algo es uno de estos 
 
 ## Todavía no
 
-- Una vista de calendario; está prevista para una versión posterior.
 - Horas del día.
 - Idiomas distintos del inglés y el español.
