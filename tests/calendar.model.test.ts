@@ -7,6 +7,7 @@ import type { CivilMonth } from "../src/calendar/grid.ts";
 import { headerParts } from "../src/calendar/header.ts";
 import { calendarModel, dayClasses, titlePartClasses, weekClasses } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
+import type { Dot, DotCell } from "../src/calendar/decorators.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
 import { ISO_WEEK_RULE, SUNDAY_WEEK_RULE } from "../src/calendar/weeks.ts";
 import type { WeekRule } from "../src/calendar/weeks.ts";
@@ -14,7 +15,8 @@ import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import type { PeriodSettingsByPeriod } from "../src/dateNotes/periods.ts";
 import { moment } from "./moment.ts";
 
-const FILLED = { filled: true };
+const FILLED: Dot = { decoratorId: "dots-1", source: "words", shape: "filled", color: "default", position: "below" };
+const WITHOUT_NOTE: Dot = { ...FILLED, decoratorId: "dots-2", source: "links" };
 const NOVEMBER_2026 = { year: 2026, month: 11 };
 const TODAY = { year: 2026, month: 11, day: 17 };
 const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,9 +30,10 @@ interface Scene {
 	existing?: string[];
 	activePath?: string;
 	change?: (periods: PeriodSettingsByPeriod) => void;
+	dotsOf?: (path: string, cell: DotCell, hasNote: boolean) => Dot[];
 }
 
-function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers = true, existing = [], activePath, change }: Scene = {}): CalendarModel {
+function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers = true, existing = [], activePath, change, dotsOf = (_path, _cell, hasNote) => (hasNote ? [FILLED] : []) }: Scene = {}): CalendarModel {
 	const periods = dateNotesWithoutQuarter().periods;
 	change?.(periods);
 	const grid = monthGrid(month, rule, TODAY);
@@ -43,7 +46,8 @@ function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers 
 		showWeekNumbers,
 		activePath,
 		noteExists: (path) => existing.includes(path),
-		dotsOfNote: () => [FILLED],
+		showsDotsAbove: false,
+		dotsOf,
 	});
 }
 
@@ -70,6 +74,24 @@ test("a day carries its number, its note target and the classes of its state", (
 	const plain = dayOf(model, 3, 2);
 	assert.deepEqual(dayClasses(plain), ["day", "is-clickable"]);
 	assert.deepEqual(plain.dots, []);
+});
+
+test("cells without a note ask for the dots that show without one, and say whether they are a day or a week", () => {
+	const asked: string[] = [];
+	const model = modelOf({
+		existing: ["2026-11-17.md"],
+		dotsOf: (path, cell, hasNote) => {
+			asked.push(`${path} ${cell} ${hasNote}`);
+			return hasNote ? [FILLED] : [WITHOUT_NOTE];
+		},
+	});
+	assert.deepEqual(dayOf(model, 3, 1).dots, [FILLED]);
+	assert.deepEqual(dayOf(model, 3, 2).dots, [WITHOUT_NOTE]);
+	assert.deepEqual(model.rows[3].week?.dots, [WITHOUT_NOTE]);
+	assert.ok(asked.includes("2026-11-17.md day true"));
+	assert.ok(asked.includes("2026-11-18.md day false"));
+	assert.ok(asked.includes("2026-W47.md week false"));
+	assert.deepEqual(model.title.flatMap((part) => part.dots), []);
 });
 
 test("days are not clickable when daily notes are off", () => {

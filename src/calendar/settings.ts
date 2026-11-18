@@ -1,16 +1,12 @@
 import { isRecord } from "../dateNotes/periods.ts";
+import { mergeDecorators } from "./decorators.ts";
+import type { DotDecorator } from "./decorators.ts";
 
 export interface CalendarSettings {
 	showWeekNumbers: boolean;
 	confirmBeforeCreate: boolean;
-	wordsPerDot: number;
+	decorators: DotDecorator[];
 	themeCompatibility: boolean;
-}
-
-export const DEFAULT_WORDS_PER_DOT = 250;
-
-export function isWordsPerDot(value: unknown): value is number {
-	return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 export function defaultCalendar(): CalendarSettings {
@@ -22,7 +18,7 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 	return {
 		showWeekNumbers: typeof data.showWeekNumbers === "boolean" ? data.showWeekNumbers : true,
 		confirmBeforeCreate: typeof data.confirmBeforeCreate === "boolean" ? data.confirmBeforeCreate : true,
-		wordsPerDot: isWordsPerDot(data.wordsPerDot) ? data.wordsPerDot : DEFAULT_WORDS_PER_DOT,
+		decorators: mergeDecorators(data.decorators, data.wordsPerDot),
 		themeCompatibility: typeof data.themeCompatibility === "boolean" ? data.themeCompatibility : false,
 	};
 }

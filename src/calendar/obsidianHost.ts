@@ -1,15 +1,17 @@
-import { moment } from "obsidian";
+import { getAllTags, moment } from "obsidian";
 import type { App, TFile } from "obsidian";
 import type { Moment } from "moment";
 import type { CivilDate } from "../parse/calendar.ts";
-import { countWords, dotsOf, hasOpenTask, wordCountCache } from "./dots.ts";
-import type { Dot } from "./dots.ts";
+import { backlinkIndex, dotsOfDecorators, matchesFilters } from "./decorators.ts";
+import type { BacklinkIndex, Dot, DotCell, DotDecorator, LinkingNote } from "./decorators.ts";
+import { countWords, openTaskCount, wordCountCache } from "./dots.ts";
 import { firstDayOf } from "./grid.ts";
 import type { CivilMonth } from "./grid.ts";
 import type { WeekRule } from "./weeks.ts";
 
 export interface NoteDotsReader {
-	dotsOfNote(path: string, wordsPerDot: number): Dot[];
+	dotsOf(path: string, cell: DotCell, hasNote: boolean, decorators: readonly DotDecorator[]): Dot[];
+	linksChanged(): void;
 }
 
 interface PluginRegistry {
@@ -56,13 +58,38 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 			reading.delete(read);
 		}
 	};
+	let backlinks: BacklinkIndex | undefined;
+	const backlinksNow = (): BacklinkIndex => {
+		backlinks ??= backlinkIndex({ resolved: app.metadataCache.resolvedLinks, unresolved: app.metadataCache.unresolvedLinks });
+		return backlinks;
+	};
+	const linkingNoteOf = (path: string): LinkingNote => {
+		const cache = app.metadataCache.getCache(path);
+		return { path, tags: cache ? (getAllTags(cache) ?? []) : [], frontmatter: cache?.frontmatter };
+	};
+	const wordsOf = (file: TFile): number => {
+		const counted = counts.get(file.path, file.stat.mtime);
+		if (counted === undefined) countWordsOf(file).catch(() => undefined);
+		return counted ?? 0;
+	};
 	return {
-		dotsOfNote: (path, wordsPerDot) => {
-			const file = app.vault.getFileByPath(path);
-			if (!file) return [];
-			const counted = wordsPerDot > 0 ? counts.get(path, file.stat.mtime) : 0;
-			if (counted === undefined) countWordsOf(file).catch(() => undefined);
-			return dotsOf({ words: counted ?? 0, hasOpenTask: hasOpenTask(app.metadataCache.getFileCache(file)?.listItems) }, wordsPerDot);
+		dotsOf: (path, cell, hasNote, decorators) => {
+			const file = hasNote ? app.vault.getFileByPath(path) : null;
+			let linkingNotes: LinkingNote[] | undefined;
+			return dotsOfDecorators(decorators, cell, file !== null, (decorator) => {
+				switch (decorator.source) {
+					case "words":
+						return file ? wordsOf(file) : 0;
+					case "openTasks":
+						return file ? openTaskCount(app.metadataCache.getFileCache(file)?.listItems) : 0;
+					case "links":
+						linkingNotes ??= backlinksNow().sourcesOf(path).map(linkingNoteOf);
+						return linkingNotes.filter((note) => matchesFilters(note, decorator.filters)).length;
+				}
+			});
+		},
+		linksChanged: () => {
+			backlinks = undefined;
 		},
 	};
 }

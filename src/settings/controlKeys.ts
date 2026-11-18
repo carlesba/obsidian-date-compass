@@ -8,7 +8,8 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
-import { isWordsPerDot } from "../calendar/settings.ts";
+import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, validCells, validFilters } from "../calendar/decorators.ts";
+import type { DecoratorField, DotDecorator } from "../calendar/decorators.ts";
 import { ASK_KINDS, COMMAND_DESTINATIONS, COMMAND_FIELDS, WRITE_MODES } from "../commands/settings.ts";
 import type { CommandField, DateCommand } from "../commands/settings.ts";
 
@@ -24,11 +25,93 @@ export const CALENDAR_SHOW_WEEK_NUMBERS_KEY = "calendar/showWeekNumbers";
 
 export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate";
 
-export const CALENDAR_WORDS_PER_DOT_KEY = "calendar/wordsPerDot";
-
 export const CALENDAR_THEME_COMPATIBILITY_KEY = "calendar/themeCompatibility";
 
 const CALENDAR_KEY_PREFIX = "calendar/";
+
+const DECORATOR_KEY_PREFIX = "calendar/dots/";
+
+const DECORATOR_FIELDS_SHOWN_IN_THE_LIST: readonly DecoratorField[] = ["name", "amountPerDot", "maxDots"];
+
+const DECORATOR_FIELDS_THAT_KEEP_THE_PAGE: readonly DecoratorField[] = ["filters"];
+
+export function decoratorKey(decoratorId: string, field: DecoratorField): string {
+	return `${DECORATOR_KEY_PREFIX}${decoratorId}/${field}`;
+}
+
+export interface DecoratorKeyParts {
+	decoratorId: string;
+	field: DecoratorField;
+}
+
+export function decoratorKeyParts(key: string): DecoratorKeyParts | undefined {
+	if (!key.startsWith(DECORATOR_KEY_PREFIX)) return undefined;
+	const parts = key.slice(DECORATOR_KEY_PREFIX.length).split("/");
+	const field = DECORATOR_FIELDS.find((known) => known === parts[1]);
+	return parts.length === 2 && field ? { decoratorId: parts[0], field } : undefined;
+}
+
+export function decoratorPageRefresh(key: string): PageRefresh | undefined {
+	const parts = decoratorKeyParts(key);
+	if (!parts) return undefined;
+	if (DECORATOR_FIELDS_SHOWN_IN_THE_LIST.includes(parts.field)) return "afterTyping";
+	return DECORATOR_FIELDS_THAT_KEEP_THE_PAGE.includes(parts.field) ? "none" : "now";
+}
+
+interface DecoratorControl {
+	decorators: DotDecorator[];
+	index: number;
+	field: DecoratorField;
+}
+
+function decoratorControlOfKey(settings: DateCompassSettings, key: string): DecoratorControl | undefined {
+	const parts = decoratorKeyParts(key);
+	const { decorators } = settings.calendar;
+	const index = parts ? decorators.findIndex((candidate) => candidate.id === parts.decoratorId) : -1;
+	return parts && index >= 0 ? { decorators, index, field: parts.field } : undefined;
+}
+
+function writeDecoratorControl({ decorators, index, field }: DecoratorControl, value: unknown): boolean {
+	const decorator = decorators[index];
+	switch (field) {
+		case "name":
+			return writeText(value, (name) => (decorator.name = name));
+		case "source":
+			return writeChoice(DOT_SOURCES, value, (source) => {
+				if (source !== decorator.source) decorators[index] = { ...decoratorOf(source, decorator.id), name: decorator.name, cells: decorator.cells };
+			});
+		case "count":
+			return writeChoice(DOT_COUNTS, value, (count) => (decorator.count = count));
+		case "amountPerDot":
+			if (!isAmountPerDot(value)) return false;
+			decorator.amountPerDot = value;
+			return true;
+		case "maxDots":
+			if (!isMaxDots(value)) return false;
+			decorator.maxDots = value;
+			return true;
+		case "shape":
+			return writeChoice(DOT_SHAPES, value, (shape) => (decorator.shape = shape));
+		case "color":
+			return writeChoice(DOT_COLORS, value, (color) => (decorator.color = color));
+		case "position":
+			return writeChoice(DOT_POSITIONS, value, (position) => (decorator.position = position));
+		case "showWithoutNote":
+			return writeBoolean(value, (shown) => (decorator.showWithoutNote = shown));
+		case "cells": {
+			const cells = validCells(value);
+			if (!cells) return false;
+			decorator.cells = cells;
+			return true;
+		}
+		case "filters": {
+			const filters = validFilters(value);
+			if (!filters) return false;
+			decorator.filters = filters;
+			return true;
+		}
+	}
+}
 
 const MENTION_KEY_PREFIX = "mentions/";
 
@@ -215,7 +298,8 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return settings.calendar.showWeekNumbers;
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
-	if (key === CALENDAR_WORDS_PER_DOT_KEY) return settings.calendar.wordsPerDot;
+	const decoratorControl = decoratorControlOfKey(settings, key);
+	if (decoratorControl) return decoratorControl.decorators[decoratorControl.index][decoratorControl.field];
 	if (key === CALENDAR_THEME_COMPATIBILITY_KEY) return settings.calendar.themeCompatibility;
 	const mentionControl = mentionControlOfKey(settings, key);
 	return mentionControl ? mentionControl.mention[mentionControl.field] : undefined;
@@ -236,14 +320,11 @@ export function writeControl(settings: DateCompassSettings, key: string, value: 
 }
 
 function writeCalendarControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
+	const decoratorControl = decoratorControlOfKey(settings, key);
+	if (decoratorControl) return writeDecoratorControl(decoratorControl, value);
 	const { calendar } = settings;
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return writeBoolean(value, (shown) => (calendar.showWeekNumbers = shown));
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return writeBoolean(value, (confirm) => (calendar.confirmBeforeCreate = confirm));
-	if (key === CALENDAR_WORDS_PER_DOT_KEY) {
-		if (!isWordsPerDot(value)) return false;
-		calendar.wordsPerDot = value;
-		return true;
-	}
 	if (key === CALENDAR_THEME_COMPATIBILITY_KEY) return writeBoolean(value, (compatible) => (calendar.themeCompatibility = compatible));
 	return false;
 }

@@ -4,11 +4,12 @@ import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage } from "./settings.ts";
-import { CALENDAR_THEME_COMPATIBILITY_KEY, commandPageRefresh, mentionKeyParts, periodKey, readControl, writeControl } from "./settings/controlKeys.ts";
+import { CALENDAR_THEME_COMPATIBILITY_KEY, commandPageRefresh, decoratorPageRefresh, mentionKeyParts, periodKey, readControl, writeControl } from "./settings/controlKeys.ts";
 import type { MentionControlField, PageRefresh } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup, weekStartMismatchGroup } from "./settings/dateNotesPage.ts";
-import { calendarGroups } from "./settings/calendarPage.ts";
+import { calendarPage } from "./settings/calendarPage.ts";
+import type { Choice } from "./settings/calendarPage.ts";
 import { enabledPluginIds, localeWeekRule } from "./calendar/obsidianHost.ts";
 import { sharesRootIdWithOriginalCalendar } from "./calendar/themeCompatibility.ts";
 import { weekRuleOf, weekStartDisagreesWithFormat } from "./calendar/weeks.ts";
@@ -72,7 +73,15 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						notify: (message) => new Notice(message),
 					}),
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
-					sectionPage("calendarSection", "calendarSectionDesc", calendarGroups(() => this.sharesRootIdWithOriginalCalendar())),
+					calendarPage({
+						decorators: () => this.plugin.settings.calendar.decorators,
+						sharesRootIdWithOriginalCalendar: () => this.sharesRootIdWithOriginalCalendar(),
+						openPage: (pageId) => this.openPage(pageId),
+						change: (mutate) => this.changeEntries(mutate),
+						write: (key, value) => void this.setControlValue(key, value),
+						notify: (message) => new Notice(message),
+						choose: (anchor, choices, pick) => this.choose(anchor, choices, pick),
+					}),
 					mentionsPage({
 						...this.linkStyleHost(),
 						mentions: () => this.plugin.settings.mentions,
@@ -147,6 +156,13 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		};
 	}
 
+	private choose<Value extends string>(anchor: HTMLElement, choices: Choice<Value>[], pick: (value: Value) => void): void {
+		const menu = new Menu();
+		for (const choice of choices) menu.addItem((item) => item.setTitle(choice.name).onClick(() => pick(choice.value)));
+		const box = anchor.getBoundingClientRect();
+		menu.showAtPosition({ x: box.left, y: box.bottom });
+	}
+
 	private clashesOf(mention: Mention): TriggerClash[] {
 		return triggerClashes(mention, this.plugin.settings.mentions, enabledPluginsWithTriggers(this.app), slashCommandsEnabled(this.app));
 	}
@@ -203,7 +219,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
 		else if (key === WEEK_ENABLED_KEY || key === CALENDAR_THEME_COMPATIBILITY_KEY) this.update();
 		else if (key === WEEK_FORMAT_KEY) this.updateAfterTyping();
-		else this.refreshCommandPage(commandPageRefresh(key));
+		else this.refreshCommandPage(commandPageRefresh(key) ?? decoratorPageRefresh(key));
 	}
 
 	private refreshCommandPage(refresh: PageRefresh | undefined): void {

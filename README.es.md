@@ -382,23 +382,43 @@ por ejemplo semanas que empiezan en domingo con el formato ISO `GGGG-[W]WW`, una
 mostrar un número en el calendario y otro en su nota; la página Notas de fecha lo avisa
 y no cambia ninguno de los dos ajustes.
 
-**Puntos.** Un día o una semana que tiene nota muestra un punto relleno por cada **Palabras por
-punto** palabras de la nota, como mínimo uno y como máximo cinco, más un punto hueco cuando la
-nota tiene una tarea sin terminar.
+**Puntos.** Cada entrada de la lista **Puntos** en Ajustes → **Calendario** añade puntos a los
+días y semanas, en el orden de la lista. Una entrada tiene una fuente y un aspecto:
+
+- **Fuente**: **Palabras** cuenta las palabras de la nota, **Tareas pendientes** sus tareas sin
+  terminar y **Notas que enlazan** las notas que enlazan a ella, desde el texto o desde una
+  propiedad.
+- **Puntos**: un punto en cuanto hay algo, o un punto por cantidad, como uno cada 250 palabras,
+  hasta un límite de uno a cinco. Los puntos de palabras muestran siempre al menos uno en un día o
+  semana con nota.
+- **Mostrar en**: días, semanas o ambos.
+- **Forma**, **Color** y **Posición**: un punto relleno o un anillo hueco, en el color del tema,
+  el de acento o uno de los colores del tema, debajo o encima del número o en una esquina
+  superior. En el día resaltado de la nota abierta todos los puntos toman el color del texto
+  resaltado.
+- **Mostrar en días sin nota**, solo para notas que enlazan: una nota de reunión que enlaza al
+  martes que viene marca el martes antes de que exista su nota.
+- **Solo notas que cumplen todos los filtros**, solo para notas que enlazan: la ruta o el nombre
+  empieza por un texto, la nota tiene una etiqueta o una anidada bajo ella, o tiene una propiedad,
+  con un valor opcional escrito como `clave: valor`.
+
+Por defecto la lista mantiene el aspecto anterior: un punto relleno cada 250 palabras, como mínimo
+uno y como máximo cinco, y después un punto hueco cuando la nota tiene una tarea sin terminar. Un
+valor de **Palabras por punto** guardado por una versión anterior pasa a ser la cantidad de los
+puntos de palabras, y 0 deja solo los puntos de tareas.
 
 Ajustes → **Calendario**:
 
 - **Mostrar números de semana**: añade la columna de semanas. Activado por defecto.
 - **Confirmar antes de crear una nota**: pregunta antes de crear una nota que aún no existe.
   Activado por defecto.
-- **Palabras por punto**: cuántas palabras representa cada punto relleno. 250 por defecto; 0
-  desactiva los puntos de palabras y deja solo el punto de tareas.
 - **Compatibilidad con estilos de tema para Calendar**: da al calendario el id
   `calendar-container` que usa el plugin Calendar de Liam Cain, para que los temas y fragmentos
   CSS escritos para ese plugin, como el tema Minimal, también den estilo a este calendario.
   Desactivado por defecto. Déjalo desactivado mientras el plugin Calendar también esté abierto:
   dos elementos compartirían ese id y el tema daría estilo a ambos. La página avisa cuando el
   ajuste está activado y el plugin Calendar está habilitado.
+- **Puntos**: la lista de puntos descrita arriba, con + para añadir una entrada según su fuente.
 
 Una nota solo se encuentra en la ruta que le dan su carpeta y su formato de nombre. El aspecto
 sigue el del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) de Liam Cain

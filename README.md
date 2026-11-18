@@ -363,21 +363,39 @@ weeks differently, for example weeks starting on Sunday with the ISO format `GGG
 can show one number in the calendar and another in its note; the Date notes page warns about it
 and changes neither setting.
 
-**Dots.** A day or week that has a note shows one filled dot per **Words per dot** words in the
-note, at least one and at most five, plus one hollow dot when the note has an unfinished task.
+**Dots.** Each entry of the **Dots** list in Settings → **Calendar** adds dots to the days and
+weeks, in list order. An entry has a source and a look:
+
+- **Source**: **Words** counts the words of the note, **Open tasks** its unfinished tasks, and
+  **Linking notes** the notes that link to it, from the body or from a property.
+- **Dots**: one dot as soon as there is something, or one dot per amount, such as one per 250
+  words, up to a limit of one to five. Word dots always show at least one dot on a day or week with
+  a note.
+- **Show on**: days, weeks or both.
+- **Shape**, **Color** and **Position**: a filled dot or a hollow ring, in the theme's default
+  color, the accent or one of the theme's colors, below or above the number or in a top corner.
+  On the highlighted day of the open note every dot takes the highlighted text color.
+- **Show on days without a note**, for linking notes only: a meeting note that links to next
+  Tuesday marks Tuesday before its note exists.
+- **Only notes that match every filter**, for linking notes only: the path or the name starts with
+  a text, the note has a tag or one nested under it, or it has a property, optionally with a value
+  written as `key: value`.
+
+By default the list keeps the earlier look: one filled dot per 250 words, at least one and at most
+five, then one hollow dot when the note has an unfinished task. A **Words per dot** value saved by
+an earlier version becomes the amount of the word dots, and 0 leaves only the task dots.
 
 Settings → **Calendar**:
 
 - **Show week numbers**: add the week column. On by default.
 - **Confirm before creating a note**: ask before creating a note that does not exist yet. On by
   default.
-- **Words per dot**: how many words each filled dot stands for. 250 by default; 0 turns word dots
-  off and leaves only the task dot.
 - **Compatibility with theme styles for Calendar**: give the calendar the id `calendar-container`
   that Liam Cain's Calendar plugin uses, so themes and CSS snippets written for that plugin, such
   as the Minimal theme, style this calendar too. Off by default. Keep it off while the Calendar
   plugin is open as well: two elements would share that id and the theme would style both. The
   page warns when the setting is on and the Calendar plugin is enabled.
+- **Dots**: the list of dots described above, with + to add an entry by its source.
 
 A note is found only at the path its folder and name format give it. The look follows Liam Cain's
 [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) plugin (MIT).

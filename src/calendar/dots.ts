@@ -1,19 +1,7 @@
-export interface Dot {
-	filled: boolean;
-}
-
-export interface NoteFacts {
-	words: number;
-	hasOpenTask: boolean;
-}
-
 export interface WordCountCache {
 	get(path: string, mtime: number): number | undefined;
 	set(path: string, mtime: number, words: number): void;
 }
-
-export const MIN_WORD_DOTS = 1;
-export const MAX_WORD_DOTS = 5;
 
 const OPEN_TASK = " ";
 
@@ -27,18 +15,8 @@ export function countWords(text: string): number {
 	return text.match(WORD)?.length ?? 0;
 }
 
-export function hasOpenTask(listItems: readonly { task?: string }[] | undefined): boolean {
-	return listItems?.some((item) => item.task === OPEN_TASK) ?? false;
-}
-
-export function wordDots(words: number, wordsPerDot: number): number {
-	if (wordsPerDot <= 0) return 0;
-	return Math.min(MAX_WORD_DOTS, Math.max(MIN_WORD_DOTS, Math.floor(words / wordsPerDot)));
-}
-
-export function dotsOf(facts: NoteFacts, wordsPerDot: number): Dot[] {
-	const filled = Array.from({ length: wordDots(facts.words, wordsPerDot) }, () => ({ filled: true }));
-	return facts.hasOpenTask ? [...filled, { filled: false }] : filled;
+export function openTaskCount(listItems: readonly { task?: string }[] | undefined): number {
+	return listItems?.filter((item) => item.task === OPEN_TASK).length ?? 0;
 }
 
 export function wordCountCache(): WordCountCache {

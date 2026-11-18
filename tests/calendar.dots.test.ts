@@ -1,9 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { countWords, dotsOf, hasOpenTask, wordCountCache } from "../src/calendar/dots.ts";
-
-const FILLED = { filled: true };
-const HOLLOW = { filled: false };
+import { countWords, openTaskCount, wordCountCache } from "../src/calendar/dots.ts";
 
 test("words are counted across punctuation, numbers, accents and scripts without spaces", () => {
 	assert.equal(countWords(""), 0);
@@ -15,35 +12,12 @@ test("words are counted across punctuation, numbers, accents and scripts without
 	assert.equal(countWords("--- ... !!!"), 0);
 });
 
-test("a note shows one filled dot per full batch of words, at least one and at most five", () => {
-	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: false }, 250), [FILLED]);
-	assert.deepEqual(dotsOf({ words: 249, hasOpenTask: false }, 250), [FILLED]);
-	assert.deepEqual(dotsOf({ words: 250, hasOpenTask: false }, 250), [FILLED]);
-	assert.deepEqual(dotsOf({ words: 499, hasOpenTask: false }, 250), [FILLED]);
-	assert.deepEqual(dotsOf({ words: 749, hasOpenTask: false }, 250), [FILLED, FILLED]);
-	assert.deepEqual(dotsOf({ words: 1250, hasOpenTask: false }, 250), [FILLED, FILLED, FILLED, FILLED, FILLED]);
-	assert.deepEqual(dotsOf({ words: 90_000, hasOpenTask: false }, 250), [FILLED, FILLED, FILLED, FILLED, FILLED]);
-	assert.deepEqual(dotsOf({ words: 30, hasOpenTask: false }, 10), [FILLED, FILLED, FILLED]);
-});
-
-test("0 words per dot turns word dots off", () => {
-	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: false }, 0), []);
-	assert.deepEqual(dotsOf({ words: 5000, hasOpenTask: false }, 0), []);
-	assert.deepEqual(dotsOf({ words: 5000, hasOpenTask: true }, 0), [HOLLOW]);
-});
-
-test("an open task adds one hollow dot after the filled ones", () => {
-	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: true }, 250), [FILLED, HOLLOW]);
-	assert.deepEqual(dotsOf({ words: 500, hasOpenTask: true }, 250), [FILLED, FILLED, HOLLOW]);
-	assert.deepEqual(dotsOf({ words: 5000, hasOpenTask: true }, 250), [FILLED, FILLED, FILLED, FILLED, FILLED, HOLLOW]);
-});
-
-test("a note has an open task when any list item is an unchecked task", () => {
-	assert.equal(hasOpenTask(undefined), false);
-	assert.equal(hasOpenTask([]), false);
-	assert.equal(hasOpenTask([{}, { task: undefined }]), false);
-	assert.equal(hasOpenTask([{ task: "x" }, { task: "-" }]), false);
-	assert.equal(hasOpenTask([{ task: "x" }, { task: " " }]), true);
+test("a note counts its unchecked tasks", () => {
+	assert.equal(openTaskCount(undefined), 0);
+	assert.equal(openTaskCount([]), 0);
+	assert.equal(openTaskCount([{}, { task: undefined }]), 0);
+	assert.equal(openTaskCount([{ task: "x" }, { task: "-" }]), 0);
+	assert.equal(openTaskCount([{ task: "x" }, { task: " " }, { task: " " }]), 2);
 });
 
 test("word counts are remembered per path until the file's modification time changes", () => {

@@ -239,6 +239,56 @@
 	stroke: var(--color-dot);
 }
 
+.date-compass-calendar .dot-corner {
+	position: absolute;
+	top: 2px;
+	min-height: 0;
+}
+
+.date-compass-calendar .dot-corner.top-left {
+	left: 1px;
+}
+
+.date-compass-calendar .dot-corner.top-right {
+	right: 1px;
+}
+
+.date-compass-calendar .dot.dot-color-accent {
+	--color-dot: var(--interactive-accent);
+}
+
+.date-compass-calendar .dot.dot-color-red {
+	--color-dot: var(--color-red);
+}
+
+.date-compass-calendar .dot.dot-color-orange {
+	--color-dot: var(--color-orange);
+}
+
+.date-compass-calendar .dot.dot-color-yellow {
+	--color-dot: var(--color-yellow);
+}
+
+.date-compass-calendar .dot.dot-color-green {
+	--color-dot: var(--color-green);
+}
+
+.date-compass-calendar .dot.dot-color-cyan {
+	--color-dot: var(--color-cyan);
+}
+
+.date-compass-calendar .dot.dot-color-blue {
+	--color-dot: var(--color-blue);
+}
+
+.date-compass-calendar .dot.dot-color-purple {
+	--color-dot: var(--color-purple);
+}
+
+.date-compass-calendar .dot.dot-color-pink {
+	--color-dot: var(--color-pink);
+}
+
 .date-compass-calendar .active .dot.filled,
 .date-compass-calendar .is-clickable:active .dot.filled {
 	fill: var(--text-on-accent);

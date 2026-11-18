@@ -1,7 +1,7 @@
 import { setIcon } from "obsidian";
 import { t } from "../i18n/index.ts";
-import type { Dot } from "./dots.ts";
-import { dayClasses, titlePartClasses, weekClasses } from "./model.ts";
+import type { Dot, DotPosition } from "./decorators.ts";
+import { dayClasses, dotClasses, titlePartClasses, weekClasses } from "./model.ts";
 import type { CalendarModel, NoteCell, NoteTarget } from "./model.ts";
 
 export interface CalendarHandlers {
@@ -16,8 +16,8 @@ export interface CalendarHandlers {
 const ARROW_ICON = "chevron-left";
 const DOT_VIEW_BOX = "0 0 6 6";
 const DOT_CIRCLE = { cx: 3, cy: 3, r: 2 };
-const FILLED_DOT_CLASSES = ["dot", "filled"];
-const HOLLOW_DOT_CLASSES = ["dot", "hollow", "task"];
+const CORNER_POSITIONS: readonly DotPosition[] = ["topLeft", "topRight"];
+const CORNER_CLASSES: Record<string, string> = { topLeft: "top-left", topRight: "top-right" };
 const WEEK_CELL_CLASS = "week-num-cell";
 
 export function renderCalendar(root: HTMLElement, model: CalendarModel, handlers: CalendarHandlers): void {
@@ -59,22 +59,27 @@ function renderTable(root: HTMLElement, model: CalendarModel, handlers: Calendar
 	const body = table.createEl("tbody");
 	for (const row of model.rows) {
 		const tableRow = body.createEl("tr");
-		if (row.week) renderCell(tableRow.createEl("td", { cls: WEEK_CELL_CLASS }), weekClasses(row.week), row.week.label, row.week, handlers);
-		for (const day of row.days) renderCell(tableRow.createEl("td"), dayClasses(day), day.label, day, handlers);
+		if (row.week) renderCell(tableRow.createEl("td", { cls: WEEK_CELL_CLASS }), weekClasses(row.week), row.week.label, row.week, model.showsDotsAbove, handlers);
+		for (const day of row.days) renderCell(tableRow.createEl("td"), dayClasses(day), day.label, day, model.showsDotsAbove, handlers);
 	}
 }
 
-function renderCell(tableCell: HTMLElement, classes: string[], label: string, cell: NoteCell, handlers: CalendarHandlers): void {
-	const cellEl = tableCell.createDiv({ cls: classes, text: label });
-	renderDots(cellEl.createDiv({ cls: "dot-container" }), cell.dots);
+function renderCell(tableCell: HTMLElement, classes: string[], label: string, cell: NoteCell, showsDotsAbove: boolean, handlers: CalendarHandlers): void {
+	const cellEl = tableCell.createDiv({ cls: classes });
+	const dotsAt = (position: DotPosition) => cell.dots.filter((dot) => dot.position === position);
+	if (showsDotsAbove) renderDots(cellEl.createDiv({ cls: "dot-container" }), dotsAt("above"));
+	cellEl.appendText(label);
+	renderDots(cellEl.createDiv({ cls: "dot-container" }), dotsAt("below"));
+	for (const corner of CORNER_POSITIONS) {
+		const dots = dotsAt(corner);
+		if (dots.length > 0) renderDots(cellEl.createDiv({ cls: ["dot-container", "dot-corner", CORNER_CLASSES[corner]] }), dots);
+	}
 	bindNote(cellEl, cell, handlers);
 }
 
 function renderDots(container: HTMLElement, dots: readonly Dot[]): void {
 	for (const dot of dots) {
-		container
-			.createSvg("svg", { cls: dot.filled ? FILLED_DOT_CLASSES : HOLLOW_DOT_CLASSES, attr: { viewBox: DOT_VIEW_BOX } })
-			.createSvg("circle", { attr: DOT_CIRCLE });
+		container.createSvg("svg", { cls: dotClasses(dot), attr: { viewBox: DOT_VIEW_BOX } }).createSvg("circle", { attr: DOT_CIRCLE });
 	}
 }
 

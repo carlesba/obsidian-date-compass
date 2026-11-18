@@ -75,6 +75,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		this.registerEvent(vault.on("delete", (file) => this.noteChanged(file.path)));
 		this.registerEvent(vault.on("rename", (file: TAbstractFile, oldPath: string) => this.noteChanged(file.path, oldPath)));
 		this.registerEvent(metadataCache.on("changed", (file) => this.noteChanged(file.path)));
+		this.registerEvent(metadataCache.on("resolved", () => this.linksChanged()));
 		this.registerEvent(workspace.on("file-open", () => this.activeNoteChanged()));
 		this.registerEvent(workspace.on("active-leaf-change", () => this.activeNoteChanged()));
 		this.registerEvent(workspace.on("layout-change", () => this.renderIfAwaited()));
@@ -114,6 +115,11 @@ export class CalendarView extends ItemView implements HoverParent {
 		if (touchesVisible(this.visiblePaths, path, oldPath)) this.requestRender();
 	}
 
+	private linksChanged(): void {
+		this.dots.linksChanged();
+		if (this.settings().calendar.decorators.some((decorator) => decorator.source === "links")) this.requestRender();
+	}
+
 	private activeNoteChanged(): void {
 		if (activeNoteTouchesVisible(this.visiblePaths, this.app.workspace.getActiveFile()?.path, this.renderedActivePath)) this.requestRender();
 	}
@@ -149,6 +155,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		this.followToday();
 		const settings = this.settings();
 		const { periods } = settings.dateNotes;
+		const { decorators } = settings.calendar;
 		const rule = weekRuleOf(settings.weekStart, localeWeekRule());
 		const grid = monthGrid(this.displayed, rule, this.today);
 		const notes = visibleNotes(grid, periods, momentOf);
@@ -164,7 +171,8 @@ export class CalendarView extends ItemView implements HoverParent {
 			showWeekNumbers: settings.calendar.showWeekNumbers,
 			activePath,
 			noteExists: (path) => this.app.vault.getFileByPath(path) !== null,
-			dotsOfNote: (path) => this.dots.dotsOfNote(path, settings.calendar.wordsPerDot),
+			showsDotsAbove: decorators.some((decorator) => decorator.position === "above"),
+			dotsOf: (path, cell, hasNote) => this.dots.dotsOf(path, cell, hasNote, decorators),
 		});
 		this.root.empty();
 		renderCalendar(this.root, model, this.handlers);
