@@ -6,12 +6,19 @@ export const LIST_ROW_EDIT_CLASS = "date-compass-list-row-edit";
 
 const DRAG_HANDLE_CLASS = "mod-drag-handle";
 
-export function leadWithListControls(setting: Setting): void {
+export function leadWithListControls(setting: Setting): () => void {
 	setting.settingEl.addClass(LIST_ROW_CLASS);
+	let leading: Element[] = [];
+	let tornDown = false;
 	queueMicrotask(() => {
-		const leading = [DRAG_HANDLE_CLASS, LIST_ROW_EDIT_CLASS]
+		if (tornDown) return;
+		leading = [DRAG_HANDLE_CLASS, LIST_ROW_EDIT_CLASS]
 			.map((className) => setting.controlEl.querySelector(`.${className}`))
 			.filter((element): element is Element => element !== null);
 		setting.settingEl.prepend(...leading);
 	});
+	return () => {
+		tornDown = true;
+		leading.forEach((element) => element.remove());
+	};
 }

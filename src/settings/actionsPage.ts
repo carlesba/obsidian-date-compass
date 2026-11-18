@@ -73,7 +73,6 @@ function actionRow(action: DateAction, context: ActionsPageContext): SettingDefi
 		name: actionName(action),
 		desc: actionWarning(action) ?? actionSummary(action),
 		render: (setting) => {
-			leadWithListControls(setting);
 			setting.setName(actionName(action));
 			setting.setDesc(actionWarning(action) ?? actionSummary(action));
 			setting.addExtraButton((button) =>
@@ -83,6 +82,7 @@ function actionRow(action: DateAction, context: ActionsPageContext): SettingDefi
 					.onClick(() => context.openPage(actionPageId(action)))
 					.extraSettingsEl.addClass(LIST_ROW_EDIT_CLASS),
 			);
+			return leadWithListControls(setting);
 		},
 	};
 }
