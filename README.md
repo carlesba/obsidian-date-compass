@@ -18,7 +18,6 @@ The examples below assume today is **Tuesday 17 November 2026** and weeks start 
 - [Public API for Templater](#public-api-for-templater)
 - [Settings layout](#settings-layout)
 - [Not yet](#not-yet)
-- [For Carles: hand checks](#for-carles-hand-checks)
 
 ## Date phrases
 
@@ -377,8 +376,3 @@ Nothing is hidden: every behaviour that picks or hides something is a setting ab
 - A calendar view; it is planned for a later version.
 - Times of day.
 - Languages other than English and Spanish.
-- Publishing to the community plugin list, a GitHub repository, tags or releases.
-
-## For Carles: hand checks
-
-- [docs/hand-checks.md](docs/hand-checks.md): what to check by hand in `~/Obsidian/plugin tester`.
