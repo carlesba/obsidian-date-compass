@@ -12,6 +12,7 @@ export interface WordCountCache {
 	set(path: string, mtime: number, words: number): void;
 }
 
+export const MIN_WORD_DOTS = 1;
 export const MAX_WORD_DOTS = 5;
 
 const OPEN_TASK = " ";
@@ -32,7 +33,7 @@ export function hasOpenTask(listItems: readonly { task?: string }[] | undefined)
 
 export function wordDots(words: number, wordsPerDot: number): number {
 	if (wordsPerDot <= 0) return 0;
-	return Math.min(MAX_WORD_DOTS, Math.max(0, Math.floor(words / wordsPerDot)));
+	return Math.min(MAX_WORD_DOTS, Math.max(MIN_WORD_DOTS, Math.floor(words / wordsPerDot)));
 }
 
 export function dotsOf(facts: NoteFacts, wordsPerDot: number): Dot[] {

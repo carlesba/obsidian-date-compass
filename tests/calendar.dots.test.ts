@@ -15,10 +15,11 @@ test("words are counted across punctuation, numbers, accents and scripts without
 	assert.equal(countWords("--- ... !!!"), 0);
 });
 
-test("each full batch of words is one filled dot, up to five", () => {
-	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: false }, 250), []);
-	assert.deepEqual(dotsOf({ words: 249, hasOpenTask: false }, 250), []);
+test("a note shows one filled dot per full batch of words, at least one and at most five", () => {
+	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: false }, 250), [FILLED]);
+	assert.deepEqual(dotsOf({ words: 249, hasOpenTask: false }, 250), [FILLED]);
 	assert.deepEqual(dotsOf({ words: 250, hasOpenTask: false }, 250), [FILLED]);
+	assert.deepEqual(dotsOf({ words: 499, hasOpenTask: false }, 250), [FILLED]);
 	assert.deepEqual(dotsOf({ words: 749, hasOpenTask: false }, 250), [FILLED, FILLED]);
 	assert.deepEqual(dotsOf({ words: 1250, hasOpenTask: false }, 250), [FILLED, FILLED, FILLED, FILLED, FILLED]);
 	assert.deepEqual(dotsOf({ words: 90_000, hasOpenTask: false }, 250), [FILLED, FILLED, FILLED, FILLED, FILLED]);
@@ -26,12 +27,13 @@ test("each full batch of words is one filled dot, up to five", () => {
 });
 
 test("0 words per dot turns word dots off", () => {
+	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: false }, 0), []);
 	assert.deepEqual(dotsOf({ words: 5000, hasOpenTask: false }, 0), []);
 	assert.deepEqual(dotsOf({ words: 5000, hasOpenTask: true }, 0), [HOLLOW]);
 });
 
 test("an open task adds one hollow dot after the filled ones", () => {
-	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: true }, 250), [HOLLOW]);
+	assert.deepEqual(dotsOf({ words: 0, hasOpenTask: true }, 250), [FILLED, HOLLOW]);
 	assert.deepEqual(dotsOf({ words: 500, hasOpenTask: true }, 250), [FILLED, FILLED, HOLLOW]);
 	assert.deepEqual(dotsOf({ words: 5000, hasOpenTask: true }, 250), [FILLED, FILLED, FILLED, FILLED, FILLED, HOLLOW]);
 });
