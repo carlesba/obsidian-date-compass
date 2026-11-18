@@ -12,7 +12,7 @@ const NOVEMBER_2026 = { year: 2026, month: 11 };
 test("a month is always 6 rows of 7 consecutive days", () => {
 	for (const month of [NOVEMBER_2026, { year: 2026, month: 2 }, { year: 2015, month: 2 }, { year: 2024, month: 12 }]) {
 		for (const rule of [ISO_WEEK_RULE, SUNDAY_WEEK_RULE, SATURDAY_LOCALE]) {
-			const grid = monthGrid(month, rule, "iso");
+			const grid = monthGrid(month, rule);
 			assert.equal(grid.rows.length, 6);
 			const days = grid.rows.flatMap((row) => row.days);
 			assert.equal(days.length, 42);
@@ -25,14 +25,14 @@ test("a month is always 6 rows of 7 consecutive days", () => {
 });
 
 test("the first column is the week start: Monday, Sunday or the locale's Saturday", () => {
-	const firstColumn = (rule: WeekRule) => monthGrid(NOVEMBER_2026, rule, "iso").rows.map((row) => isoDate(row.days[0].date));
+	const firstColumn = (rule: WeekRule) => monthGrid(NOVEMBER_2026, rule).rows.map((row) => isoDate(row.days[0].date));
 	assert.deepEqual(firstColumn(ISO_WEEK_RULE), ["2026-10-26", "2026-11-02", "2026-11-09", "2026-11-16", "2026-11-23", "2026-11-30"]);
 	assert.deepEqual(firstColumn(SUNDAY_WEEK_RULE), ["2026-11-01", "2026-11-08", "2026-11-15", "2026-11-22", "2026-11-29", "2026-12-06"]);
 	assert.deepEqual(firstColumn(SATURDAY_LOCALE), ["2026-10-31", "2026-11-07", "2026-11-14", "2026-11-21", "2026-11-28", "2026-12-05"]);
 });
 
 test("days outside the displayed month are flagged as adjacent", () => {
-	const days = monthGrid(NOVEMBER_2026, ISO_WEEK_RULE, "iso").rows.flatMap((row) => row.days);
+	const days = monthGrid(NOVEMBER_2026, ISO_WEEK_RULE).rows.flatMap((row) => row.days);
 	assert.deepEqual(days.filter((day) => day.adjacentMonth).map((day) => isoDate(day.date)), [
 		"2026-10-26",
 		"2026-10-27",
@@ -51,7 +51,7 @@ test("days outside the displayed month are flagged as adjacent", () => {
 });
 
 test("a February that fits four weeks still gets six rows, the last two in March", () => {
-	const grid = monthGrid({ year: 2026, month: 2 }, SUNDAY_WEEK_RULE, "none");
+	const grid = monthGrid({ year: 2026, month: 2 }, SUNDAY_WEEK_RULE);
 	assert.equal(isoDate(grid.rows[0].days[0].date), "2026-02-01");
 	assert.ok(grid.rows[4].days.every((day) => day.adjacentMonth));
 	assert.ok(grid.rows[5].days.every((day) => day.adjacentMonth));
@@ -59,7 +59,7 @@ test("a February that fits four weeks still gets six rows, the last two in March
 
 test("only today's cell is flagged, and none without a today", () => {
 	const flagged = (today?: { year: number; month: number; day: number }) =>
-		monthGrid(NOVEMBER_2026, ISO_WEEK_RULE, "iso", today)
+		monthGrid(NOVEMBER_2026, ISO_WEEK_RULE, today)
 			.rows.flatMap((row) => row.days)
 			.filter((day) => day.today)
 			.map((day) => isoDate(day.date));
@@ -70,7 +70,7 @@ test("only today's cell is flagged, and none without a today", () => {
 });
 
 test("each row carries its week number under the week rule, across the year boundary", () => {
-	const weekNumbers = (month: { year: number; month: number }, rule: WeekRule) => monthGrid(month, rule, "iso").rows.map((row) => row.weekNumber);
+	const weekNumbers = (month: { year: number; month: number }, rule: WeekRule) => monthGrid(month, rule).rows.map((row) => row.weekNumber);
 	assert.deepEqual(weekNumbers(NOVEMBER_2026, ISO_WEEK_RULE), [44, 45, 46, 47, 48, 49]);
 	assert.deepEqual(weekNumbers(NOVEMBER_2026, SUNDAY_WEEK_RULE), [45, 46, 47, 48, 49, 50]);
 	assert.deepEqual(weekNumbers({ year: 2026, month: 12 }, ISO_WEEK_RULE), [49, 50, 51, 52, 53, 1]);
@@ -78,13 +78,14 @@ test("each row carries its week number under the week rule, across the year boun
 	assert.deepEqual(weekNumbers({ year: 2024, month: 1 }, SUNDAY_WEEK_RULE), [1, 2, 3, 4, 5, 6]);
 });
 
-test("the weekly note of a row is found from its Thursday for ISO formats and from its first day otherwise", () => {
-	const weekNoteDates = (rule: WeekRule, kind: "iso" | "locale" | "none") => monthGrid(NOVEMBER_2026, rule, kind).rows.map((row) => isoDate(row.weekNoteDate));
-	assert.deepEqual(weekNoteDates(ISO_WEEK_RULE, "iso").slice(0, 2), ["2026-10-29", "2026-11-05"]);
-	assert.deepEqual(weekNoteDates(SUNDAY_WEEK_RULE, "iso").slice(0, 2), ["2026-11-05", "2026-11-12"]);
-	assert.deepEqual(weekNoteDates(SATURDAY_LOCALE, "iso").slice(0, 2), ["2026-11-05", "2026-11-12"]);
-	assert.deepEqual(weekNoteDates(SUNDAY_WEEK_RULE, "locale").slice(0, 2), ["2026-11-01", "2026-11-08"]);
-	assert.deepEqual(weekNoteDates(ISO_WEEK_RULE, "none").slice(0, 2), ["2026-10-26", "2026-11-02"]);
+test("the weekly note of a row is found from its fourth day, whatever the week start", () => {
+	const weekNoteDates = (month: { year: number; month: number }, rule: WeekRule) => monthGrid(month, rule).rows.map((row) => isoDate(row.weekNoteDate));
+	assert.deepEqual(weekNoteDates(NOVEMBER_2026, ISO_WEEK_RULE).slice(0, 2), ["2026-10-29", "2026-11-05"]);
+	assert.deepEqual(weekNoteDates(NOVEMBER_2026, SUNDAY_WEEK_RULE).slice(0, 2), ["2026-11-04", "2026-11-11"]);
+	assert.deepEqual(weekNoteDates(NOVEMBER_2026, SATURDAY_LOCALE).slice(0, 2), ["2026-11-03", "2026-11-10"]);
+	for (const rule of [ISO_WEEK_RULE, SUNDAY_WEEK_RULE, SATURDAY_LOCALE]) {
+		for (const row of monthGrid({ year: 2026, month: 12 }, rule).rows) assert.deepEqual(row.weekNoteDate, row.days[3].date);
+	}
 });
 
 test("weekday columns follow the week start, with Saturday and Sunday as the weekend", () => {

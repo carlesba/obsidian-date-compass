@@ -16,7 +16,7 @@ import { createNoteDotsReader, localeWeekRule, momentOf, monthShortName, weekday
 import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "./paths.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
-import { weekFormatKind, weekRuleOf } from "./weeks.ts";
+import { weekRuleOf } from "./weeks.ts";
 
 export const CALENDAR_VIEW_TYPE = "date-compass-calendar";
 export const CALENDAR_ICON = "calendar-days";
@@ -138,7 +138,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		const settings = this.settings();
 		const { periods } = settings.dateNotes;
 		const rule = weekRuleOf(settings.weekStart, localeWeekRule());
-		const grid = monthGrid(this.displayed, rule, weekFormatKind(periods.week.format), this.today);
+		const grid = monthGrid(this.displayed, rule, this.today);
 		const notes = visibleNotes(grid, periods, momentOf);
 		const activePath = this.app.workspace.getActiveFile()?.path;
 		this.visiblePaths = notes.visiblePaths;

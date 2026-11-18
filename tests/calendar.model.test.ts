@@ -8,7 +8,7 @@ import { headerParts } from "../src/calendar/header.ts";
 import { calendarModel, dayClasses, titlePartClasses, weekClasses } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
-import { ISO_WEEK_RULE, SUNDAY_WEEK_RULE, weekFormatKind } from "../src/calendar/weeks.ts";
+import { ISO_WEEK_RULE, SUNDAY_WEEK_RULE } from "../src/calendar/weeks.ts";
 import type { WeekRule } from "../src/calendar/weeks.ts";
 import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import type { PeriodSettingsByPeriod } from "../src/dateNotes/periods.ts";
@@ -33,7 +33,7 @@ interface Scene {
 function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers = true, existing = [], activePath, change }: Scene = {}): CalendarModel {
 	const periods = dateNotesWithoutQuarter().periods;
 	change?.(periods);
-	const grid = monthGrid(month, rule, weekFormatKind(periods.week.format), TODAY);
+	const grid = monthGrid(month, rule, TODAY);
 	return calendarModel({
 		grid,
 		notes: visibleNotes(grid, periods, toMoment),

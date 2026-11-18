@@ -1,7 +1,7 @@
 import { addDays, weekdayOf } from "../parse/calendar.ts";
 import type { CivilDate } from "../parse/calendar.ts";
 import { weekNumber } from "./weeks.ts";
-import type { WeekFormatKind, WeekRule } from "./weeks.ts";
+import type { WeekRule } from "./weeks.ts";
 
 export interface CivilMonth {
 	year: number;
@@ -33,7 +33,7 @@ export interface WeekdayColumn {
 export const GRID_ROWS = 6;
 
 const DAYS_IN_WEEK = 7;
-const THURSDAY = 4;
+const MIDDLE_OF_WEEK = 3;
 const WEEKEND_DAYS = [0, 6];
 
 export function monthOf(date: CivilDate): CivilMonth {
@@ -44,14 +44,14 @@ export function firstDayOf(month: CivilMonth): CivilDate {
 	return { year: month.year, month: month.month, day: 1 };
 }
 
-export function monthGrid(month: CivilMonth, rule: WeekRule, weekFormat: WeekFormatKind, today?: CivilDate): MonthGrid {
+export function monthGrid(month: CivilMonth, rule: WeekRule, today?: CivilDate): MonthGrid {
 	const first = firstDayOf(month);
 	const gridStart = addDays(first, -daysAfterWeekStart(weekdayOf(first), rule));
 	const rows = Array.from({ length: GRID_ROWS }, (_, rowIndex) => {
 		const rowStart = addDays(gridStart, rowIndex * DAYS_IN_WEEK);
 		return {
 			weekNumber: weekNumber(rowStart, rule),
-			weekNoteDate: weekFormat === "iso" ? addDays(rowStart, daysAfterWeekStart(THURSDAY, rule)) : rowStart,
+			weekNoteDate: addDays(rowStart, MIDDLE_OF_WEEK),
 			days: Array.from({ length: DAYS_IN_WEEK }, (_, column) => gridDay(addDays(rowStart, column), month, today)),
 		};
 	});
