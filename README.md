@@ -361,7 +361,7 @@ The **Localization** page has:
 - **Supported languages**: a list with one row per language, in priority order. Each row has a
   remove button and the **+** button adds a language that is not listed yet, last. The last
   language can't be removed, and + says so when every language is listed. When a word means different things, such as "mar", the first language
-  wins the top row. To change the order, remove a language and add it again.
+  wins the top row. Drag a row to change the order.
 - **Week starts on**: **Locale default** (default), **Monday** or **Sunday**.
 - **"Next" weekday means**: **That day of next week** (default) or **The next time that day
   comes**.

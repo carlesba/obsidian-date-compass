@@ -374,8 +374,8 @@ La página **Localización** tiene:
 - **Idiomas admitidos**: una lista con una fila por idioma, por orden de prioridad. Cada fila
   tiene un botón para quitarla y el botón **+** añade al final un idioma que aún no está en la
   lista. El último idioma no se puede quitar, y + lo avisa cuando ya están todos. Cuando una palabra significa cosas distintas, como "mar",
-  la primera fila es la del primer idioma. Para cambiar el orden, quita un idioma y vuelve a
-  añadirlo.
+  la primera fila es la del primer idioma. Arrastra una fila para cambiar el
+  orden.
 - **La semana empieza el**: **Según la configuración regional** (por defecto), **Lunes** o
   **Domingo**.
 - **"Próximo" día de la semana significa**: **Ese día de la semana que viene** (por defecto) o **La

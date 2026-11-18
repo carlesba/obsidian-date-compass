@@ -230,7 +230,7 @@ interface LanguageListLike {
 	type: string;
 	heading: string;
 	items: Array<{ name: string; desc?: string }>;
-	onReorder?: unknown;
+	onReorder?: (from: number, to: number) => void;
 	onDelete?: (position: number) => void;
 	addItem?: { name: string; action: (anchor: HTMLElement) => void };
 }
@@ -262,7 +262,6 @@ test("Localization is a page of its own with the reading settings and then the l
 	assert.deepEqual(languages().items.map((row) => row.name), ["Spanish", "English"]);
 	assert.match(languages().items[0].desc ?? "", /wins/);
 	assert.equal(languages().items[1].desc, undefined);
-	assert.equal(languages().onReorder, undefined);
 	assert.deepEqual(reading().map((item) => (item as { name: string }).name), ["Week starts on", "\"Next\" weekday means", "Read typed dates like"]);
 });
 
@@ -286,6 +285,15 @@ test("the language list always offers add and remove, asking which language to a
 	assert.deepEqual(settings.languages, ["en", "es"]);
 	languages().onDelete?.(1);
 	assert.deepEqual(settings.languages, ["en"]);
+});
+
+test("dragging a language changes which one wins shared words", () => {
+	const settings = mergeSettings({ languages: ["es", "en"] });
+	const { languages } = localization(settings);
+	languages().onReorder?.(1, 0);
+	assert.deepEqual(settings.languages, ["en", "es"]);
+	assert.deepEqual(languages().items.map((row) => row.name), ["English", "Spanish"]);
+	assert.match(languages().items[0].desc ?? "", /wins/);
 });
 
 test("the typed date order offers Day/Month and Month/Day and shows today in the chosen order", () => {

@@ -5,7 +5,7 @@ import type { TranslationKey } from "../i18n/index.ts";
 import { DAY_MONTH_ORDERS } from "../settings.ts";
 import type { DayMonthOrder, NextWeekdayMeaning, ParserLanguage, WeekStart } from "../settings.ts";
 import { DAY_MONTH_ORDER_KEY, NEXT_WEEKDAY_KEY, WEEK_START_KEY } from "./controlKeys.ts";
-import { addLanguage, canRemoveLanguage, languagesToAdd, removeLanguage } from "./languageList.ts";
+import { addLanguage, canRemoveLanguage, languagesToAdd, moveLanguage, removeLanguage } from "./languageList.ts";
 import type { IdentifiedPage } from "./pages.ts";
 import { addTodaySample, todayIn } from "./todaySample.ts";
 import type { SampleHost } from "./todaySample.ts";
@@ -76,6 +76,7 @@ function languagesList(context: LocalizationPageContext): SettingDefinitionList 
 			name: t(LANGUAGE_NAMES[language]),
 			desc: position === 0 && enabled.length > 1 ? t("firstLanguageDesc") : undefined,
 		})),
+		onReorder: (from: number, to: number) => context.changeLanguages(moveLanguage(enabled, from, to)),
 		onDelete: (position: number) => {
 			if (!canRemoveLanguage(enabled)) context.notify(t("keepOneLanguage"));
 			else context.changeLanguages(removeLanguage(enabled, enabled[position]));
