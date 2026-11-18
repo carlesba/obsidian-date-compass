@@ -226,7 +226,8 @@ Insertar fechas:
   - **Qué dice el texto del enlace**: **La frase escrita** o **Un formato de fecha** (por defecto).
     Con la frase escrita, varias fechas no llevan texto en el enlace.
   - **Formato de fecha del texto del enlace**: solo aparece con **Un formato de fecha**; por
-    defecto `ddd D MMM`.
+    defecto `ddd D MMM`. Debajo, «Hoy: mar. 17 nov.» muestra el día de hoy en el formato mientras
+    escribes.
 
 ## Acciones de fecha
 

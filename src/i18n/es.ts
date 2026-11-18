@@ -107,6 +107,7 @@ export const es: Translation = {
 	aliasShapeDesc: "La frase que escribiste, o la fecha escrita con el formato que elijas.",
 	aliasFormatSetting: "Formato de fecha del texto del enlace",
 	aliasFormatSettingDesc: "Un formato de moment.js, como ddd D MMM.",
+	todaySample: "Hoy: {date}",
 	insertDates: "Insertar fechas",
 	datesToProperty: "Las fechas se añadirán a la propiedad «{name}».",
 	withAlias: "Con texto en el enlace",

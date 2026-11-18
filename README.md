@@ -217,7 +217,8 @@ dates:
     switch flip it for one insert.
   - **What the link text says**: **The typed phrase** or **A date format** (default). With the typed
     phrase, several dates get no link text.
-  - **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`.
+  - **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`. Below
+    it, "Today: Tue 17 Nov" shows today in the format as you type.
 
 ## Date actions
 

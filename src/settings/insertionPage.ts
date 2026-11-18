@@ -1,3 +1,4 @@
+import type { Moment } from "moment";
 import type { SettingDefinitionGroup } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
@@ -12,6 +13,8 @@ import {
 	formatError,
 	linkTemplateError,
 } from "./controlKeys.ts";
+import { addTodaySample, todayIn } from "./todaySample.ts";
+import type { SampleHost } from "./todaySample.ts";
 
 const SEPARATOR_LABELS: Record<LinkSeparator, TranslationKey> = {
 	commaSpace: "separatorCommaSpace",
@@ -25,7 +28,11 @@ const ALIAS_SHAPE_LABELS: Record<AliasShape, TranslationKey> = {
 	format: "aliasFormat",
 };
 
-export function insertionGroups(insertion: () => InsertionSettings): SettingDefinitionGroup[] {
+export function aliasFormatSample(typed: string, today: Moment): string {
+	return formatError(typed) ?? todayIn(typed.trim(), today);
+}
+
+export function insertionGroups(insertion: () => InsertionSettings, host: SampleHost): SettingDefinitionGroup[] {
 	return [
 		{
 			type: "group",
@@ -60,7 +67,18 @@ export function insertionGroups(insertion: () => InsertionSettings): SettingDefi
 					name: t("aliasFormatSetting"),
 					desc: t("aliasFormatSettingDesc"),
 					visible: () => insertion().aliasShape === "format",
-					control: { type: "text", key: INSERTION_ALIAS_FORMAT_KEY, placeholder: DEFAULT_ALIAS_FORMAT, validate: formatError },
+					render: (setting) => {
+						const showSample = addTodaySample(setting, aliasFormatSample(insertion().aliasFormat, host.today()));
+						setting.addText((text) =>
+							text
+								.setPlaceholder(DEFAULT_ALIAS_FORMAT)
+								.setValue(insertion().aliasFormat)
+								.onChange((typed) => {
+									showSample(aliasFormatSample(typed, host.today()));
+									host.write(INSERTION_ALIAS_FORMAT_KEY, typed);
+								}),
+						);
+					},
 				},
 			],
 		},

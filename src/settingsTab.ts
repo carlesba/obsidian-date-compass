@@ -20,9 +20,10 @@ import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup } from "./settings/dateNotesPage.ts";
 import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
-import { enabledExternalDateNotes } from "./dateNotes/obsidianHost.ts";
+import { enabledExternalDateNotes, obsidianMoment } from "./dateNotes/obsidianHost.ts";
 import { mentionGroups } from "./settings/mentionsPage.ts";
 import { insertionGroups } from "./settings/insertionPage.ts";
+import type { SampleHost } from "./settings/todaySample.ts";
 import { sameTriggerPlugins } from "./mentions/conflicts.ts";
 import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
 import { actionsPage } from "./settings/actionsPage.ts";
@@ -103,7 +104,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 				items: [
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
-					sectionPage("insertionSection", "insertionSectionDesc", insertionGroups(() => this.plugin.settings.insertion)),
+					sectionPage("insertionSection", "insertionSectionDesc", insertionGroups(() => this.plugin.settings.insertion, this.sampleHost())),
 					actionsPage({
 						actions: () => this.plugin.settings.actions,
 						openPage: (pageId) => this.openPage(pageId),
@@ -129,6 +130,10 @@ export class DateCompassSettingTab extends PluginSettingTab {
 				],
 			},
 		];
+	}
+
+	private sampleHost(): SampleHost {
+		return { today: () => obsidianMoment(), write: (key, value) => void this.setControlValue(key, value) };
 	}
 
 	private dateNotesItems(): SettingDefinitionItem[] {

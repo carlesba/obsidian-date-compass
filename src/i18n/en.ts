@@ -105,6 +105,7 @@ export const en = {
 	aliasShapeDesc: "The phrase you typed, or the date written in a format of your choice.",
 	aliasFormatSetting: "Date format of the link text",
 	aliasFormatSettingDesc: "A moment.js format, such as ddd D MMM.",
+	todaySample: "Today: {date}",
 	insertDates: "Insert dates",
 	datesToProperty: "Dates will be added to the property {name}.",
 	withAlias: "With link text",

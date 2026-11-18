@@ -17,7 +17,8 @@ import {
 } from "../src/settings/controlKeys.ts";
 import { mergeMentions } from "../src/mentions/settings.ts";
 import { mergeInsertion } from "../src/insertion/settings.ts";
-import { insertionGroups } from "../src/settings/insertionPage.ts";
+import { aliasFormatSample, insertionGroups } from "../src/settings/insertionPage.ts";
+import { moment } from "./moment.ts";
 import { presetActions } from "../src/actions/settings.ts";
 import { sameTriggerWarning } from "../src/settings/mentionsPage.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
@@ -141,8 +142,8 @@ test("every Mentions control reads and writes its setting and refuses bad values
 
 test("every Insertion control reads and writes its setting and refuses bad values", () => {
 	const settings = defaultSettings();
-	const keys = insertionGroups(() => settings.insertion).flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
-	assert.deepEqual(keys, [INSERTION_LINK_TEMPLATE_KEY, INSERTION_SEPARATOR_KEY, INSERTION_ALIAS_BY_DEFAULT_KEY, INSERTION_ALIAS_SHAPE_KEY, INSERTION_ALIAS_FORMAT_KEY]);
+	const keys = insertionGroups(() => settings.insertion, sampleHost()).flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
+	assert.deepEqual(keys, [INSERTION_LINK_TEMPLATE_KEY, INSERTION_SEPARATOR_KEY, INSERTION_ALIAS_BY_DEFAULT_KEY, INSERTION_ALIAS_SHAPE_KEY]);
 	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "- [ ] {{name}}"), true);
 	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "  "), false);
 	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, 3), false);
@@ -157,6 +158,67 @@ test("every Insertion control reads and writes its setting and refuses bad value
 	assert.deepEqual(settings.insertion, { linkTemplate: "- [ ] {{name}}", separator: "bulletLines", aliasShape: "typed", aliasFormat: "D MMM", aliasByDefault: true });
 	assert.equal(readControl(settings, INSERTION_LINK_TEMPLATE_KEY), "- [ ] {{name}}");
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).insertion, settings.insertion);
+});
+
+const TODAY = "2026-11-17";
+
+function sampleHost(written: Array<[string, unknown]> = []) {
+	return { today: () => moment(TODAY), write: (key: string, value: unknown) => void written.push([key, value]) };
+}
+
+interface TypedRow {
+	samples: string[];
+	shown: () => string;
+	type: (value: string) => void;
+	pick: (value: string) => void;
+	field: { placeholder: string; value: string; options: Record<string, string> };
+}
+
+function renderedRow(render: (setting: never) => unknown): TypedRow {
+	const samples: string[] = [];
+	const field = { placeholder: "", value: "", options: {} as Record<string, string> };
+	let changed: (value: string) => void = () => undefined;
+	const component = {
+		setPlaceholder: (placeholder: string) => ((field.placeholder = placeholder), component),
+		setValue: (value: string) => ((field.value = value), component),
+		addOptions: (options: Record<string, string>) => ((field.options = options), component),
+		onChange: (listener: (value: string) => void) => ((changed = listener), component),
+	};
+	const setting = {
+		infoEl: {
+			createDiv: ({ text }: { text: string }) => {
+				samples.push(text);
+				return { setText: (next: string) => void samples.push(next) };
+			},
+		},
+		addText: (build: (text: typeof component) => unknown) => void build(component),
+		addDropdown: (build: (dropdown: typeof component) => unknown) => void build(component),
+	};
+	render(setting as never);
+	return { samples, shown: () => samples[samples.length - 1], type: (value) => changed(value), pick: (value) => changed(value), field };
+}
+
+function renderOf(items: readonly unknown[], name: string): (setting: never) => unknown {
+	const item = items.find((candidate) => (candidate as { name?: string }).name === name) as { render?: (setting: never) => unknown } | undefined;
+	assert.ok(item?.render, name);
+	return item.render;
+}
+
+test("the link text format shows today in the typed format and follows every keystroke", () => {
+	const settings = defaultSettings();
+	const written: Array<[string, unknown]> = [];
+	const [, linkText] = insertionGroups(() => settings.insertion, sampleHost(written));
+	const row = renderedRow(renderOf(linkText.items ?? [], "Date format of the link text"));
+	assert.equal(row.field.value, "ddd D MMM");
+	assert.equal(row.shown(), "Today: Tue 17 Nov");
+	row.type("D/M/YY");
+	assert.equal(row.shown(), "Today: 17/11/26");
+	row.type("dddd");
+	assert.equal(row.shown(), "Today: Tuesday");
+	row.type("  ");
+	assert.equal(row.shown(), "Enter a name format.");
+	assert.deepEqual(written, [[INSERTION_ALIAS_FORMAT_KEY, "D/M/YY"], [INSERTION_ALIAS_FORMAT_KEY, "dddd"], [INSERTION_ALIAS_FORMAT_KEY, "  "]]);
+	assert.equal(aliasFormatSample(" YYYY ", moment(TODAY)), "Today: 2026");
 });
 
 test("the Mentions page warns only when another plugin shares the trigger", () => {
