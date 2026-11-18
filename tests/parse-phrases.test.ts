@@ -13,10 +13,10 @@ function starts(input: string, language: string): string[][] {
 }
 
 const everyWednesdayUntilDecember20 = ["2026-11-18", "2026-11-25", "2026-12-02", "2026-12-09", "2026-12-16"];
-const everyOtherDayForSixDays = ["2026-11-17", "2026-11-19", "2026-11-21"];
+const everyOtherDayForSixDays = ["2026-11-19", "2026-11-21", "2026-11-23"];
 const everyOtherWednesdayForThreeMonths = ["2026-11-18", "2026-12-02", "2026-12-16", "2026-12-30", "2027-01-13", "2027-01-27", "2027-02-10"];
 const wednesdayForFiveWeeks = everyWednesdayUntilDecember20;
-const everyTwoDaysTenTimes = ["2026-11-17", "2026-11-19", "2026-11-21", "2026-11-23", "2026-11-25", "2026-11-27", "2026-11-29", "2026-12-01", "2026-12-03", "2026-12-05"];
+const everyTwoDaysTenTimes = ["2026-11-19", "2026-11-21", "2026-11-23", "2026-11-25", "2026-11-27", "2026-11-29", "2026-12-01", "2026-12-03", "2026-12-05", "2026-12-07"];
 
 const phrases: Array<[string, string, string[]]> = [
 	["en", "every wed until dec 20", everyWednesdayUntilDecember20],
@@ -48,7 +48,7 @@ test("until and every other keep the item limit", () => {
 		assert.deepEqual(analysis.interpretations, [], input);
 		assert.deepEqual(analysis.refusals.map((refusal) => [refusal.reason, refusal.limit]), [["tooManyItems", SEQUENCE_LIMIT]], input);
 	}
-	assert.equal(starts("every day until 2027-11-17", "en")[0].length, SEQUENCE_LIMIT);
+	assert.equal(starts("every day until 2027-11-18", "en")[0].length, SEQUENCE_LIMIT);
 });
 
 test("an end date in the past gives no sequence", () => {
@@ -102,6 +102,13 @@ test("a phrase that already parses gets no hints", () => {
 	assert.deepEqual(complete("every wed for 5 weeks", NOW, optionsFor("en")), []);
 });
 
+test("step sequences without a start begin one step after today, in every unit", () => {
+	for (const [input, first] of [["every day 2 times", "2026-11-18"], ["every 3 days 2 times", "2026-11-20"], ["every week 2 times", "2026-11-24"], ["every other week 2 times", "2026-12-01"], ["every month 2 times", "2026-12-17"], ["every quarter 2 times", "2027-02-17"], ["every year 2 times", "2027-11-17"], ["every day until nov 19", "2026-11-18"]]) {
+		assert.equal(starts(input, "en")[0][0], first, input);
+	}
+	assert.deepEqual(starts("every day until nov 17", "en"), []);
+});
+
 test("a yearless end date already past this year ends next year", () => {
 	const lateDecember = new Date(2026, 11, 25, 12, 0);
 	for (const [language, input] of [["en", "every wed until jan 10"], ["es", "cada miércoles hasta el 10 de enero"]]) {
@@ -127,5 +134,5 @@ test("a numeric end date already past this year ends next year", () => {
 });
 
 test("an end date that is today does not roll to next year", () => {
-	assert.deepEqual(starts("every day until nov 17", "en"), [["2026-11-17"]]);
+	assert.deepEqual(starts("every tue until nov 17", "en"), [["2026-11-17"]]);
 });

@@ -65,14 +65,16 @@ Ranges and sequences give several dates at once:
 | `next 3 weeks` | three week notes starting with this week |
 | `every mon for 4 weeks` | 23 Nov, 30 Nov, 7 Dec, 14 Dec |
 | `every mon, wed for 4 weeks` | those weekdays over the next 4 weeks, starting today |
-| `every 2 days x5`, `every 2 weeks 5 times`, `every 2 days for 10 times` | that many dates starting today, a step apart |
+| `every 2 days x5`, `every 2 weeks 5 times`, `every 2 days for 10 times` | that many dates a step apart, the first one step after today: `every 2 days x5` starts on 19 Nov |
+| `every week 3 times`, `every day for 5 days` | 24 Nov, 1 Dec, 8 Dec; 18 to 22 Nov, so `every day` starts tomorrow |
 | `every wed until dec 20` | every Wednesday from today to 20 Dec, the end date included when it matches |
-| `every other day for 6 days` | every second day inside the next 6 days |
+| `every other day for 6 days` | every second day for 6 days, the first in two days: 19, 21, 23 Nov |
 | `every other wed for 3 months` | alternate Wednesdays over the next 3 months |
 | `wed for 5 weeks` | a Wednesday a week for the next 5 weeks, like `every wed for 5 weeks` |
 | `W48 to W50`, `weeks of december` | the week notes W48 to W50; the five weeks that touch December |
 
-`until` takes a date without a year as the next time it comes: when `dec 20` is already past this
+A sequence that names a step (`every day`, `every 2 weeks`, `every month`) starts one step after
+today, while one that names weekdays (`every wed`) starts today. `until` takes a date without a year as the next time it comes: when `dec 20` is already past this
 year, it means 20 Dec next year. `every other wed` counts alternate weeks from the start of the
 current week, as set by **Week starts on**, so a weekday that has already passed this week first
 appears the week after next. While you type a sequence, the `@` list shows rows with the dates each way of going on would give,
@@ -102,9 +104,9 @@ Add **Spanish** under **Understand dates in** to use these.
 | `del lunes al viernes` | 23 to 27 Nov |
 | `los próximos 5 días` | five days starting today |
 | `cada lunes y miércoles durante 4 semanas` | Mondays and Wednesdays over the next 4 weeks |
-| `cada 2 días 5 veces`, `cada 2 días durante 10 veces` | that many dates starting today, two days apart |
+| `cada 2 días 5 veces`, `cada 2 días durante 10 veces` | that many dates two days apart, the first in two days |
 | `cada miércoles hasta el 20 de diciembre` | every Wednesday from today to 20 Dec |
-| `cada otro día durante 6 días` | every second day inside the next 6 days |
+| `cada otro día durante 6 días` | every second day for 6 days, the first in two days |
 | `cada otro miércoles durante 3 meses` | alternate Wednesdays over the next 3 months |
 | `miércoles durante 5 semanas` | a Wednesday a week for the next 5 weeks |
 

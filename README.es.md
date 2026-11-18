@@ -67,14 +67,16 @@ Los rangos y las secuencias dan varias fechas a la vez:
 | `next 3 weeks` | tres notas semanales empezando por esta semana |
 | `every mon for 4 weeks` | 23 nov, 30 nov, 7 dic, 14 dic |
 | `every mon, wed for 4 weeks` | esos días durante las próximas 4 semanas, desde hoy |
-| `every 2 days x5`, `every 2 weeks 5 times`, `every 2 days for 10 times` | ese número de fechas desde hoy, separadas por ese paso |
+| `every 2 days x5`, `every 2 weeks 5 times`, `every 2 days for 10 times` | ese número de fechas separadas por ese paso, la primera un paso después de hoy: `every 2 days x5` empieza el 19 nov |
+| `every week 3 times`, `every day for 5 days` | 24 nov, 1 dic, 8 dic; del 18 al 22 nov, así que `every day` empieza mañana |
 | `every wed until dec 20` | cada miércoles desde hoy hasta el 20 dic, con el último día incluido si coincide |
-| `every other day for 6 days` | un día sí y otro no dentro de los próximos 6 días |
+| `every other day for 6 days` | un día sí y otro no durante 6 días, el primero dentro de dos días: 19, 21 y 23 nov |
 | `every other wed for 3 months` | miércoles alternos durante los próximos 3 meses |
 | `wed for 5 weeks` | un miércoles por semana durante 5 semanas, como `every wed for 5 weeks` |
 | `W48 to W50`, `weeks of december` | las notas semanales de W48 a W50; las cinco semanas que tocan diciembre |
 
-Con `until`, una fecha sin año es la próxima vez que llega: si el `dec 20` ya pasó este año, se
+Una secuencia que nombra un paso (`every day`, `every 2 weeks`, `every month`) empieza un paso
+después de hoy, y una que nombra días de la semana (`every wed`) empieza hoy. Con `until`, una fecha sin año es la próxima vez que llega: si el `dec 20` ya pasó este año, se
 entiende el 20 dic del año que viene. `every other wed` cuenta las semanas alternas desde el inicio
 de la semana actual, según **La semana empieza el**, así que un día que ya pasó esta semana
 aparece por primera vez dentro de dos semanas. Mientras escribes una secuencia, la lista de `@` muestra filas con las fechas que daría cada forma de
@@ -104,9 +106,9 @@ Añade **Español** en **Entender fechas en** para usarlas.
 | `del lunes al viernes` | del 23 al 27 nov |
 | `los próximos 5 días` | cinco días desde hoy |
 | `cada lunes y miércoles durante 4 semanas` | lunes y miércoles de las próximas 4 semanas |
-| `cada 2 días 5 veces`, `cada 2 días durante 10 veces` | ese número de fechas desde hoy, cada dos días |
+| `cada 2 días 5 veces`, `cada 2 días durante 10 veces` | ese número de fechas cada dos días, la primera dentro de dos días |
 | `cada miércoles hasta el 20 de diciembre` | cada miércoles desde hoy hasta el 20 dic |
-| `cada otro día durante 6 días` | un día sí y otro no dentro de los próximos 6 días |
+| `cada otro día durante 6 días` | un día sí y otro no durante 6 días, el primero dentro de dos días |
 | `cada otro miércoles durante 3 meses` | miércoles alternos durante los próximos 3 meses |
 | `miércoles durante 5 semanas` | un miércoles por semana durante 5 semanas |
 
