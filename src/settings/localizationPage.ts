@@ -84,7 +84,6 @@ function languagesList(context: LocalizationPageContext): SettingDefinitionList 
 			name: t("addLanguage"),
 			action: (anchor: HTMLElement) => {
 				if (remaining.length === 0) context.notify(t("everyLanguageListed"));
-				else if (remaining.length === 1) add(remaining[0]);
 				else context.chooseLanguage(anchor, remaining.map((language) => ({ language, name: t(LANGUAGE_NAMES[language]) })), add);
 			},
 		},

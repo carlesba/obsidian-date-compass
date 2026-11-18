@@ -20,7 +20,7 @@ import { mergeInsertion } from "../src/insertion/settings.ts";
 import { aliasFormatSample, insertionGroups } from "../src/settings/insertionPage.ts";
 import { moment } from "./moment.ts";
 import { localizationPage } from "../src/settings/localizationPage.ts";
-import type { LocalizationPageContext } from "../src/settings/localizationPage.ts";
+import type { LanguageChoice, LocalizationPageContext } from "../src/settings/localizationPage.ts";
 import { pagePath } from "../src/settings/pages.ts";
 import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 import type { DateCompassSettings, ParserLanguage } from "../src/settings.ts";
@@ -235,13 +235,16 @@ interface LanguageListLike {
 	addItem?: { name: string; action: (anchor: HTMLElement) => void };
 }
 
-function localization(settings: DateCompassSettings, written: Array<[string, unknown]> = [], notices: string[] = []) {
+function localization(settings: DateCompassSettings, written: Array<[string, unknown]> = [], notices: string[] = [], offered: string[][] = []) {
 	const context: LocalizationPageContext = {
 		...sampleHost(written),
 		languages: () => settings.languages,
 		dayMonthOrder: () => settings.dayMonthOrder,
 		changeLanguages: (languages: ParserLanguage[]) => void (settings.languages = languages),
-		chooseLanguage: () => assert.fail("one remaining language is added without asking"),
+		chooseLanguage: (_anchor: HTMLElement, choices: LanguageChoice[], pick: (language: ParserLanguage) => void) => {
+			offered.push(choices.map((choice) => choice.name));
+			pick(choices[0].language);
+		},
 		notify: (message: string) => void notices.push(message),
 	};
 	const page = () => localizationPage(context);
@@ -263,10 +266,11 @@ test("Localization is a page of its own with the reading settings and then the l
 	assert.deepEqual(reading().map((item) => (item as { name: string }).name), ["Week starts on", "\"Next\" weekday means", "Read typed dates like"]);
 });
 
-test("the language list always offers add and remove, refusing to drop the last language or add a listed one", () => {
+test("the language list always offers add and remove, asking which language to add and refusing to drop the last one", () => {
 	const settings = mergeSettings({ languages: ["es", "en"] });
 	const notices: string[] = [];
-	const { languages } = localization(settings, [], notices);
+	const offered: string[][] = [];
+	const { languages } = localization(settings, [], notices, offered);
 	languages().addItem?.action({} as HTMLElement);
 	assert.deepEqual(settings.languages, ["es", "en"]);
 	assert.deepEqual(notices, ["Every supported language is already listed."]);
@@ -278,6 +282,7 @@ test("the language list always offers add and remove, refusing to drop the last 
 	assert.deepEqual(settings.languages, ["en"]);
 	assert.deepEqual(notices, ["Every supported language is already listed.", "Keep at least one language."]);
 	languages().addItem?.action({} as HTMLElement);
+	assert.deepEqual(offered, [["Spanish"]]);
 	assert.deepEqual(settings.languages, ["en", "es"]);
 	languages().onDelete?.(1);
 	assert.deepEqual(settings.languages, ["en"]);
