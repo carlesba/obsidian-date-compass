@@ -235,26 +235,27 @@ interface LanguageListLike {
 	addItem?: { name: string; action: (anchor: HTMLElement) => void };
 }
 
-function localization(settings: DateCompassSettings, written: Array<[string, unknown]> = []) {
+function localization(settings: DateCompassSettings, written: Array<[string, unknown]> = [], notices: string[] = []) {
 	const context: LocalizationPageContext = {
 		...sampleHost(written),
 		languages: () => settings.languages,
 		dayMonthOrder: () => settings.dayMonthOrder,
 		changeLanguages: (languages: ParserLanguage[]) => void (settings.languages = languages),
 		chooseLanguage: () => assert.fail("one remaining language is added without asking"),
+		notify: (message: string) => void notices.push(message),
 	};
 	const page = () => localizationPage(context);
-	const languages = () => (page().items ?? [])[0] as unknown as LanguageListLike;
-	const reading = () => ((page().items ?? [])[1] as unknown as { items: unknown[] }).items;
+	const languages = () => (page().items ?? [])[1] as unknown as LanguageListLike;
+	const reading = () => ((page().items ?? [])[0] as unknown as { items: unknown[] }).items;
 	return { page, languages, reading };
 }
 
-test("Localization is a page of its own with the language list and the reading settings", () => {
+test("Localization is a page of its own with the reading settings and then the language list", () => {
 	const { page, languages, reading } = localization(mergeSettings({ languages: ["es", "en"] }));
 	assert.equal(page().name, "Localization");
 	assert.deepEqual(pagePath([{ type: "group", items: [page()] }], "localization"), ["localization"]);
 	assert.equal(languages().type, "list");
-	assert.equal(languages().heading, "Understand dates in");
+	assert.equal(languages().heading, "Supported languages");
 	assert.deepEqual(languages().items.map((row) => row.name), ["Spanish", "English"]);
 	assert.match(languages().items[0].desc ?? "", /wins/);
 	assert.equal(languages().items[1].desc, undefined);
@@ -262,18 +263,22 @@ test("Localization is a page of its own with the language list and the reading s
 	assert.deepEqual(reading().map((item) => (item as { name: string }).name), ["Week starts on", "\"Next\" weekday means", "Read typed dates like"]);
 });
 
-test("a language is removed with its row button, down to the last one, and added back last with the add button", () => {
+test("the language list always offers add and remove, refusing to drop the last language or add a listed one", () => {
 	const settings = mergeSettings({ languages: ["es", "en"] });
-	const { languages } = localization(settings);
-	assert.equal(languages().addItem, undefined);
+	const notices: string[] = [];
+	const { languages } = localization(settings, [], notices);
+	languages().addItem?.action({} as HTMLElement);
+	assert.deepEqual(settings.languages, ["es", "en"]);
+	assert.deepEqual(notices, ["Every supported language is already listed."]);
 	languages().onDelete?.(0);
 	assert.deepEqual(settings.languages, ["en"]);
-	assert.equal(languages().onDelete, undefined);
 	assert.equal(languages().items[0].desc, undefined);
 	assert.equal(languages().addItem?.name, "Add language");
+	languages().onDelete?.(0);
+	assert.deepEqual(settings.languages, ["en"]);
+	assert.deepEqual(notices, ["Every supported language is already listed.", "Keep at least one language."]);
 	languages().addItem?.action({} as HTMLElement);
 	assert.deepEqual(settings.languages, ["en", "es"]);
-	assert.equal(languages().addItem, undefined);
 	languages().onDelete?.(1);
 	assert.deepEqual(settings.languages, ["en"]);
 });

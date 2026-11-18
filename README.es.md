@@ -25,7 +25,7 @@ Los nombres de los ajustes son los que muestra Obsidian con la interfaz en espa�
 ## Expresiones de fecha
 
 Todas las funciones leen las fechas con el mismo analizador. Entiende las expresiones de abajo en
-cada idioma de la lista **Entender fechas en**, no distingue mayúsculas ni acentos (`miercoles` =
+cada idioma de la lista **Idiomas admitidos**, no distingue mayúsculas ni acentos (`miercoles` =
 `miércoles`) y separa palabras de cifras (`3daysago` = `3 days ago`). Mientras escribes, la última
 palabra también se completa: `next we` ofrece "next Wed" y "next week".
 
@@ -94,7 +94,7 @@ para él.
 
 ### Español
 
-Añade **Español** en **Entender fechas en** para usarlas.
+Añade **Español** en **Idiomas admitidos** para usarlas.
 
 | Escribes | Obtienes |
 | --- | --- |
@@ -371,9 +371,9 @@ ajustes**, que devuelve cada opción a los valores predeterminados tras confirma
 
 La página **Localización** tiene:
 
-- **Entender fechas en**: una lista con una fila por idioma, por orden de prioridad. Cada fila
-  tiene un botón para quitarla, salvo cuando queda un solo idioma, y el botón **+** añade al final
-  un idioma que aún no está en la lista. Cuando una palabra significa cosas distintas, como "mar",
+- **Idiomas admitidos**: una lista con una fila por idioma, por orden de prioridad. Cada fila
+  tiene un botón para quitarla y el botón **+** añade al final un idioma que aún no está en la
+  lista. El último idioma no se puede quitar, y + lo avisa cuando ya están todos. Cuando una palabra significa cosas distintas, como "mar",
   la primera fila es la del primer idioma. Para cambiar el orden, quita un idioma y vuelve a
   añadirlo.
 - **La semana empieza el**: **Según la configuración regional** (por defecto), **Lunes** o

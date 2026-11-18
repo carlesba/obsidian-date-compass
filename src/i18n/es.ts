@@ -6,8 +6,10 @@ export const es: Translation = {
 
 	localizationSection: "Localización",
 	localizationSectionDesc: "Los idiomas de las expresiones de fecha, el primer día de la semana y cómo se leen las fechas escritas.",
-	parserLanguages: "Entender fechas en",
+	parserLanguages: "Idiomas admitidos",
 	addLanguage: "Añadir idioma",
+	everyLanguageListed: "Ya están todos los idiomas admitidos.",
+	keepOneLanguage: "Deja al menos un idioma.",
 	firstLanguageDesc: "El primero de la lista, así que gana cuando una palabra significa cosas distintas, como \"mar\".",
 	weekStart: "La semana empieza el",
 	weekStartDesc: "El primer día de la semana, para las notas semanales y expresiones como \"este miércoles\".",

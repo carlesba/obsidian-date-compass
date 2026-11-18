@@ -64,6 +64,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 							const box = anchor.getBoundingClientRect();
 							menu.showAtPosition({ x: box.left, y: box.bottom });
 						},
+						notify: (message) => new Notice(message),
 					}),
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),

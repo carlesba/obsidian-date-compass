@@ -4,8 +4,10 @@ export const en = {
 
 	localizationSection: "Localization",
 	localizationSectionDesc: "The languages of date phrases, the first day of the week and how typed dates are read.",
-	parserLanguages: "Understand dates in",
+	parserLanguages: "Supported languages",
 	addLanguage: "Add language",
+	everyLanguageListed: "Every supported language is already listed.",
+	keepOneLanguage: "Keep at least one language.",
 	firstLanguageDesc: "First in the list, so it wins when a word means different things, such as \"mar\".",
 	weekStart: "Week starts on",
 	weekStartDesc: "The first day of a week, for week notes and phrases such as \"this wed\".",

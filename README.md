@@ -23,7 +23,7 @@ The examples below assume today is **Tuesday 17 November 2026** and weeks start 
 ## Date phrases
 
 Every feature reads dates through the same parser. It understands the phrases below in each
-language listed under **Understand dates in**, ignores case and accents (`miercoles` = `miércoles`), and
+language listed under **Supported languages**, ignores case and accents (`miercoles` = `miércoles`), and
 splits words from digits (`3daysago` = `3 days ago`). While you type, the last word also completes:
 `next we` offers "next Wed" and "next week".
 
@@ -92,7 +92,7 @@ for it.
 
 ### Spanish
 
-Add **Spanish** under **Understand dates in** to use these.
+Add **Spanish** under **Supported languages** to use these.
 
 | You type | You get |
 | --- | --- |
@@ -358,9 +358,9 @@ defaults after you confirm.
 
 The **Localization** page has:
 
-- **Understand dates in**: a list with one row per language, in priority order. Each row has a
-  remove button, except when one language is left, and the **+** button adds a language that is
-  not listed yet, last. When a word means different things, such as "mar", the first language
+- **Supported languages**: a list with one row per language, in priority order. Each row has a
+  remove button and the **+** button adds a language that is not listed yet, last. The last
+  language can't be removed, and + says so when every language is listed. When a word means different things, such as "mar", the first language
   wins the top row. To change the order, remove a language and add it again.
 - **Week starts on**: **Locale default** (default), **Monday** or **Sunday**.
 - **"Next" weekday means**: **That day of next week** (default) or **The next time that day

@@ -48,6 +48,7 @@ export interface LocalizationPageContext extends SampleHost {
 	dayMonthOrder: () => DayMonthOrder;
 	changeLanguages: (languages: ParserLanguage[]) => void;
 	chooseLanguage: (anchor: HTMLElement, choices: LanguageChoice[], pick: (language: ParserLanguage) => void) => void;
+	notify: (message: string) => void;
 }
 
 export function dayMonthOrderSample(order: DayMonthOrder, today: Moment): string {
@@ -60,7 +61,7 @@ export function localizationPage(context: LocalizationPageContext): IdentifiedPa
 		id: LOCALIZATION_PAGE_ID,
 		name: t("localizationSection"),
 		desc: t("localizationSectionDesc"),
-		items: [languagesList(context), readingGroup(context)],
+		items: [readingGroup(context), languagesList(context)],
 	};
 }
 
@@ -75,18 +76,18 @@ function languagesList(context: LocalizationPageContext): SettingDefinitionList 
 			name: t(LANGUAGE_NAMES[language]),
 			desc: position === 0 && enabled.length > 1 ? t("firstLanguageDesc") : undefined,
 		})),
-		...(canRemoveLanguage(enabled) ? { onDelete: (position: number) => context.changeLanguages(removeLanguage(enabled, enabled[position])) } : {}),
-		...(remaining.length > 0
-			? {
-					addItem: {
-						name: t("addLanguage"),
-						action: (anchor: HTMLElement) => {
-							if (remaining.length === 1) add(remaining[0]);
-							else context.chooseLanguage(anchor, remaining.map((language) => ({ language, name: t(LANGUAGE_NAMES[language]) })), add);
-						},
-					},
-				}
-			: {}),
+		onDelete: (position: number) => {
+			if (!canRemoveLanguage(enabled)) context.notify(t("keepOneLanguage"));
+			else context.changeLanguages(removeLanguage(enabled, enabled[position]));
+		},
+		addItem: {
+			name: t("addLanguage"),
+			action: (anchor: HTMLElement) => {
+				if (remaining.length === 0) context.notify(t("everyLanguageListed"));
+				else if (remaining.length === 1) add(remaining[0]);
+				else context.chooseLanguage(anchor, remaining.map((language) => ({ language, name: t(LANGUAGE_NAMES[language]) })), add);
+			},
+		},
 	};
 }
 
