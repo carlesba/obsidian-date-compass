@@ -5,7 +5,7 @@ import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } fro
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
 import { withoutWhitespace } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, isLinkTemplate } from "../insertion/settings.ts";
-import { ACTION_FIELDS, ASK_KINDS } from "../actions/settings.ts";
+import { ACTION_FIELDS, ASK_KINDS, WRITE_MODES } from "../actions/settings.ts";
 import type { ActionField, DateAction } from "../actions/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
@@ -96,6 +96,8 @@ function writeActionControl({ action, field }: ActionControl, value: unknown): b
 			return writeBoolean(value, (link) => (action.link = link));
 		case "asks":
 			return writeChoice(ASK_KINDS, value, (asks) => (action.asks = asks));
+		case "mode":
+			return writeChoice(WRITE_MODES, value, (mode) => (action.mode = mode));
 		case "name":
 			return writeText(value, (name) => (action.name = name));
 		case "property":

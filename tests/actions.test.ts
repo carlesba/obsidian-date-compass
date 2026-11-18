@@ -9,7 +9,7 @@ import { previewSequence } from "../src/sequence/preview.ts";
 import type { SequenceContext } from "../src/sequence/preview.ts";
 import { linkTarget } from "../src/insertion/property.ts";
 import { actionName, actionWarning, mergeActions, newAction, presetActions, questionOf } from "../src/actions/settings.ts";
-import { propertyKind, valueToWrite } from "../src/actions/value.ts";
+import { effectiveMode, propertyKind, valueToWrite, writeToFrontmatter } from "../src/actions/value.ts";
 import { propertyWidgetOf } from "../src/actions/propertyType.ts";
 import { ActionCommands, actionCommands } from "../src/actions/commands.ts";
 import { actionSummary, actionsPage } from "../src/settings/actionsPage.ts";
@@ -54,19 +54,19 @@ const v1SetReminders = {
 	writes: [{ id: "reminders", target: "property", property: "reminders", input: "reminders", value: "links", format: "link", mode: "append", condition: "" }],
 };
 
-test("presets are Set dates and Set reminders, both asking for dates as links", () => {
+test("presets are Add dates and Set reminders, both adding dates as links", () => {
 	assert.deepEqual(presetActions(), [
-		{ id: "set-dates", name: "Set dates", property: "dates", asks: "dates", link: true },
-		{ id: "set-reminders", name: "Set reminders", property: "reminders", asks: "dates", link: true },
+		{ id: "set-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
+		{ id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
 	]);
 	assert.deepEqual(mergeSettings({ weekStart: "monday" }).actions, presetActions());
 });
 
-test("the two stored v1 presets migrate to Set dates and Set reminders keeping their ids", () => {
+test("the two stored v1 presets keep their names and ids and still add", () => {
 	const migrated = mergeSettings({ actions: [v1AddDates, v1SetReminders] }).actions;
 	assert.deepEqual(migrated, [
-		{ id: "add-dates", name: "Set dates", property: "dates", asks: "dates", link: true },
-		{ id: "set-reminders", name: "Set reminders", property: "reminders", asks: "dates", link: true },
+		{ id: "add-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
+		{ id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
 	]);
 });
 
@@ -80,7 +80,7 @@ test("a custom v1 action keeps its name, comes back enabled, and takes its first
 			writes: [{ id: "w", target: "property", property: " due ", input: "when", value: "first", format: "dateText", mode: "replace", condition: "" }],
 		},
 	]);
-	assert.deepEqual(action, { id: "trip", name: "Plan trip", property: "due", asks: "date", link: false });
+	assert.deepEqual(action, { id: "trip", name: "Plan trip", property: "due", mode: "replace", asks: "date", link: false });
 });
 
 test("a v1 action with several writes uses the first property write, skipping body writes", () => {
@@ -99,7 +99,7 @@ test("a v1 action with several writes uses the first property write, skipping bo
 			],
 		},
 	]);
-	assert.deepEqual(action, { id: "mix", name: "Mix", property: "week", asks: "date", link: true });
+	assert.deepEqual(action, { id: "mix", name: "Mix", property: "week", mode: "add", asks: "date", link: true });
 });
 
 test("a v1 action with no property write is dropped, and one whose question is missing asks for dates", () => {
@@ -109,8 +109,8 @@ test("a v1 action with no property write is dropped, and one whose question is m
 	const missingQuestion = { id: "lost", name: "Lost", inputs: [], writes: [{ id: "w", target: "property", property: "when", input: "gone", format: "link" }] };
 	const yesNoQuestion = { id: "yn", name: "YN", inputs: [{ id: "q", type: "yesNo" }], writes: [{ id: "w", target: "property", property: "flag", input: "q", format: "dateText" }] };
 	assert.deepEqual(mergeActions([noWrites, bodyOnly, noProperty, missingQuestion, yesNoQuestion]), [
-		{ id: "lost", name: "Lost", property: "when", asks: "dates", link: true },
-		{ id: "yn", name: "YN", property: "flag", asks: "dates", link: false },
+		{ id: "lost", name: "Lost", property: "when", mode: "add", asks: "dates", link: true },
+		{ id: "yn", name: "YN", property: "flag", mode: "add", asks: "dates", link: false },
 	]);
 });
 
@@ -119,7 +119,7 @@ test("no stored actions gives the presets, an empty list stays empty, unknown ke
 	assert.deepEqual(mergeActions({ not: "a list" }), presetActions());
 	assert.deepEqual(mergeActions([]), []);
 	const [action] = mergeActions([{ id: "x", name: "X", property: "p", asks: "date", link: false, extra: 1, inputs: "junk" }, "broken", 3]);
-	assert.deepEqual(action, { id: "x", name: "X", property: "p", asks: "date", link: false });
+	assert.deepEqual(action, { id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false });
 });
 
 test("migrating twice changes nothing, and ids are kept unique", () => {
@@ -130,7 +130,7 @@ test("migrating twice changes nothing, and ids are kept unique", () => {
 
 test("stored v2 fields fall back field by field", () => {
 	const [action] = mergeActions([{ id: "p", asks: "dates", name: 3, enabled: "yes", property: null, link: "no" }]);
-	assert.deepEqual(action, { id: "p", name: "", property: "", asks: "dates", link: true });
+	assert.deepEqual(action, { id: "p", name: "", property: "", mode: "add", asks: "dates", link: true });
 });
 
 const kinds = ["date", "datetime", "other", "list"] as const;
@@ -209,7 +209,7 @@ test("one command per action, re-registered when actions are renamed or removed"
 	const { commands, host } = fakeCommandHost();
 	const registry = new ActionCommands(host, ({ id, name }) => ({ id, name }));
 	registry.sync(actions);
-	assert.deepEqual([...commands], [["action-set-dates", "Set dates"], ["action-set-reminders", "Set reminders"]]);
+	assert.deepEqual([...commands], [["action-set-dates", "Add dates"], ["action-set-reminders", "Set reminders"]]);
 	actions[0].name = "Plan trip";
 	registry.sync(actions);
 	assert.deepEqual([...commands].sort(), [["action-set-dates", "Plan trip"], ["action-set-reminders", "Set reminders"]]);
@@ -228,8 +228,11 @@ test("the action controls read and write every field of an action and refuse bad
 	assert.equal(writeControl(settings, key("name"), "Mine"), true);
 	assert.equal(writeControl(settings, key("link"), false), true);
 	assert.equal(writeControl(settings, key("asks"), "date"), true);
-	assert.deepEqual(settings.actions[0], { id: "set-dates", name: "Mine", property: "when", asks: "date", link: false });
+	assert.equal(readControl(settings, key("mode")), "add");
+	assert.equal(writeControl(settings, key("mode"), "replace"), true);
+	assert.deepEqual(settings.actions[0], { id: "set-dates", name: "Mine", property: "when", mode: "replace", asks: "date", link: false });
 	assert.equal(writeControl(settings, key("asks"), "periodicNote"), false);
+	assert.equal(writeControl(settings, key("mode"), "append"), false);
 	assert.equal(writeControl(settings, key("link"), "no"), false);
 	assert.equal(writeControl(settings, key("name"), 3), false);
 	assert.equal(writeControl(settings, "actions/set-dates/enabled", false), false);
@@ -251,7 +254,7 @@ test("each action has one page with all its fields and nothing nests below it", 
 	const page = actionsPage(context);
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { id: string; items: unknown[] }[] }];
 	assert.equal(hidden.items.length, 2);
-	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "property", "asks", "link"].map((field) => `actions/set-dates/${field}`));
+	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "property", "mode", "asks", "link"].map((field) => `actions/set-dates/${field}`));
 	assert.equal(pagePath([{ type: "group", items: [page] }], "action-set-reminders")?.join("/"), "actions/action-set-reminders");
 	assert.equal(pagePath([page], "nowhere"), undefined);
 });
@@ -280,35 +283,40 @@ test("a new action never reuses the id, and so the command, of a removed one", (
 	assert.notEqual(newAction([first], 1).id, first.id);
 });
 
-test("the action row says what it sets and what it asks", () => {
-	assert.equal(actionSummary(presetActions()[1]), "Sets reminders. Asks for Dates.");
+test("the action row says whether it adds or sets and what it asks", () => {
+	assert.equal(actionSummary(presetActions()[1]), "Adds to reminders. Asks for Dates.");
+	assert.equal(actionSummary({ ...presetActions()[1], mode: "replace" }), "Sets reminders. Asks for Dates.");
 });
 
 test("an action stored as disabled loads as an action and gets its command", () => {
-	const actions = mergeActions([{ id: "x", name: "X", enabled: false, property: "p", asks: "date", link: false }]);
-	assert.deepEqual(actions, [{ id: "x", name: "X", property: "p", asks: "date", link: false }]);
+	const actions = mergeActions([{ id: "x", name: "X", enabled: false, property: "p", mode: "add", asks: "date", link: false }]);
+	assert.deepEqual(actions, [{ id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false }]);
 	assert.deepEqual(actionCommands(actions).map((command) => command.name), ["X"]);
 });
 
 test("an action with no property is not offered as a command", () => {
 	const unfinished = { ...newAction([]), name: "Draft" };
-	assert.deepEqual(actionCommands([unfinished, ...presetActions()]).map((command) => command.name), ["Set dates", "Set reminders"]);
+	assert.deepEqual(actionCommands([unfinished, ...presetActions()]).map((command) => command.name), ["Add dates", "Set reminders"]);
 });
 
-test("only the stored v1 preset is renamed, not a custom action that shares its name", () => {
+test("a custom v1 action named like the preset keeps its name", () => {
 	const custom = { ...v1AddDates, id: "mine" };
 	assert.deepEqual(mergeActions([custom]).map((action) => action.name), ["Add dates"]);
 });
 
-test("the One date picker asks the question as placeholder and keeps the replace sentence as its own text", async () => {
+test("the One date picker asks the question as placeholder and says add or replace in its own text", async () => {
 	const { setLanguage, DEFAULT_LANGUAGE } = await import("../src/i18n/index.ts");
 	const { pickerTextOf } = await import("../src/actions/pickerText.ts");
 	const action = { ...newAction([]), property: " due ", asks: "date" as const };
+	const replacing = { ...action, mode: "replace" as const };
 	try {
 		setLanguage("en");
-		assert.deepEqual(pickerTextOf(action), { placeholder: "Which date for due?", note: "The date will replace the value of the property due." });
+		assert.deepEqual(pickerTextOf(action), { placeholder: "Which date for due?", note: "The date will be added to the property due." });
+		assert.deepEqual(pickerTextOf(replacing), { placeholder: "Which date for due?", note: "The date will replace the value of the property due." });
+		assert.equal(pickerTextOf(action, effectiveMode(action.mode, "date")).note, "The date will replace the value of the property due.");
 		setLanguage("es");
-		assert.deepEqual(pickerTextOf(action), { placeholder: "¿Qué fecha para due?", note: "La fecha sustituirá el valor de la propiedad «due»." });
+		assert.deepEqual(pickerTextOf(action), { placeholder: "¿Qué fecha para due?", note: "La fecha se añadirá a la propiedad «due»." });
+		assert.deepEqual(pickerTextOf(replacing), { placeholder: "¿Qué fecha para due?", note: "La fecha sustituirá el valor de la propiedad «due»." });
 	} finally {
 		setLanguage(DEFAULT_LANGUAGE);
 	}
@@ -317,7 +325,7 @@ test("the One date picker asks the question as placeholder and keeps the replace
 test("the One date picker renders the replace sentence and the phrase picker renders no text", async () => {
 	const { setLanguage, DEFAULT_LANGUAGE } = await import("../src/i18n/index.ts");
 	const { pickerTextOf, pickerNoteTextOf, phrasePickerTextOf } = await import("../src/actions/pickerText.ts");
-	const action = { ...newAction([]), property: "due", asks: "date" as const };
+	const action = { ...newAction([]), property: "due", asks: "date" as const, mode: "replace" as const };
 	try {
 		setLanguage("en");
 		const options = pickerTextOf(action);
@@ -330,4 +338,101 @@ test("the One date picker renders the replace sentence and the phrase picker ren
 	} finally {
 		setLanguage(DEFAULT_LANGUAGE);
 	}
+});
+
+function frontmatterAfter(before: Record<string, unknown>, phrase: string, request: { mode: "add" | "replace"; kind?: (typeof kinds)[number]; link?: boolean }): Record<string, unknown> {
+	const frontmatter = structuredClone(before);
+	writeToFrontmatter(frontmatter, "dates", { notes: notesOf(phrase), link: request.link ?? true, kind: request.kind ?? "other", mode: request.mode, linkTo });
+	return frontmatter;
+}
+
+test("Add on a list keeps the items and appends the new dates after them, unsorted", () => {
+	const before = { title: "Trip", dates: ["[[2026-11-25]]", "[[2026-11-18]]"] };
+	assert.deepEqual(frontmatterAfter(before, "nov 20 to nov 21", { mode: "add", kind: "list" }), {
+		title: "Trip",
+		dates: ["[[2026-11-25]]", "[[2026-11-18]]", "[[2026-11-20]]", "[[2026-11-21]]"],
+	});
+});
+
+test("Add on a list skips dates already there, comparing the trimmed written value", () => {
+	const before = { dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]"] };
+	assert.deepEqual(frontmatterAfter(before, "nov 18 to nov 21", { mode: "add", kind: "list" }), {
+		dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]", "[[2026-11-18]]", "[[2026-11-20]]", "[[2026-11-21]]"],
+	});
+	assert.deepEqual(frontmatterAfter(before, "nov 19 to nov 20", { mode: "add", kind: "list", link: false }), {
+		dates: [" [[2026-11-19]] ", "2026-11-20", "[[2026-11-21|Sat]]", "2026-11-19"],
+	});
+	assert.deepEqual(frontmatterAfter({ dates: ["[[2026-11-18]]"] }, "nov 18", { mode: "add", kind: "list" }), { dates: ["[[2026-11-18]]"] });
+});
+
+test("Add on a property that already holds a list appends whatever its type", () => {
+	assert.deepEqual(frontmatterAfter({ dates: ["[[2026-11-18]]"] }, "nov 19", { mode: "add", kind: "other" }), { dates: ["[[2026-11-18]]", "[[2026-11-19]]"] });
+});
+
+test("Add on a list property holding one plain value turns it into a list with the new dates after it", () => {
+	assert.deepEqual(frontmatterAfter({ dates: "[[2026-11-18]]" }, "nov 18 to nov 19", { mode: "add", kind: "list" }), { dates: ["[[2026-11-18]]", "[[2026-11-19]]"] });
+});
+
+test("Add on a text property holding one value appends the new dates to the text with commas", () => {
+	assert.deepEqual(frontmatterAfter({ dates: "[[2026-11-18]]" }, "nov 19", { mode: "add" }), { dates: "[[2026-11-18]], [[2026-11-19]]" });
+	assert.deepEqual(frontmatterAfter({ dates: "someday" }, "nov 19 to nov 20", { mode: "add", link: false }), { dates: "someday, 2026-11-19, 2026-11-20" });
+	assert.deepEqual(frontmatterAfter({ dates: 2026 }, "nov 19", { mode: "add", link: false }), { dates: "2026, 2026-11-19" });
+});
+
+test("Add on a text property does not repeat a date the text already has", () => {
+	assert.deepEqual(frontmatterAfter({ dates: "[[2026-11-18]], [[2026-11-19]]" }, "nov 18 to nov 20", { mode: "add" }), { dates: "[[2026-11-18]], [[2026-11-19]], [[2026-11-20]]" });
+	assert.deepEqual(frontmatterAfter({ dates: "[[2026-11-18]]" }, "nov 18", { mode: "add" }), { dates: "[[2026-11-18]]" });
+});
+
+test("Add on an empty or missing property writes the same shape as Replace", () => {
+	for (const before of [{}, { dates: null }, { dates: "" }, { dates: "  " }]) {
+		assert.deepEqual(frontmatterAfter(before, "nov 18", { mode: "add" }), { dates: "[[2026-11-18]]" });
+		assert.deepEqual(frontmatterAfter(before, "nov 18 to nov 19", { mode: "add" }), { dates: ["[[2026-11-18]]", "[[2026-11-19]]"] });
+		assert.deepEqual(frontmatterAfter(before, "nov 18", { mode: "add", kind: "list" }), { dates: ["[[2026-11-18]]"] });
+	}
+	assert.deepEqual(frontmatterAfter({ dates: [] }, "nov 18", { mode: "add" }), { dates: ["[[2026-11-18]]"] });
+});
+
+test("Add on a date or date and time property replaces, because it holds one value", () => {
+	assert.deepEqual(frontmatterAfter({ dates: "2026-11-01" }, "nov 18", { mode: "add", kind: "date", link: false }), { dates: "2026-11-18" });
+	assert.deepEqual(frontmatterAfter({ dates: "2026-11-01T09:00" }, "nov 18", { mode: "add", kind: "datetime", link: false }), { dates: "2026-11-18T00:00" });
+	assert.deepEqual(kinds.map((kind) => effectiveMode("add", kind)), ["replace", "replace", "add", "add"]);
+	assert.deepEqual(kinds.map((kind) => effectiveMode("replace", kind)), ["replace", "replace", "replace", "replace"]);
+});
+
+test("Replace overwrites the value and leaves the other properties alone", () => {
+	assert.deepEqual(frontmatterAfter({ title: "Trip", dates: "[[2026-11-01]]" }, "nov 18", { mode: "replace" }), { title: "Trip", dates: "[[2026-11-18]]" });
+	assert.deepEqual(frontmatterAfter({ dates: "[[2026-11-01]]" }, "nov 18 to nov 19", { mode: "replace" }), { dates: ["[[2026-11-18]]", "[[2026-11-19]]"] });
+	assert.deepEqual(frontmatterAfter({ dates: ["[[2026-11-01]]", "[[2026-11-02]]"] }, "nov 18", { mode: "replace" }), { dates: ["[[2026-11-18]]"] });
+	assert.deepEqual(frontmatterAfter({ dates: ["[[2026-11-01]]"] }, "nov 18", { mode: "replace", kind: "list" }), { dates: ["[[2026-11-18]]"] });
+});
+
+test("a stored action with no mode adds, a stored mode is kept, and an unknown one adds", () => {
+	const stored = (mode?: unknown) => ({ id: "x", name: "X", property: "p", asks: "dates", link: true, ...(mode === undefined ? {} : { mode }) });
+	assert.deepEqual([stored(), stored("replace"), stored("add"), stored("sort")].map((entry) => mergeActions([entry])[0].mode), ["add", "replace", "add", "add"]);
+	assert.equal(newAction([]).mode, "add");
+});
+
+test("a v1 write keeps replace and turns append and sort into add", () => {
+	const v1 = (mode: string) => ({ id: mode, name: mode, inputs: [{ id: "d", type: "dates" }], writes: [{ target: "property", property: "p", input: "d", format: "link", mode }] });
+	assert.deepEqual(mergeActions([v1("append"), v1("replace"), v1("sort")]).map((action) => action.mode), ["add", "replace", "add"]);
+});
+
+test("the preset stored as Set dates before modes existed is renamed Add dates, once", () => {
+	const stored = { id: "add-dates", name: "Set dates", enabled: true, property: "dates", asks: "dates", link: true };
+	const [loaded] = mergeActions([stored]);
+	assert.deepEqual(loaded, { id: "add-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true });
+	assert.equal(mergeActions([{ ...loaded, name: "Set dates" }])[0].name, "Set dates");
+	assert.equal(mergeActions([{ ...stored, id: "set-dates", name: "Poner fechas" }])[0].name, "Add dates");
+	assert.equal(mergeActions([{ ...stored, id: "mine" }])[0].name, "Set dates");
+});
+
+test("the action page offers Add and Replace right after the property", () => {
+	const settings = defaultSettings();
+	const page = actionsPage({ actions: () => settings.actions, openPage: () => undefined, change: () => Promise.resolve() });
+	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { items: { items: { name: string; control: { type: string; key: string; options?: Record<string, string> } }[] }[] }[] }];
+	const fields = hidden.items[0].items[0].items;
+	assert.equal(fields[1].control.key, "actions/set-dates/property");
+	assert.equal(fields[2].name, "When the property already has a value");
+	assert.deepEqual(fields[2].control, { type: "dropdown", key: "actions/set-dates/mode", options: { add: "Add", replace: "Replace" } });
 });

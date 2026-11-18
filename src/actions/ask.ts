@@ -10,9 +10,11 @@ import { actionWarning, questionOf } from "./settings.ts";
 import type { DateAction } from "./settings.ts";
 import { pickerTextOf } from "./pickerText.ts";
 import { propertyWidgetOf } from "./propertyType.ts";
-import { propertyKind, valueToWrite } from "./value.ts";
+import { effectiveMode, propertyKind, writeToFrontmatter } from "./value.ts";
+import type { PropertyKind } from "./value.ts";
 
-function askForNotes(app: App, settings: () => DateCompassSettings, action: DateAction): Promise<NoteRef[] | undefined> {
+function askForNotes(app: App, settings: () => DateCompassSettings, action: DateAction, kind: PropertyKind): Promise<NoteRef[] | undefined> {
+	const mode = effectiveMode(action.mode, kind);
 	return new Promise((resolve) => {
 		let settled = false;
 		const answer = (notes: NoteRef[] | undefined) => {
@@ -25,7 +27,7 @@ function askForNotes(app: App, settings: () => DateCompassSettings, action: Date
 			new DatesModal(
 				app,
 				settings,
-				{ title: questionOf(action), initialText: "", propertyName: action.property.trim(), replacesProperty: true },
+				{ title: questionOf(action), initialText: "", propertyName: action.property.trim(), replacesProperty: mode === "replace" },
 				(preview) => {
 					if (preview.kind !== "dates") return false;
 					answer(preview.notes);
@@ -36,7 +38,7 @@ function askForNotes(app: App, settings: () => DateCompassSettings, action: Date
 			return;
 		}
 		new DateNotePickerModal(app, settings, {
-			...pickerTextOf(action),
+			...pickerTextOf(action, mode),
 			choose: (row) => answer(row.notes),
 			dismissed,
 		}).openWithQuery("");
@@ -54,16 +56,16 @@ export async function runActionInActiveNote(app: App, settings: () => DateCompas
 	if (actionWarning(action)) return;
 	const property = action.property.trim();
 	try {
-		const notes = await askForNotes(app, settings, action);
-		if (!notes || notes.length === 0) return;
 		const kind = propertyKind(propertyWidgetOf(app, property));
+		const notes = await askForNotes(app, settings, action, kind);
+		if (!notes || notes.length === 0) return;
 		await view.save();
 		await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
-			frontmatter[property] = valueToWrite({
+			writeToFrontmatter(frontmatter, property, {
 				notes,
 				link: action.link,
 				kind,
-				existingIsList: Array.isArray(frontmatter[property]),
+				mode: action.mode,
 				linkTo: (note) => propertyLinkTo(app, note, file.path),
 			});
 		});

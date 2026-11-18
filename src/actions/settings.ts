@@ -4,25 +4,43 @@ import { isRecord } from "../dateNotes/periods.ts";
 export const ASK_KINDS = ["date", "dates"] as const;
 export type AskKind = (typeof ASK_KINDS)[number];
 
-export const ACTION_FIELDS = ["name", "property", "asks", "link"] as const;
+export const WRITE_MODES = ["add", "replace"] as const;
+export type WriteMode = (typeof WRITE_MODES)[number];
+
+export const ACTION_FIELDS = ["name", "property", "mode", "asks", "link"] as const;
 export type ActionField = (typeof ACTION_FIELDS)[number];
 
 export interface DateAction {
 	id: string;
 	name: string;
 	property: string;
+	mode: WriteMode;
 	asks: AskKind;
 	link: boolean;
 }
 
 export function presetActions(): DateAction[] {
 	return [
-		{ id: "set-dates", name: t("presetSetDates"), property: "dates", asks: "dates", link: true },
-		{ id: "set-reminders", name: t("presetSetReminders"), property: "reminders", asks: "dates", link: true },
+		{ id: "set-dates", name: t("presetAddDates"), property: "dates", mode: "add", asks: "dates", link: true },
+		{ id: "set-reminders", name: t("presetSetReminders"), property: "reminders", mode: "add", asks: "dates", link: true },
 	];
 }
 
 const V1_PRESET_NAMES = ["Add dates", "Añadir fechas"];
+
+const PRESET_IDS_BEFORE_MODES = ["add-dates", "set-dates"];
+
+const PRESET_NAMES_BEFORE_MODES = ["Set dates", "Poner fechas"];
+
+function isWriteMode(value: unknown): value is WriteMode {
+	return WRITE_MODES.some((mode) => mode === value);
+}
+
+function nameOfStored(data: Record<string, unknown>): string {
+	const name = text(data.name);
+	const namedBeforeModes = data.mode === undefined && PRESET_IDS_BEFORE_MODES.some((id) => id === data.id) && PRESET_NAMES_BEFORE_MODES.includes(name);
+	return namedBeforeModes ? t("presetAddDates") : name;
+}
 
 export function mergeActions(stored: unknown): DateAction[] {
 	if (!Array.isArray(stored)) return presetActions();
@@ -42,8 +60,9 @@ function isAskKind(value: unknown): value is AskKind {
 function mergeAction(data: Record<string, unknown>, earlier: readonly DateAction[]): DateAction {
 	return {
 		id: uniqueId(data.id, earlier),
-		name: text(data.name),
+		name: nameOfStored(data),
 		property: text(data.property),
+		mode: isWriteMode(data.mode) ? data.mode : "add",
 		asks: isAskKind(data.asks) ? data.asks : "dates",
 		link: typeof data.link === "boolean" ? data.link : true,
 	};
@@ -57,8 +76,9 @@ function migratedAction(data: Record<string, unknown>, earlier: readonly DateAct
 	const name = text(data.name);
 	return {
 		id: uniqueId(data.id, earlier),
-		name: data.id === "add-dates" && V1_PRESET_NAMES.includes(name) ? t("presetSetDates") : name,
+		name: data.id === "add-dates" && V1_PRESET_NAMES.includes(name) ? t("presetAddDates") : name,
 		property: text(write.property).trim(),
+		mode: write.mode === "replace" ? "replace" : "add",
 		asks: question?.type === "date" || question?.type === "periodicNote" ? "date" : "dates",
 		link: write.format !== "dateText",
 	};
@@ -69,7 +89,7 @@ function records(value: unknown): Record<string, unknown>[] {
 }
 
 export function newAction(actions: readonly DateAction[], now: number = Date.now()): DateAction {
-	return { id: freeId(actions, `action-${now.toString(36)}`), name: "", property: "", asks: "dates", link: true };
+	return { id: freeId(actions, `action-${now.toString(36)}`), name: "", property: "", mode: "add", asks: "dates", link: true };
 }
 
 export function actionName(action: DateAction): string {

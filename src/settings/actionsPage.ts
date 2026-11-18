@@ -2,7 +2,7 @@ import type { SettingDefinitionList, SettingDefinitionRender } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { actionName, actionWarning, moveEntry, newAction } from "../actions/settings.ts";
-import type { AskKind, DateAction } from "../actions/settings.ts";
+import type { AskKind, DateAction, WriteMode } from "../actions/settings.ts";
 import { actionKey } from "./controlKeys.ts";
 import type { IdentifiedPage } from "./pages.ts";
 
@@ -17,6 +17,16 @@ export const ACTIONS_PAGE_ID = "actions";
 export const ASK_LABELS: Record<AskKind, TranslationKey> = {
 	date: "askOneDate",
 	dates: "askDates",
+};
+
+export const MODE_LABELS: Record<WriteMode, TranslationKey> = {
+	add: "modeAdd",
+	replace: "modeReplace",
+};
+
+const SUMMARIES: Record<WriteMode, TranslationKey> = {
+	add: "actionSummaryAdd",
+	replace: "actionSummary",
 };
 
 export function actionPageId(action: DateAction): string {
@@ -54,7 +64,7 @@ function actionsList(actions: DateAction[], context: ActionsPageContext): Settin
 
 export function actionSummary(action: DateAction): string {
 	const property = action.property.trim();
-	return t("actionSummary", { property, asks: t(ASK_LABELS[action.asks]) });
+	return t(SUMMARIES[action.mode], { property, asks: t(ASK_LABELS[action.asks]) });
 }
 
 function actionRow(action: DateAction, context: ActionsPageContext): SettingDefinitionRender {
@@ -88,6 +98,7 @@ function actionPage(action: DateAction): IdentifiedPage {
 				items: [
 					{ name: t("actionName"), desc: t("actionNameDesc"), control: { type: "text", key: actionKey(action.id, "name"), placeholder: t("untitledAction") } },
 					{ name: t("actionProperty"), desc: t("actionPropertyDesc"), control: { type: "text", key: actionKey(action.id, "property"), placeholder: "dates" } },
+					{ name: t("actionMode"), desc: t("actionModeDesc"), control: { type: "dropdown", key: actionKey(action.id, "mode"), options: translatedLabels(MODE_LABELS) } },
 					{ name: t("actionAsks"), desc: t("actionAsksDesc"), control: { type: "dropdown", key: actionKey(action.id, "asks"), options: translatedLabels(ASK_LABELS) } },
 					{ name: t("actionLink"), desc: t("actionLinkDesc"), control: { type: "toggle", key: actionKey(action.id, "link") } },
 				],
