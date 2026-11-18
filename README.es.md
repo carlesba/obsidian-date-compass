@@ -20,7 +20,7 @@ Los nombres de los ajustes son los que muestra Obsidian con la interfaz en espa�
 - [API pública para Templater](#api-pública-para-templater)
 - [Organización de los ajustes](#organización-de-los-ajustes)
 - [Todavía no](#todavía-no)
-- [Para Carles: comprobaciones a mano y decisiones abiertas](#para-carles-comprobaciones-a-mano-y-decisiones-abiertas)
+- [Para Carles: comprobaciones a mano](#para-carles-comprobaciones-a-mano)
 
 ## Expresiones de fecha
 
@@ -395,8 +395,6 @@ No hay nada oculto: todo comportamiento que elige u oculta algo es uno de estos 
 - Idiomas distintos del inglés y el español.
 - Publicar en la lista de plugins de la comunidad, un repositorio de GitHub, etiquetas o versiones.
 
-## Para Carles: comprobaciones a mano y decisiones abiertas
+## Para Carles: comprobaciones a mano
 
 - [docs/hand-checks.md](docs/hand-checks.md): qué comprobar a mano en `~/Obsidian/plugin tester`.
-- [docs/decisions.md](docs/decisions.md): las decisiones tomadas sin ti, para confirmarlas o
-  revertirlas.
