@@ -1,5 +1,5 @@
 import type { NoteRef } from "../mentions/rows.ts";
-import type { InsertionSettings, LinkSeparator } from "./settings.ts";
+import type { LinkSeparator, LinkStyle } from "./linkStyle.ts";
 
 const TEMPLATE_VARIABLE = /\{\{(link|name|path|alias)\}\}|\{\{date:([^}]*)\}\}/g;
 
@@ -16,23 +16,12 @@ export function renderLink(template: string, { link, note, alias }: LinkParts): 
 	);
 }
 
-export function aliasFor(insertion: Pick<InsertionSettings, "aliasShape" | "aliasFormat">, phrase: string, notes: readonly NoteRef[], note: NoteRef): string | undefined {
-	if (insertion.aliasShape === "typed") return notes.length === 1 ? phrase : undefined;
-	return note.start.format(insertion.aliasFormat);
-}
-
-export function usesAlias(insertion: Pick<InsertionSettings, "aliasByDefault">, flipped: boolean): boolean {
-	return insertion.aliasByDefault !== flipped;
+export function aliasFor(style: Pick<LinkStyle, "aliasShape" | "aliasFormat">, phrase: string, notes: readonly NoteRef[], note: NoteRef): string | undefined {
+	if (style.aliasShape === "typed") return notes.length === 1 ? phrase : undefined;
+	return note.start.format(style.aliasFormat);
 }
 
 export type ObsidianLink = (note: NoteRef, alias: string | undefined) => string;
-
-export function insertionLinks(notes: readonly NoteRef[], phrase: string, insertion: InsertionSettings, withAlias: boolean, obsidianLink: ObsidianLink): string[] {
-	return notes.map((note) => {
-		const alias = withAlias ? aliasFor(insertion, phrase, notes, note) : undefined;
-		return renderLink(insertion.linkTemplate, { link: obsidianLink(note, alias), note, alias });
-	});
-}
 
 export function formattedItems(items: readonly string[], notes: readonly NoteRef[], linkTemplate: string): string[] {
 	return items.map((link, index) => renderLink(linkTemplate, { link, note: notes[index], alias: undefined }));

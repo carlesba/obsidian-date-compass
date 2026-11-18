@@ -1,5 +1,8 @@
 import { t } from "../i18n/index.ts";
 import { isRecord } from "../dateNotes/periods.ts";
+import { defaultLinkStyle, mergeLinkStyle } from "../insertion/linkStyle.ts";
+import type { LinkStyle } from "../insertion/linkStyle.ts";
+import { freeId, uniqueId } from "../settings/entryList.ts";
 
 export const ASK_KINDS = ["date", "dates"] as const;
 export type AskKind = (typeof ASK_KINDS)[number];
@@ -7,10 +10,12 @@ export type AskKind = (typeof ASK_KINDS)[number];
 export const WRITE_MODES = ["add", "replace"] as const;
 export type WriteMode = (typeof WRITE_MODES)[number];
 
+const ACTION_ID_PREFIX = "action";
+
 export const ACTION_FIELDS = ["name", "property", "mode", "asks", "link"] as const;
 export type ActionField = (typeof ACTION_FIELDS)[number];
 
-export interface DateAction {
+export interface DateAction extends LinkStyle {
 	id: string;
 	name: string;
 	property: string;
@@ -21,8 +26,8 @@ export interface DateAction {
 
 export function presetActions(): DateAction[] {
 	return [
-		{ id: "set-dates", name: t("presetAddDates"), property: "dates", mode: "add", asks: "dates", link: true },
-		{ id: "set-reminders", name: t("presetSetReminders"), property: "reminders", mode: "add", asks: "dates", link: true },
+		{ ...defaultLinkStyle(), id: "set-dates", name: t("presetAddDates"), property: "dates", mode: "add", asks: "dates", link: true },
+		{ ...defaultLinkStyle(), id: "set-reminders", name: t("presetSetReminders"), property: "reminders", mode: "add", asks: "dates", link: true },
 	];
 }
 
@@ -46,7 +51,8 @@ function isAskKind(value: unknown): value is AskKind {
 
 function mergeAction(data: Record<string, unknown>, earlier: readonly DateAction[]): DateAction {
 	return {
-		id: uniqueId(data.id, earlier),
+		...mergeLinkStyle(data),
+		id: uniqueId(data.id, earlier, ACTION_ID_PREFIX),
 		name: text(data.name),
 		property: text(data.property),
 		mode: isWriteMode(data.mode) ? data.mode : "add",
@@ -56,7 +62,7 @@ function mergeAction(data: Record<string, unknown>, earlier: readonly DateAction
 }
 
 export function newAction(actions: readonly DateAction[], now: number = Date.now()): DateAction {
-	return { id: freeId(actions, `action-${now.toString(36)}`), name: "", property: "", mode: "add", asks: "dates", link: true };
+	return { ...defaultLinkStyle(), id: freeId(actions, `${ACTION_ID_PREFIX}-${now.toString(36)}`), name: "", property: "", mode: "add", asks: "dates", link: true };
 }
 
 export function actionName(action: DateAction): string {
@@ -69,23 +75,6 @@ export function actionWarning(action: DateAction): string | undefined {
 
 export function questionOf(action: DateAction): string {
 	return t(action.asks === "date" ? "actionAsksDate" : "actionAsksDates", { name: action.property.trim() });
-}
-
-export function moveEntry(entries: unknown[], from: number, to: number): void {
-	entries.splice(to, 0, ...entries.splice(from, 1));
-}
-
-function freeId(entries: readonly { id: string }[], prefix: string): string {
-	for (let number = 1; ; number++) {
-		const id = `${prefix}-${number}`;
-		if (!entries.some((entry) => entry.id === id)) return id;
-	}
-}
-
-function uniqueId(stored: unknown, earlier: readonly { id: string }[]): string {
-	const id = typeof stored === "string" ? stored.trim() : "";
-	if (id !== "" && !id.includes("/") && !earlier.some((entry) => entry.id === id)) return id;
-	return freeId(earlier, "action");
 }
 
 function text(value: unknown, fallback = ""): string {

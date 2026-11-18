@@ -4,22 +4,22 @@ import { t } from "../i18n/index.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { obsidianRowContext } from "../obsidianParseOptions.ts";
-import { addDatesToProperty, destinationInActiveEditor, noticeNoProperty } from "../insertion/obsidianHost.ts";
-import { insertionLinks, usesAlias } from "../insertion/render.ts";
+import { addDatesToProperty, destinationInActiveEditor, noticeNoProperty, obsidianLinks } from "../insertion/obsidianHost.ts";
 import { insertLinks } from "../sequence/preview.ts";
 import { openInsertDatesModal } from "../sequence/modal.ts";
-import { markdownLinkTo } from "./obsidianHost.ts";
-import { buildRows, mayStillMatch, mentionAllows, rowLabel } from "./rows.ts";
+import { buildRows, mayStillMatch, rowLabel } from "./rows.ts";
 import type { DateRow, RowContext } from "./rows.ts";
 import { isMoreRow, selectionIntent, withMoreRow } from "./selection.ts";
 import type { Suggestion } from "./selection.ts";
-import { isDeadEnd, isDismissed, isInCode, mentionAt } from "./trigger.ts";
+import type { Mention } from "./settings.ts";
+import { activeMentionAt, isDeadEnd, isDismissed, mayOpenMentionAt } from "./trigger.ts";
 import type { Dismissal } from "./trigger.ts";
 
 export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 	private readonly settings: () => DateCompassSettings;
 	private dismissal: Dismissal | undefined;
 	private rows: DateRow[] = [];
+	private mention: Mention | undefined;
 
 	constructor(app: App, settings: () => DateCompassSettings) {
 		super(app);
@@ -36,25 +36,28 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 	}
 
 	onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
-		const { mentions } = this.settings();
-		if (!mentions.enabled || !file) return null;
-		const lineBeforeCaret = editor.getLine(cursor.line).slice(0, cursor.ch);
-		const match = mentionAt(lineBeforeCaret, mentions.trigger);
 		this.rows = [];
-		if (!match) {
+		this.mention = undefined;
+		if (!file) return null;
+		const lineBeforeCaret = editor.getLine(cursor.line).slice(0, cursor.ch);
+		const active = activeMentionAt(lineBeforeCaret, this.settings().mentions);
+		if (!active) {
 			this.dismissal = undefined;
 			return null;
 		}
+		const { mention, match } = active;
 		const start = { line: cursor.line, ch: match.start };
 		const position = positionKey(file, start);
 		if (isDismissed(this.dismissal, position, match.query)) return null;
-		if (isInCode(linesAbove(editor, cursor.line), lineBeforeCaret)) return null;
-		const rows = this.rowsFor(match.query);
-		if (rows.length === 0 && isDeadEnd(match.query, (text) => mayStillMatch(text, this.rowContext()))) {
+		if (!mayOpenMentionAt(linesOf(editor), cursor.line, lineBeforeCaret)) return null;
+		const rowContext = this.rowContext(mention);
+		const rows = buildRows(match.query, rowContext);
+		if (rows.length === 0 && isDeadEnd(match.query, (text) => mayStillMatch(text, rowContext))) {
 			this.dismissal = { position, deadEndQuery: match.query };
 			return null;
 		}
 		this.rows = rows;
+		this.mention = mention;
 		return { start, end: cursor, query: match.query };
 	}
 
@@ -68,11 +71,12 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 
 	selectSuggestion(suggestion: Suggestion, event: MouseEvent | KeyboardEvent): void {
 		const context = this.context;
+		const mention = this.mention;
 		this.finish();
-		if (!context) return;
+		if (!context || !mention) return;
 		const intent = selectionIntent(suggestion, event);
-		if (intent === "openDatesModal") this.openDatesModal(context);
-		else if (!isMoreRow(suggestion)) this.insertLinks(suggestion, context, intent === "insertFlippingAlias");
+		if (intent === "openDatesModal") this.openDatesModal(mention, context);
+		else if (!isMoreRow(suggestion)) this.insertLinks(suggestion, mention, context, intent === "insertWithAlias");
 	}
 
 	close(): void {
@@ -83,38 +87,33 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 
 	private finish(): void {
 		this.rows = [];
+		this.mention = undefined;
 		super.close();
 	}
 
-	private rowsFor(query: string): DateRow[] {
-		return buildRows(query, this.rowContext());
-	}
-
-	private rowContext(): RowContext {
-		const settings = this.settings();
-		return obsidianRowContext(settings, mentionAllows(settings.mentions));
+	private rowContext(mention: Mention): RowContext {
+		return obsidianRowContext(this.settings(), mention.targets);
 	}
 
 	private isStillTyped({ editor, file, start }: EditorSuggestContext): boolean {
 		const cursor = editor.getCursor();
 		if (cursor.line !== start.line || this.app.workspace.getActiveFile() !== file) return false;
-		const match = mentionAt(editor.getLine(cursor.line).slice(0, cursor.ch), this.settings().mentions.trigger);
-		return match?.start === start.ch;
+		const active = activeMentionAt(editor.getLine(cursor.line).slice(0, cursor.ch), this.settings().mentions);
+		return active?.match.start === start.ch;
 	}
 
-	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext, flippingAlias: boolean): void {
+	private insertLinks(row: DateRow, mention: Mention, { editor, file, start, end }: EditorSuggestContext, withAlias: boolean): void {
 		const destination = destinationInActiveEditor(editor);
 		if (destination.kind === "frontmatterWithoutProperty") return noticeNoProperty();
-		if (destination.kind === "property") return addDatesToProperty(this.app, editor, file, destination.name, row.notes, this.settings().insertion.linkPath, { start, end });
-		const { insertion } = this.settings();
-		const links = insertionLinks(row.notes, row.text, insertion, usesAlias(insertion, flippingAlias), (note, alias) => markdownLinkTo(this.app, note, file.path, alias, insertion.linkPath));
-		insertLinks(editor, links, insertion.separator, { start, end });
+		const links = obsidianLinks(this.app, file.path, mention)(destination.kind, row.notes, row.text, withAlias);
+		if (destination.kind === "property") return addDatesToProperty(this.app, editor, file, destination.name, links, { start, end });
+		insertLinks(editor, links, mention.separator, { start, end });
 	}
 
-	private openDatesModal({ editor, file, start, end, query }: EditorSuggestContext): void {
+	private openDatesModal(mention: Mention, { editor, file, start, end, query }: EditorSuggestContext): void {
 		const destination = destinationInActiveEditor(editor);
 		if (destination.kind === "frontmatterWithoutProperty") return noticeNoProperty();
-		openInsertDatesModal(this.settings, { app: this.app, editor, file, destination, range: { start, end } }, query);
+		openInsertDatesModal(this.settings, mention, { app: this.app, editor, file, destination, range: { start, end } }, query);
 	}
 
 	private showInstructions(): void {
@@ -132,8 +131,6 @@ function positionKey(file: TFile, { line, ch }: EditorPosition): string {
 	return `${file.path}:${line}:${ch}`;
 }
 
-function linesAbove(editor: Editor, line: number): string[] {
-	const lines: string[] = [];
-	for (let index = 0; index < line; index++) lines.push(editor.getLine(index));
-	return lines;
+function linesOf(editor: Editor): string[] {
+	return Array.from({ length: editor.lineCount() }, (_, index) => editor.getLine(index));
 }

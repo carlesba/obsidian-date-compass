@@ -8,8 +8,6 @@ import { importDateNotes } from "./dateNotes/import.ts";
 import { installedExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 import { OpenDateNoteByPhraseModal } from "./dateNotes/phraseModal.ts";
 import { DateMentionSuggest } from "./mentions/suggest.ts";
-import { destinationInActiveEditor, noticeNoProperty } from "./insertion/obsidianHost.ts";
-import { openInsertDatesModal } from "./sequence/modal.ts";
 import { ActionCommands } from "./actions/commands.ts";
 import { canRunAction, runActionInActiveNote } from "./actions/ask.ts";
 import { createObsidianDateCompassApi } from "./api/obsidianHost.ts";
@@ -42,15 +40,6 @@ export default class DateCompassPlugin extends Plugin {
 			id: "open-date-note-by-phrase",
 			name: t("openDateNoteByPhrase"),
 			callback: () => new OpenDateNoteByPhraseModal(this.app, () => this.settings).open(),
-		});
-		this.addCommand({
-			id: "insert-date-sequence",
-			name: t("insertDates"),
-			editorCallback: (editor, context) => {
-				const destination = destinationInActiveEditor(editor);
-				if (destination.kind === "frontmatterWithoutProperty") noticeNoProperty();
-				else openInsertDatesModal(() => this.settings, { app: this.app, editor, file: context.file ?? undefined, destination }, "");
-			},
 		});
 		this.registerEditorSuggest(new DateMentionSuggest(this.app, () => this.settings));
 		this.actionCommands.sync(this.settings.actions);

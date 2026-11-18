@@ -4,21 +4,22 @@ import { moment } from "./moment.ts";
 import { defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { Period } from "../src/dateNotes/periods.ts";
 import type { Completion, Interpretation, ParseOptions, Unit } from "../src/parse/index.ts";
-import { buildRows, mayStillMatch, mentionAllows, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
+import { buildRows, mayStillMatch, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
 import type { DateParser, RowContext } from "../src/mentions/rows.ts";
-import { mergeMentions } from "../src/mentions/settings.ts";
-import { isDeadEnd, isDismissed, isInCode, mentionAt } from "../src/mentions/trigger.ts";
+import { defaultMentions, mergeMentions, newMention } from "../src/mentions/settings.ts";
+import { defaultLinkStyle } from "../src/insertion/linkStyle.ts";
+import { activeMentionAt, isDeadEnd, isDismissed, isInCode, mayOpenMentionAt, mentionAt } from "../src/mentions/trigger.ts";
 import { sameTriggerPlugins } from "../src/mentions/conflicts.ts";
 import { fileNameParts } from "../src/dateNotes/paths.ts";
 import { parseOptionsOf, parserWeekStart } from "../src/parseOptions.ts";
-import { defaultSettings } from "../src/settings.ts";
+import { defaultSettings, mergeSettings } from "../src/settings.ts";
 
 const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 
 const options: ParseOptions = { languages: ["en"], weekStart: "monday", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth" };
 
 function context(overrides: Partial<RowContext> = {}): RowContext {
-	return { now, moment, options, periods: defaultDateNotes().periods, allows: () => true, ...overrides };
+	return { now, moment, options, periods: defaultDateNotes().periods, ...overrides };
 }
 
 function interpretation(unit: Unit, start: string, end = start, language = "en"): Interpretation {
@@ -55,14 +56,48 @@ test("a mention does not open inside a word, before a space, or without a trigge
 	assert.equal(mentionAt("meet @wed", ""), undefined);
 });
 
-test("a mention does not open inside code or frontmatter", () => {
+test("a mention does not open inside a code block or inline code", () => {
 	assert.equal(isInCode(["```js"], "const a = @"), true);
 	assert.equal(isInCode(["~~~", "x", "~~~"], "@"), false);
 	assert.equal(isInCode([], "see `@wed"), true);
 	assert.equal(isInCode([], "see `x` @wed"), false);
-	assert.equal(isInCode(["---", "title: a"], "date: @"), true);
 	assert.equal(isInCode(["---", "title: a", "---"], "@"), false);
 	assert.equal(isInCode(["text", "---"], "@"), false);
+});
+
+const NOTE_WITH_PROPERTIES = ["---", "title: Trip", "dates:", "  - @", "meta:", "  due: @", "", "---", "Body @", "```", "@", "```", "after @"];
+
+function mayOpenOn(line: number, lines = NOTE_WITH_PROPERTIES): boolean {
+	return mayOpenMentionAt(lines, line, lines[line]);
+}
+
+test("in the frontmatter a mention opens only on a line that belongs to a top-level property", () => {
+	assert.equal(mayOpenMentionAt(NOTE_WITH_PROPERTIES, 1, "title: @"), true);
+	assert.equal(mayOpenOn(2), true);
+	assert.equal(mayOpenOn(3), true);
+	assert.equal(mayOpenOn(5), false);
+	assert.equal(mayOpenOn(6), false);
+	assert.equal(mayOpenOn(0), true);
+	assert.equal(mayOpenMentionAt(["---", "", "---"], 1, "@"), false);
+	assert.equal(mayOpenMentionAt(["---", "dates: @", "never closed"], 1, "dates: @"), false);
+});
+
+test("in the note body a mention opens anywhere but in code, and inline code blocks it in a property too", () => {
+	assert.equal(mayOpenOn(8), true);
+	assert.equal(mayOpenOn(10), false);
+	assert.equal(mayOpenOn(12), true);
+	assert.equal(mayOpenMentionAt(NOTE_WITH_PROPERTIES, 8, "Body `@"), false);
+	assert.equal(mayOpenMentionAt(NOTE_WITH_PROPERTIES, 1, "title: `@"), false);
+	assert.equal(mayOpenMentionAt(["text", "---", "@"], 2, "@"), true);
+});
+
+test("the mention that opens brings its own targets", () => {
+	const day = { ...defaultLinkStyle(), id: "a", trigger: "@", targets: ["day" as const] };
+	const month = { ...defaultLinkStyle(), id: "b", trigger: "#", targets: ["month" as const] };
+	assert.equal(activeMentionAt("due @next month", [day, month])?.mention, day);
+	assert.equal(activeMentionAt("in #tomorrow", [day, month])?.mention, month);
+	assert.equal(activeMentionAt("no trigger", [day, month]), undefined);
+	assert.equal(activeMentionAt("@today", []), undefined);
 });
 
 test("a mention closes when a space follows a query with no interpretation and no completion", () => {
@@ -108,7 +143,7 @@ test("rows list the best interpretation, then the others, then completions, each
 	);
 });
 
-test("rows keep only the periods mentions allow and Date notes enable", () => {
+test("without targets rows keep every period Date notes enable and drop the others", () => {
 	const parser = fakeParser({
 		q: [
 			interpretation("day", "2026-11-17"),
@@ -117,13 +152,63 @@ test("rows keep only the periods mentions allow and Date notes enable", () => {
 			interpretation("year", "2026-01-01", "2026-12-31"),
 		],
 	});
-	const mentions = mergeMentions({ periods: { week: false } });
-	const rows = buildRows("q", context({ parser, allows: mentionAllows(mentions) }));
-	assert.deepEqual(rows.map((row) => row.notes[0].period), ["day", "year"]);
+	const rows = buildRows("q", context({ parser }));
+	assert.deepEqual(rows.map((row) => row.notes[0].period), ["day", "week", "year"]);
 	const dateNotes = defaultDateNotes();
 	dateNotes.periods.quarter.enabled = true;
-	const withQuarter = buildRows("q", context({ parser, periods: dateNotes.periods, allows: mentionAllows(mentions) }));
-	assert.deepEqual(withQuarter.map((row) => row.notes[0].period), ["day", "quarter", "year"]);
+	const withQuarter = buildRows("q", context({ parser, periods: dateNotes.periods }));
+	assert.deepEqual(withQuarter.map((row) => row.notes[0].period), ["day", "week", "quarter", "year"]);
+});
+
+const FRIDAY_13_FEB_2026 = moment("2026-02-13 12:00", "YYYY-MM-DD HH:mm");
+
+function firstNotes(phrase: string, targets: Period[] | undefined, overrides: Partial<RowContext> = {}): string[] {
+	const [row] = buildRows(phrase, context({ now: FRIDAY_13_FEB_2026, targets, ...overrides }));
+	return row ? row.notes.map((note) => note.name) : [];
+}
+
+test("a day-only mention and a month-only mention read the same phrase as their own period", () => {
+	assert.deepEqual(firstNotes("next month", ["day"]), ["2026-03-13"]);
+	assert.deepEqual(firstNotes("next month", ["month"]), ["2026-03"]);
+	assert.deepEqual(firstNotes("tomorrow", ["day"]), ["2026-02-14"]);
+	assert.deepEqual(firstNotes("tomorrow", ["month"]), ["2026-02"]);
+	assert.deepEqual(firstNotes("next month", undefined), ["2026-03"]);
+});
+
+test("a phrase outside the targets moves to the closest target instead of being dropped", () => {
+	assert.deepEqual(firstNotes("next week", ["day"]), ["2026-02-20"]);
+	assert.deepEqual(firstNotes("this month", ["day"]), ["2026-02-13"]);
+	assert.deepEqual(firstNotes("next month", ["day", "year"]), ["2026"]);
+	assert.deepEqual(firstNotes("next month", ["day", "week"]), ["2026-W11"]);
+	const dateNotes = defaultDateNotes();
+	dateNotes.periods.quarter.enabled = true;
+	assert.deepEqual(firstNotes("next quarter", ["week", "month"], { periods: dateNotes.periods }), ["2026-05"]);
+});
+
+test("a day-only mention on the 31st reads next month as the last day of a shorter month", () => {
+	assert.deepEqual(firstNotes("next month", ["day"], { now: moment("2026-01-31 12:00", "YYYY-MM-DD HH:mm") }), ["2026-02-28"]);
+	assert.deepEqual(firstNotes("next month", ["day"], { now: moment("2024-01-31 12:00", "YYYY-MM-DD HH:mm") }), ["2024-02-29"]);
+});
+
+test("the targets that count are the ones Date notes enable", () => {
+	const dateNotes = defaultDateNotes();
+	dateNotes.periods.month.enabled = false;
+	assert.deepEqual(firstNotes("next month", ["day", "month"], { periods: dateNotes.periods }), ["2026-03-13"]);
+	assert.deepEqual(firstNotes("next month", ["month"], { periods: dateNotes.periods }), []);
+	assert.deepEqual(firstNotes("tomorrow", ["month"], { periods: dateNotes.periods }), []);
+	assert.deepEqual(firstNotes("next month", undefined, { periods: dateNotes.periods }), []);
+});
+
+test("a range moved to a coarser target names each note once", () => {
+	assert.deepEqual(firstNotes("26 feb to 2 mar", ["month"]), ["2026-02", "2026-03"]);
+	assert.deepEqual(firstNotes("26 feb to 2 mar", ["week"]), ["2026-W09", "2026-W10"]);
+	assert.deepEqual(firstNotes("26 feb to 2 mar", undefined), ["2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02"]);
+});
+
+test("two readings that land on the same note after moving are one row", () => {
+	const parser = fakeParser({ q: [interpretation("day", "2026-02-14"), interpretation("week", "2026-02-09", "2026-02-15"), interpretation("month", "2026-02-01", "2026-02-28")] });
+	const rows = buildRows("q", context({ parser, now: FRIDAY_13_FEB_2026, targets: ["month"] }));
+	assert.deepEqual(rows.map((row) => row.notes.map((note) => note.name)), [["2026-02"]]);
 });
 
 test("a week that starts on Sunday is named after the ISO week of its weekdays", () => {
@@ -151,8 +236,6 @@ test("a range is one row that names every date it inserts", () => {
 		"Week of Mon 23 Nov → Week of Mon 30 Nov · 2 notes",
 		"Tue 17 Nov → [[2026-11-17]]",
 	]);
-	const withoutWeeks = buildRows("q", context({ parser, allows: (period) => period !== "week" }));
-	assert.equal(withoutWeeks.length, 2);
 	assert.deepEqual(singleNoteRows(rows).map((row) => row.notes[0].name), ["2026-11-17"]);
 });
 
@@ -193,14 +276,54 @@ test("plugins that suggest after the same trigger are named", () => {
 	assert.deepEqual(sameTriggerPlugins("@", [{ id: "nldates-obsidian", name: "NLD", settings: {} }]), ["NLD"]);
 });
 
-test("mention settings merge with defaults", () => {
-	const periods: Record<Period, boolean> = { day: true, week: true, month: true, quarter: true, year: true };
-	assert.deepEqual(mergeMentions(undefined), { enabled: true, trigger: "@", periods });
-	assert.deepEqual(mergeMentions({ enabled: false, trigger: " ; ; ", periods: { year: false } }), {
-		enabled: false,
-		trigger: ";;",
-		periods: { ...periods, year: false },
-	});
+test("a fresh install has one mention on @ that targets every period with the default link style", () => {
+	const fresh = [{ id: "mention-1", trigger: "@", targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" }];
+	assert.deepEqual(defaultMentions(), fresh);
+	assert.deepEqual(mergeMentions(undefined), fresh);
+	assert.deepEqual(mergeSettings({}).mentions, fresh);
+});
+
+test("mentions stored in the old single-trigger shape load as the defaults, and a stored insertion is ignored", () => {
+	const old = { mentions: { enabled: false, trigger: ";;", periods: { week: false } }, insertion: { linkPath: "fullPath", linkTemplate: "- {{link}}", aliasByDefault: true } };
+	const merged = mergeSettings(old);
+	assert.deepEqual(merged.mentions, defaultMentions());
+	assert.equal("insertion" in merged, false);
+	assert.deepEqual(mergeMentions("broken"), defaultMentions());
+});
+
+test("stored mentions merge entry by entry and field by field", () => {
+	const merged = mergeMentions([
+		{ id: "day", trigger: " ; ; ", targets: ["day", "day", "decade"], template: "- {{link}}", linkPath: "name", separator: "lines", aliasShape: "typed", aliasFormat: " D MMM " },
+		{ id: "day", trigger: "  ", targets: [], template: " ", linkPath: "relative", separator: "tab", aliasShape: "none", aliasFormat: " " },
+		"broken",
+		{ id: "a/b", trigger: 3 },
+	]);
+	assert.deepEqual(merged, [
+		{ id: "day", trigger: ";;", targets: ["day"], template: "- {{link}}", linkPath: "name", separator: "lines", aliasShape: "typed", aliasFormat: "D MMM" },
+		{ ...defaultLinkStyle(), id: "mention-1", trigger: "@" },
+		{ ...defaultLinkStyle(), id: "mention-2", trigger: "@" },
+	]);
+	assert.deepEqual(mergeMentions(JSON.parse(JSON.stringify(merged))), merged);
+});
+
+test("an empty stored list keeps mentions off", () => {
+	assert.deepEqual(mergeMentions([]), []);
+	assert.deepEqual(mergeSettings({ mentions: [] }).mentions, []);
+	assert.equal(activeMentionAt("@today", mergeMentions([])), undefined);
+});
+
+test("a new mention takes the first trigger no other mention uses and a free id", () => {
+	const mentions = defaultMentions();
+	const triggers: string[] = [];
+	for (let count = 0; count < 6; count++) {
+		const added = newMention(mentions);
+		mentions.push(added);
+		triggers.push(added.trigger);
+	}
+	assert.deepEqual(triggers, ["@@", "!", "&", "+", "@@@", "@@@@"]);
+	assert.deepEqual(mentions.map((mention) => mention.id).slice(0, 3), ["mention-1", "mention-2", "mention-3"]);
+	assert.deepEqual(newMention([]), defaultMentions()[0]);
+	assert.deepEqual(newMention([{ ...defaultMentions()[0], trigger: "!" }]).trigger, "@");
 });
 
 test("labels name the year when it is not the current one", () => {
@@ -225,8 +348,7 @@ test("a link to a note that does not exist yet names its path, base name and ext
 	assert.deepEqual(fileNameParts("2026"), { path: "2026", name: "2026", basename: "2026", extension: "" });
 });
 
-test("stored triggers fall back to the default when empty, and plugins without settings use their own default", () => {
-	assert.equal(mergeMentions({ trigger: "  " }).trigger, "@");
+test("plugins without settings use their own default trigger", () => {
 	assert.deepEqual(sameTriggerPlugins("@", [{ id: "date-list", name: "Date List", settings: undefined }]), ["Date List"]);
 	assert.deepEqual(sameTriggerPlugins("", [{ id: "date-list", name: "Date List", settings: undefined }]), []);
 });

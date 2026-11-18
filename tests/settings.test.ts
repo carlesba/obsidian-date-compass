@@ -1,24 +1,14 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
-import {
-	INSERTION_ALIAS_BY_DEFAULT_KEY,
-	INSERTION_ALIAS_FORMAT_KEY,
-	INSERTION_ALIAS_SHAPE_KEY,
-	INSERTION_LINK_PATH_KEY,
-	INSERTION_LINK_TEMPLATE_KEY,
-	INSERTION_SEPARATOR_KEY,
-	MENTIONS_ENABLED_KEY,
-	MENTIONS_TRIGGER_KEY,
-	TEMPLATE_RUNNER_KEY,
-	mentionPeriodKey,
-	periodKey,
-	readControl,
-	writeControl,
-} from "../src/settings/controlKeys.ts";
-import { mergeMentions } from "../src/mentions/settings.ts";
-import { mergeInsertion } from "../src/insertion/settings.ts";
-import { aliasFormatSample, insertionGroups } from "../src/settings/insertionPage.ts";
+import { TEMPLATE_RUNNER_KEY, mentionKey, mentionKeyParts, mentionKeyPrefix, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { defaultMentions } from "../src/mentions/settings.ts";
+import type { Mention } from "../src/mentions/settings.ts";
+import type { TriggerClash } from "../src/mentions/clashes.ts";
+import type { Period } from "../src/dateNotes/periods.ts";
+import { aliasFormatSample, linkStyleItems } from "../src/settings/linkStylePage.ts";
+import type { LinkStyleHost, TargetChoice } from "../src/settings/linkStylePage.ts";
+import { mentionsPage } from "../src/settings/mentionsPage.ts";
 import { moment } from "./moment.ts";
 import { localizationPage } from "../src/settings/localizationPage.ts";
 import type { LanguageChoice, LocalizationPageContext } from "../src/settings/localizationPage.ts";
@@ -26,7 +16,6 @@ import { pagePath } from "../src/settings/pages.ts";
 import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 import type { DateCompassSettings, ParserLanguage } from "../src/settings.ts";
 import { presetActions } from "../src/actions/settings.ts";
-import { sameTriggerWarning } from "../src/settings/mentionsPage.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
 
 test("a fresh install gets the defaults, with English as the only parser language", () => {
@@ -46,12 +35,9 @@ test("a fresh install gets the defaults, with English as the only parser languag
 				year: { enabled: true, folder: "", format: "YYYY", template: "" },
 			},
 		},
-		mentions: {
-			enabled: true,
-			trigger: "@",
-			periods: { day: true, week: true, month: true, quarter: true, year: true },
-		},
-		insertion: { linkPath: "shortestWhenSafe", linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false },
+		mentions: [
+			{ id: "mention-1", trigger: "@", targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" },
+		],
 		actions: presetActions(),
 	});
 });
@@ -68,8 +54,7 @@ test("stored partial settings merge over the defaults", () => {
 		nextWeekday: "nextWeek",
 		dayMonthOrder: "monthDay",
 		dateNotes: defaultDateNotes(),
-		mentions: mergeMentions(undefined),
-		insertion: mergeInsertion(undefined),
+		mentions: defaultMentions(),
 		actions: presetActions(),
 	});
 });
@@ -119,7 +104,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: mergeMentions(undefined), insertion: mergeInsertion(undefined), actions: presetActions() });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: defaultMentions(), actions: presetActions() });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });
@@ -133,39 +118,47 @@ test("settings controls read and write the settings they name", () => {
 	assert.equal(readControl(settings, "weekStart"), "monday");
 });
 
-test("every Mentions control reads and writes its setting and refuses bad values", () => {
+test("every control of a mention reads and writes its field and refuses bad values", () => {
 	const settings = defaultSettings();
-	assert.equal(writeControl(settings, MENTIONS_ENABLED_KEY, false), true);
-	assert.equal(readControl(settings, MENTIONS_ENABLED_KEY), false);
-	assert.equal(writeControl(settings, MENTIONS_TRIGGER_KEY, " ; ; "), true);
-	assert.equal(readControl(settings, MENTIONS_TRIGGER_KEY), ";;");
-	assert.equal(writeControl(settings, MENTIONS_TRIGGER_KEY, "  "), false);
-	assert.equal(settings.mentions.trigger, ";;");
-	assert.equal(writeControl(settings, mentionPeriodKey("week"), false), true);
-	assert.equal(readControl(settings, mentionPeriodKey("week")), false);
-	assert.equal(writeControl(settings, mentionPeriodKey("week"), "no"), false);
+	const key = (field: Parameters<typeof mentionKey>[1]) => mentionKey("mention-1", field);
+	assert.equal(key("trigger"), "mentions/mention-1/trigger");
+	assert.equal(readControl(settings, key("trigger")), "@");
+	assert.equal(writeControl(settings, key("trigger"), " ; ; "), true);
+	assert.equal(readControl(settings, key("trigger")), ";;");
+	assert.equal(writeControl(settings, key("trigger"), "  "), false);
+	assert.equal(writeControl(settings, key("trigger"), 3), false);
+	assert.equal(writeControl(settings, key("linkPath"), "fullPath"), true);
+	assert.equal(writeControl(settings, key("linkPath"), "relative"), false);
+	assert.equal(writeControl(settings, key("template"), "- [ ] {{name}}"), true);
+	assert.equal(writeControl(settings, key("template"), "  "), false);
+	assert.equal(writeControl(settings, key("template"), 3), false);
+	assert.equal(writeControl(settings, key("separator"), "bulletLines"), true);
+	assert.equal(writeControl(settings, key("separator"), "tab"), false);
+	assert.equal(writeControl(settings, key("aliasShape"), "typed"), true);
+	assert.equal(writeControl(settings, key("aliasShape"), "none"), false);
+	assert.equal(writeControl(settings, key("aliasFormat"), " D MMM "), true);
+	assert.equal(writeControl(settings, key("aliasFormat"), " "), false);
+	assert.equal(writeControl(settings, key("targets"), ["month", "day"]), true);
+	assert.deepEqual(readControl(settings, key("targets")), ["month", "day"]);
+	assert.equal(writeControl(settings, key("targets"), []), false);
+	assert.equal(writeControl(settings, key("targets"), ["day", "day"]), false);
+	assert.equal(writeControl(settings, key("targets"), ["day", "decade"]), false);
+	assert.equal(writeControl(settings, key("targets"), "day"), false);
+	assert.deepEqual(settings.mentions, [{ id: "mention-1", trigger: ";;", targets: ["month", "day"], template: "- [ ] {{name}}", linkPath: "fullPath", separator: "bulletLines", aliasShape: "typed", aliasFormat: "D MMM" }]);
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).mentions, settings.mentions);
 });
 
-test("every Insertion control reads and writes its setting and refuses bad values", () => {
+test("a mention control names an existing mention and one of its fields, nothing else", () => {
 	const settings = defaultSettings();
-	const keys = insertionGroups(() => settings.insertion, sampleHost()).flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
-	assert.deepEqual(keys, [INSERTION_LINK_PATH_KEY, INSERTION_LINK_TEMPLATE_KEY, INSERTION_SEPARATOR_KEY, INSERTION_ALIAS_BY_DEFAULT_KEY, INSERTION_ALIAS_SHAPE_KEY]);
-	assert.equal(writeControl(settings, INSERTION_LINK_PATH_KEY, "fullPath"), true);
-	assert.equal(writeControl(settings, INSERTION_LINK_PATH_KEY, "relative"), false);
-	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "- [ ] {{name}}"), true);
-	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "  "), false);
-	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, 3), false);
-	assert.equal(writeControl(settings, INSERTION_SEPARATOR_KEY, "bulletLines"), true);
-	assert.equal(writeControl(settings, INSERTION_SEPARATOR_KEY, "tab"), false);
-	assert.equal(writeControl(settings, INSERTION_ALIAS_BY_DEFAULT_KEY, true), true);
-	assert.equal(writeControl(settings, INSERTION_ALIAS_BY_DEFAULT_KEY, "yes"), false);
-	assert.equal(writeControl(settings, INSERTION_ALIAS_SHAPE_KEY, "typed"), true);
-	assert.equal(writeControl(settings, INSERTION_ALIAS_SHAPE_KEY, "none"), false);
-	assert.equal(writeControl(settings, INSERTION_ALIAS_FORMAT_KEY, " D MMM "), true);
-	assert.equal(writeControl(settings, INSERTION_ALIAS_FORMAT_KEY, " "), false);
-	assert.deepEqual(settings.insertion, { linkPath: "fullPath", linkTemplate: "- [ ] {{name}}", separator: "bulletLines", aliasShape: "typed", aliasFormat: "D MMM", aliasByDefault: true });
-	assert.equal(readControl(settings, INSERTION_LINK_TEMPLATE_KEY), "- [ ] {{name}}");
-	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).insertion, settings.insertion);
+	assert.deepEqual(mentionKeyParts("mentions/mention-1/trigger"), { mentionId: "mention-1", field: "trigger" });
+	assert.equal(mentionKeyParts("mentions/mention-1/id"), undefined);
+	assert.equal(mentionKeyParts("mentions/mention-1/trigger/extra"), undefined);
+	assert.equal(mentionKeyParts("actions/set-dates/name"), undefined);
+	assert.equal(writeControl(settings, mentionKey("missing", "trigger"), "!"), false);
+	assert.equal(readControl(settings, mentionKey("missing", "trigger")), undefined);
+	assert.equal(writeControl(settings, "mentions/enabled", false), false);
+	assert.equal(writeControl(settings, "insertion/linkPath", "fullPath"), false);
+	assert.deepEqual(settings, defaultSettings());
 });
 
 const TODAY = "2026-11-17";
@@ -212,10 +205,120 @@ function renderOf(items: readonly unknown[], name: string): (setting: never) => 
 	return item.render;
 }
 
+interface StyleHostLog {
+	written: Array<[string, unknown]>;
+	notices: string[];
+	offered: string[][];
+}
+
+function styleHost(mention: () => Mention | undefined, log: StyleHostLog, offPeriods: Period[] = ["quarter"]): LinkStyleHost {
+	return {
+		today: () => moment(TODAY),
+		write: (key: string, value: unknown) => {
+			log.written.push([key, value]);
+			const target = mention();
+			if (target && key.endsWith("/targets")) target.targets = value as Period[];
+		},
+		isEnabledInDateNotes: (period: Period) => !offPeriods.includes(period),
+		chooseTarget: (_anchor: HTMLElement, choices: TargetChoice[], pick: (period: Period) => void) => {
+			log.offered.push(choices.map((choice) => choice.name));
+			pick(choices[0].period);
+		},
+		notify: (message: string) => void log.notices.push(message),
+	};
+}
+
+function newLog(): StyleHostLog {
+	return { written: [], notices: [], offered: [] };
+}
+
+interface ItemLike {
+	type?: string;
+	id?: string;
+	name?: string;
+	desc?: string;
+	heading?: string;
+	visible?: boolean | (() => boolean);
+	status?: () => "warning" | null;
+	control?: { type: string; key: string };
+	items?: ItemLike[];
+	onDelete?: (position: number) => void;
+	onReorder?: (from: number, to: number) => void;
+	addItem?: { name: string; action: (anchor: HTMLElement) => void };
+	emptyState?: string;
+}
+
+function styleItems(mention: Mention, log: StyleHostLog, fields?: Parameters<typeof linkStyleItems>[0]["fields"]): ItemLike[] {
+	return linkStyleItems({ keyPrefix: mentionKeyPrefix(mention.id), style: () => mention, host: styleHost(() => mention, log), fields }) as unknown as ItemLike[];
+}
+
+function controlKeysOf(items: readonly ItemLike[]): string[] {
+	return items.flatMap((item) => [...(item.control ? [item.control.key] : []), ...controlKeysOf(item.items ?? [])]);
+}
+
+test("the link style fields are the targets, then the links and then the link text, keyed under the given prefix", () => {
+	const [mention] = defaultMentions();
+	const items = styleItems(mention, newLog());
+	assert.deepEqual(items.map((item) => [item.type, item.heading]), [["list", "Target periods"], ["group", "Links"], ["group", "Link text"]]);
+	assert.deepEqual(items[1].items?.map((item) => item.name), ["Text around each link", "Path in each link", "Between several links"]);
+	assert.deepEqual(items[2].items?.map((item) => item.name), ["What the link text says", "Date format of the link text"]);
+	assert.deepEqual(controlKeysOf(items), ["template", "linkPath", "separator", "aliasShape"].map((field) => `mentions/mention-1/${field}`));
+});
+
+test("the link style fields can be limited to some of them, leaving out empty groups", () => {
+	const [mention] = defaultMentions();
+	const items = styleItems(mention, newLog(), ["linkPath", "aliasShape", "aliasFormat"]);
+	assert.deepEqual(items.map((item) => item.heading), ["Links", "Link text"]);
+	assert.deepEqual(controlKeysOf(items), ["mentions/mention-1/linkPath", "mentions/mention-1/aliasShape"]);
+	assert.deepEqual(styleItems(mention, newLog(), ["targets", "linkPath"]).map((item) => item.heading), ["Target periods", "Links"]);
+});
+
+test("the date format of the link text shows only for the date format shape", () => {
+	const [mention] = defaultMentions();
+	const format = () => styleItems(mention, newLog())[2].items?.[1].visible as () => boolean;
+	assert.equal(format()(), true);
+	mention.aliasShape = "typed";
+	assert.equal(format()(), false);
+});
+
+test("the targets list has one row per target and says which ones are off in Date notes", () => {
+	const [mention] = defaultMentions();
+	const [targets] = styleItems(mention, newLog());
+	assert.deepEqual(targets.items?.map((row) => row.name), ["Daily notes", "Weekly notes", "Monthly notes", "Quarterly notes", "Yearly notes"]);
+	assert.deepEqual(targets.items?.map((row) => row.desc !== undefined), [false, false, false, true, false]);
+	assert.match(targets.items?.[3].desc ?? "", /Turned off in Date notes/);
+	assert.equal(targets.items?.some((row) => row.control !== undefined), false);
+	assert.equal(targets.onReorder, undefined);
+});
+
+test("the targets list always offers add and remove, asking which period to add and refusing to drop the last one", () => {
+	const [mention] = defaultMentions();
+	const log = newLog();
+	const targets = () => styleItems(mention, log)[0];
+	targets().addItem?.action({} as HTMLElement);
+	assert.deepEqual(log.notices, ["Every period is already listed."]);
+	targets().onDelete?.(1);
+	targets().onDelete?.(1);
+	targets().onDelete?.(1);
+	targets().onDelete?.(1);
+	assert.deepEqual(mention.targets, ["day"]);
+	targets().onDelete?.(0);
+	assert.deepEqual(mention.targets, ["day"]);
+	assert.deepEqual(log.notices, ["Every period is already listed.", "Keep at least one period."]);
+	targets().addItem?.action({} as HTMLElement);
+	assert.deepEqual(log.offered, [["Weekly notes", "Monthly notes", "Quarterly notes", "Yearly notes"]]);
+	assert.deepEqual(mention.targets, ["day", "week"]);
+	mention.targets = ["day", "week", "month", "quarter"];
+	targets().addItem?.action({} as HTMLElement);
+	assert.deepEqual(log.offered[1], ["Yearly notes"]);
+	assert.deepEqual(mention.targets, ["day", "week", "month", "quarter", "year"]);
+	assert.deepEqual(log.written.map(([key]) => key), Array(6).fill("mentions/mention-1/targets"));
+});
+
 test("the link text format shows today in the typed format and follows every keystroke", () => {
-	const settings = defaultSettings();
-	const written: Array<[string, unknown]> = [];
-	const [, linkText] = insertionGroups(() => settings.insertion, sampleHost(written));
+	const [mention] = defaultMentions();
+	const log = newLog();
+	const [, , linkText] = styleItems(mention, log);
 	const row = renderedRow(renderOf(linkText.items ?? [], "Date format of the link text"));
 	assert.equal(row.field.value, "ddd D MMM");
 	assert.equal(row.shown(), "Today: Tue 17 Nov");
@@ -225,8 +328,70 @@ test("the link text format shows today in the typed format and follows every key
 	assert.equal(row.shown(), "Today: Tuesday");
 	row.type("  ");
 	assert.equal(row.shown(), "Enter a name format.");
-	assert.deepEqual(written, [[INSERTION_ALIAS_FORMAT_KEY, "D/M/YY"], [INSERTION_ALIAS_FORMAT_KEY, "dddd"], [INSERTION_ALIAS_FORMAT_KEY, "  "]]);
+	const key = "mentions/mention-1/aliasFormat";
+	assert.deepEqual(log.written, [[key, "D/M/YY"], [key, "dddd"], [key, "  "]]);
 	assert.equal(aliasFormatSample(" YYYY ", moment(TODAY)), "Today: 2026");
+});
+
+function mentions(settings: DateCompassSettings, clashes: Record<string, TriggerClash[]> = {}) {
+	const opened: string[] = [];
+	const log = newLog();
+	const page = () =>
+		mentionsPage({
+			...styleHost(() => undefined, log),
+			mentions: () => settings.mentions,
+			clashesOf: (mention) => clashes[mention.id] ?? [],
+			openPage: (pageId) => void opened.push(pageId),
+			change: (mutate) => Promise.resolve(void mutate()),
+		});
+	const list = () => (page().items ?? [])[0] as unknown as ItemLike;
+	const subPages = () => ((page().items ?? [])[1] as unknown as ItemLike).items ?? [];
+	return { page, list, subPages, opened };
+}
+
+test("Mentions is a page with one row per mention and a hidden page for each", () => {
+	const settings = mergeSettings({ mentions: [{ id: "day", trigger: "@", targets: ["day"] }, { id: "month", trigger: "#", targets: ["month", "year"] }] });
+	const { page, list, subPages } = mentions(settings, { month: [{ kind: "builtin", feature: "tags", sequence: "#" }] });
+	assert.equal(page().name, "Mentions");
+	assert.equal(list().type, "list");
+	assert.deepEqual(list().items?.map((row) => row.name), ["@", "#"]);
+	assert.equal(list().items?.[0].desc, "Daily notes");
+	assert.equal(list().items?.[1].desc, "Monthly notes, Yearly notes. Obsidian suggests tags after #, so this mention does not open there.");
+	assert.equal(((page().items ?? [])[1] as unknown as ItemLike).visible, false);
+	assert.deepEqual(subPages().map((subPage) => [subPage.id, subPage.name]), [["mention-day", "@"], ["mention-month", "#"]]);
+	assert.deepEqual(pagePath([{ type: "group", items: [page()] }], "mention-month"), ["mentions", "mention-month"]);
+});
+
+test("the page of a mention has its trigger first, then its link style, and flags a clashing trigger", () => {
+	const settings = mergeSettings({ mentions: [{ id: "day", trigger: "@" }, { id: "tag", trigger: "#" }] });
+	const { subPages } = mentions(settings, { tag: [{ kind: "builtin", feature: "tags", sequence: "#" }] });
+	const [plain, clashing] = subPages();
+	assert.deepEqual(controlKeysOf(plain.items ?? []), ["trigger", "template", "linkPath", "separator", "aliasShape"].map((field) => `mentions/day/${field}`));
+	assert.deepEqual(plain.items?.map((item) => item.heading), [undefined, "Target periods", "Links", "Link text"]);
+	assert.deepEqual(plain.items?.[0].items?.map((item) => item.name), ["Trigger"]);
+	assert.match(plain.items?.[0].items?.[0].desc ?? "", /are not checked/);
+	assert.equal(plain.status?.(), null);
+	assert.deepEqual(clashing.items?.[0].items?.map((item) => item.name), ["Trigger", "This trigger clashes"]);
+	assert.equal(clashing.items?.[0].items?.[1].desc, "Obsidian suggests tags after #, so this mention does not open there.");
+	assert.equal(clashing.status?.(), "warning");
+});
+
+test("the Mentions page adds a mention on an unused trigger and opens it, and reorders and removes mentions", async () => {
+	const settings = defaultSettings();
+	const { list, subPages, opened } = mentions(settings);
+	list().addItem?.action({} as HTMLElement);
+	await Promise.resolve();
+	assert.deepEqual(settings.mentions.map((mention) => [mention.id, mention.trigger]), [["mention-1", "@"], ["mention-2", "@@"]]);
+	assert.deepEqual(opened, ["mention-mention-2"]);
+	assert.equal(subPages().length, 2);
+	list().onReorder?.(1, 0);
+	assert.deepEqual(settings.mentions.map((mention) => mention.trigger), ["@@", "@"]);
+	list().onDelete?.(0);
+	list().onDelete?.(0);
+	assert.equal(settings.mentions.length, 0);
+	assert.equal(list().emptyState, "No mentions yet. Add one to link date notes while typing.");
+	list().addItem?.action({} as HTMLElement);
+	assert.deepEqual(settings.mentions.map((mention) => mention.trigger), ["@"]);
 });
 
 interface LanguageListLike {
@@ -325,11 +490,6 @@ test("the typed date order reads Día/Mes and Mes/Día in Spanish", () => {
 	} finally {
 		setLanguage(DEFAULT_LANGUAGE);
 	}
-});
-
-test("the Mentions page warns only when another plugin shares the trigger", () => {
-	assert.equal(sameTriggerWarning([]), undefined);
-	assert.match(sameTriggerWarning(["Natural Language Dates", "Date List"]) ?? "", /Natural Language Dates, Date List also suggests/);
 });
 
 test("the stored language order survives a load, and repeated or unknown languages are dropped", () => {

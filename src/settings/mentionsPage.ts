@@ -1,45 +1,106 @@
-import type { SettingDefinitionGroup } from "obsidian";
+import type { SettingDefinitionList, SettingDefinitionRender } from "obsidian";
 import { t } from "../i18n/index.ts";
-import { PERIODS } from "../dateNotes/periods.ts";
-import type { MentionSettings } from "../mentions/settings.ts";
-import {
-	MENTIONS_ENABLED_KEY,
-	MENTIONS_TRIGGER_KEY,
-	mentionPeriodKey,
-	triggerError,
-} from "./controlKeys.ts";
-import { PERIOD_LABELS } from "./dateNotesPage.ts";
+import { clashWarning } from "../mentions/clashes.ts";
+import type { TriggerClash } from "../mentions/clashes.ts";
+import { DEFAULT_MENTION_TRIGGER, newMention } from "../mentions/settings.ts";
+import type { Mention } from "../mentions/settings.ts";
+import { mentionKey, mentionKeyPrefix, triggerError } from "./controlKeys.ts";
+import { moveEntry } from "./entryList.ts";
+import { linkStyleItems, targetNames } from "./linkStylePage.ts";
+import type { LinkStyleHost } from "./linkStylePage.ts";
+import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
+import type { IdentifiedPage } from "./pages.ts";
 
-export function sameTriggerWarning(names: readonly string[]): string | undefined {
-	return names.length === 0 ? undefined : t("sameTriggerWarning", { plugins: names.join(", ") });
+export interface MentionsPageContext extends LinkStyleHost {
+	mentions: () => Mention[];
+	clashesOf: (mention: Mention) => TriggerClash[];
+	openPage: (pageId: string) => void;
+	change: (mutate: () => unknown) => Promise<void>;
 }
 
-export function mentionGroups(mentions: () => MentionSettings, sameTriggerNames: readonly string[]): SettingDefinitionGroup[] {
-	const isOn = () => mentions().enabled;
-	const warning = sameTriggerWarning(sameTriggerNames);
-	return [
-		{
-			type: "group",
-			items: [
-				{ name: t("mentionsEnabled"), desc: t("mentionsEnabledDesc"), control: { type: "toggle", key: MENTIONS_ENABLED_KEY } },
-				{
-					name: t("mentionTrigger"),
-					desc: t("mentionTriggerDesc"),
-					visible: isOn,
-					control: { type: "text", key: MENTIONS_TRIGGER_KEY, placeholder: "@", validate: triggerError },
-				},
-				...(warning ? [{ name: t("sameTriggerTitle"), desc: warning, visible: isOn }] : []),
-			],
+export const MENTIONS_PAGE_ID = "mentions";
+
+export function mentionPageId(mention: Mention): string {
+	return `mention-${mention.id}`;
+}
+
+export function mentionsPage(context: MentionsPageContext): IdentifiedPage {
+	const mentions = context.mentions();
+	return {
+		type: "page",
+		id: MENTIONS_PAGE_ID,
+		name: t("mentionsSection"),
+		desc: t("mentionsSectionDesc"),
+		items: [mentionsList(mentions, context), { type: "group", visible: false, items: mentions.map((mention) => mentionPage(mention, context)) }],
+	};
+}
+
+function mentionsList(mentions: Mention[], context: MentionsPageContext): SettingDefinitionList {
+	return {
+		type: "list",
+		heading: t("mentionsList"),
+		emptyState: t("noMentionsYet"),
+		items: mentions.map((mention) => mentionRow(mention, context)),
+		onReorder: (from, to) => void context.change(() => moveEntry(mentions, from, to)),
+		onDelete: (index) => void context.change(() => mentions.splice(index, 1)),
+		addItem: {
+			name: t("addMention"),
+			action: () => {
+				const mention = newMention(mentions);
+				void context.change(() => mentions.push(mention)).then(() => context.openPage(mentionPageId(mention)));
+			},
 		},
-		{
-			type: "group",
-			heading: t("mentionPeriods"),
-			visible: isOn,
-			items: PERIODS.map((period) => ({
-				name: t(PERIOD_LABELS[period]),
-				desc: t("mentionPeriodDesc"),
-				control: { type: "toggle" as const, key: mentionPeriodKey(period) },
-			})),
+	};
+}
+
+export function mentionSummary(mention: Mention, clashes: readonly TriggerClash[]): string {
+	const warning = clashWarning(clashes);
+	const targets = targetNames(mention.targets);
+	return warning ? `${targets}. ${warning}` : targets;
+}
+
+function mentionRow(mention: Mention, context: MentionsPageContext): SettingDefinitionRender {
+	const summary = () => mentionSummary(mention, context.clashesOf(mention));
+	return {
+		name: mention.trigger,
+		desc: summary(),
+		render: (setting) => {
+			setting.setName(mention.trigger);
+			setting.setDesc(summary());
+			setting.addExtraButton((button) =>
+				button
+					.setIcon("pencil")
+					.setTooltip(t("editMention"))
+					.onClick(() => context.openPage(mentionPageId(mention)))
+					.extraSettingsEl.addClass(LIST_ROW_EDIT_CLASS),
+			);
+			return leadWithListControls(setting);
 		},
-	];
+	};
+}
+
+function mentionPage(mention: Mention, context: MentionsPageContext): IdentifiedPage {
+	const warning = clashWarning(context.clashesOf(mention));
+	return {
+		type: "page",
+		id: mentionPageId(mention),
+		get name() {
+			return mention.trigger;
+		},
+		status: () => (context.clashesOf(mention).length > 0 ? "warning" : null),
+		items: [
+			{
+				type: "group",
+				items: [
+					{
+						name: t("mentionTrigger"),
+						desc: t("mentionTriggerDesc"),
+						control: { type: "text", key: mentionKey(mention.id, "trigger"), placeholder: DEFAULT_MENTION_TRIGGER, validate: triggerError },
+					},
+					...(warning ? [{ name: t("triggerClashTitle"), desc: warning }] : []),
+				],
+			},
+			...linkStyleItems({ keyPrefix: mentionKeyPrefix(mention.id), style: () => mention, host: context }),
+		],
+	};
 }

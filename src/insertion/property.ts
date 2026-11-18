@@ -27,7 +27,7 @@ function identityOf(item: unknown): string {
 }
 
 export function propertyWithLinks(existing: unknown, links: readonly string[]): unknown[] | undefined {
-	const items: unknown[] = existing === undefined || existing === null || existing === "" ? [] : Array.isArray(existing) ? (existing as unknown[]).slice() : [existing];
+	const items: unknown[] = existing === undefined || existing === null || existing === "" ? [] : Array.isArray(existing) ? (existing as unknown[]).filter((item) => item !== null && item !== undefined) : [existing];
 	const present = new Set(items.map(identityOf));
 	const missing = links.filter((link) => {
 		if (present.has(identityOf(link))) return false;

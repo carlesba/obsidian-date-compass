@@ -1,3 +1,5 @@
+import { propertyAtLine } from "../insertion/destination.ts";
+
 export interface MentionMatch {
 	start: number;
 	query: string;
@@ -50,8 +52,13 @@ export function isDismissed(dismissal: Dismissal | undefined, position: string, 
 	return dismissal.deadEndQuery === undefined || query.startsWith(dismissal.deadEndQuery);
 }
 
+export function mayOpenMentionAt(lines: readonly string[], cursorLine: number, lineBeforeCaret: string): boolean {
+	const linesAbove = lines.slice(0, cursorLine);
+	if (isInCode(linesAbove, lineBeforeCaret)) return false;
+	return !isInFrontmatter(linesAbove) || propertyAtLine(lines, cursorLine) !== undefined;
+}
+
 export function isInCode(linesAbove: readonly string[], lineBeforeCaret: string): boolean {
-	if (isInFrontmatter(linesAbove)) return true;
 	const fences = linesAbove.filter((line) => CODE_FENCE.test(line)).length;
 	if (fences % 2 === 1) return true;
 	const backticks = lineBeforeCaret.split("`").length - 1;

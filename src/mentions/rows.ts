@@ -6,7 +6,9 @@ import { noteName, notePath } from "../dateNotes/paths.ts";
 import type { MomentFactory } from "../dateNotes/paths.ts";
 import { isPeriod } from "../dateNotes/periods.ts";
 import type { Period, PeriodSettingsByPeriod } from "../dateNotes/periods.ts";
-import type { MentionSettings } from "./settings.ts";
+import { civilOf } from "../parse/calendar.ts";
+import { effectiveTargets } from "../insertion/linkStyle.ts";
+import { collapseRepeats, retargetSpans } from "./retarget.ts";
 
 export interface DateParser {
 	parse(text: string, now: Date, options: ParseOptions): Interpretation[];
@@ -20,7 +22,7 @@ export interface RowContext {
 	moment: MomentFactory;
 	options: ParseOptions;
 	periods: PeriodSettingsByPeriod;
-	allows: (period: Period) => boolean;
+	targets?: readonly Period[];
 	parser?: DateParser;
 }
 
@@ -80,27 +82,31 @@ export function mayStillMatch(query: string, context: RowContext): boolean {
 }
 
 function notesOf({ result }: Interpretation, context: RowContext): NoteRef[] | undefined {
-	const spans = result.kind === "sequence" ? result.items : [result.span];
+	const spans = spansWithin(result.kind === "sequence" ? result.items : [result.span], context);
+	if (!spans) return undefined;
 	const notes: NoteRef[] = [];
 	for (const span of spans) {
 		const note = noteOf(span, context);
 		if (!note) return undefined;
 		notes.push(note);
 	}
-	return notes.length > 0 ? notes : undefined;
+	if (notes.length === 0) return undefined;
+	return context.targets === undefined ? notes : collapseRepeats(notes, (note) => note.path);
+}
+
+function spansWithin(spans: readonly Span[], context: RowContext): readonly Span[] | undefined {
+	if (context.targets === undefined) return spans;
+	const targets = effectiveTargets(context.targets, (period) => context.periods[period].enabled);
+	return retargetSpans(spans, civilOf(context.now.toDate()), context.options, targets);
 }
 
 function noteOf(span: Span, context: RowContext): NoteRef | undefined {
 	const period = span.unit;
-	if (!isPeriod(period) || !context.periods[period].enabled || !context.allows(period)) return undefined;
+	if (!isPeriod(period) || !context.periods[period].enabled) return undefined;
 	const start = context.moment(span.start, ISO_DATE, true);
 	if (!start.isValid()) return undefined;
 	const date = period === "week" ? start.clone().add(DAYS_INTO_WEEK_THAT_NAME_IT, "days") : start;
 	return { period, start, date, name: noteName(date, period, context.periods), path: notePath(date, period, context.periods) };
-}
-
-export function mentionAllows(mention: MentionSettings): (period: Period) => boolean {
-	return (period) => mention.periods[period];
 }
 
 function dayFormat(day: Moment, now: Moment): string {

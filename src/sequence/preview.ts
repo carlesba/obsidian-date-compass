@@ -6,7 +6,7 @@ import type { Analysis, ParseOptions } from "../parse/index.ts";
 import { PHRASE_PARSER, buildRows, noteCount, rangeDescription, rowLabel } from "../mentions/rows.ts";
 import type { DateRow, NoteRef, RowContext } from "../mentions/rows.ts";
 import { insertionText } from "../insertion/render.ts";
-import type { LinkSeparator } from "../insertion/settings.ts";
+import type { LinkSeparator } from "../insertion/linkStyle.ts";
 
 export type Analyzer = (text: string, now: Date, options: ParseOptions) => Analysis;
 

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { triggerClashes } from "../src/mentions/clashes.ts";
+import { clashText, clashWarning, slashCommandsEnabledIn, triggerClashes } from "../src/mentions/clashes.ts";
 import type { TriggerOwner } from "../src/mentions/clashes.ts";
+import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 import type { EnabledPlugin } from "../src/mentions/conflicts.ts";
 
 function mention(id: string, trigger: string): TriggerOwner {
@@ -83,4 +84,40 @@ test("clashes of every kind are listed together", () => {
 		{ kind: "builtin", feature: "tags", sequence: "#" },
 		{ kind: "plugin", name: "Note Compass" },
 	]);
+});
+
+test("each clash reads as a sentence that names what it clashes with", () => {
+	assert.equal(clashText({ kind: "duplicate" }), "Another mention uses this trigger, so only the first of them in the list opens.");
+	assert.equal(clashText({ kind: "prefix", trigger: "@@" }), "The trigger @@ of another mention starts the same way, so the longer of the two wins wherever both match.");
+	assert.equal(clashText({ kind: "builtin", feature: "links", sequence: "[[" }), "Obsidian suggests links after [[, so this mention does not open there.");
+	assert.equal(clashText({ kind: "builtin", feature: "slashCommands", sequence: "/" }), "Obsidian suggests slash commands after /, so this mention does not open there.");
+	assert.equal(clashText({ kind: "plugin", name: "Date List" }), "Date List also suggests after this trigger, so both suggestions compete. Change the trigger here or in that plugin.");
+});
+
+test("the warning of a trigger joins its clashes, and there is none without clashes", () => {
+	assert.equal(clashWarning([]), undefined);
+	const hash = mention("a", "#");
+	const warning = clashWarning(triggerClashes(hash, [hash, mention("b", "#")], [], undefined));
+	assert.equal(warning, "Another mention uses this trigger, so only the first of them in the list opens. Obsidian suggests tags after #, so this mention does not open there.");
+});
+
+test("clashes read in Spanish when the interface is Spanish", () => {
+	try {
+		setLanguage("es");
+		assert.equal(clashText({ kind: "builtin", feature: "footnotes", sequence: "[^" }), "Obsidian sugiere notas al pie tras [^, así que esta mención no se abre ahí.");
+	} finally {
+		setLanguage(DEFAULT_LANGUAGE);
+	}
+});
+
+test("the Slash commands state is read from the core plugins, and is unknown when they look different", () => {
+	assert.equal(slashCommandsEnabledIn({ getPluginById: (id: string) => (id === "slash-command" ? { enabled: true } : null) }), true);
+	assert.equal(slashCommandsEnabledIn({ getPluginById: () => ({ enabled: false }) }), false);
+	assert.equal(slashCommandsEnabledIn({ plugins: { "slash-command": { enabled: true } } }), true);
+	assert.equal(slashCommandsEnabledIn({ plugins: { "slash-command": { enabled: "yes" } } }), undefined);
+	assert.equal(slashCommandsEnabledIn({ getPluginById: () => null }), undefined);
+	assert.equal(slashCommandsEnabledIn({ plugins: {} }), undefined);
+	assert.equal(slashCommandsEnabledIn({}), undefined);
+	assert.equal(slashCommandsEnabledIn(undefined), undefined);
+	assert.equal(slashCommandsEnabledIn("broken"), undefined);
 });

@@ -10,12 +10,12 @@ export function localeParseOptions(settings: DateCompassSettings): ParseOptions 
 	return parseOptionsOf(settings, moment.localeData().firstDayOfWeek());
 }
 
-export function obsidianRowContext(settings: DateCompassSettings, allows: (period: Period) => boolean = () => true): RowContext {
+export function obsidianRowContext(settings: DateCompassSettings, targets?: readonly Period[]): RowContext {
 	return {
 		now: obsidianMoment(),
 		moment: obsidianMoment,
 		options: localeParseOptions(settings),
 		periods: settings.dateNotes.periods,
-		allows,
+		targets,
 	};
 }

@@ -8,6 +8,7 @@ import type { NoteRef } from "../src/mentions/rows.ts";
 import { previewSequence } from "../src/sequence/preview.ts";
 import type { SequenceContext } from "../src/sequence/preview.ts";
 import { linkTarget } from "../src/insertion/property.ts";
+import { defaultLinkStyle } from "../src/insertion/linkStyle.ts";
 import { actionName, actionWarning, mergeActions, newAction, presetActions, questionOf } from "../src/actions/settings.ts";
 import { effectiveMode, propertyKind, valueToWrite, writeToFrontmatter } from "../src/actions/value.ts";
 import { propertyWidgetOf } from "../src/actions/propertyType.ts";
@@ -21,7 +22,7 @@ const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 
 const options: ParseOptions = { languages: ["en"], weekStart: "monday", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth" };
 
-const rowContext: SequenceContext = { now, moment, options, periods: defaultDateNotes().periods, allows: () => true };
+const rowContext: SequenceContext = { now, moment, options, periods: defaultDateNotes().periods };
 
 function notesOf(phrase: string): NoteRef[] {
 	const preview = previewSequence(phrase, rowContext);
@@ -31,10 +32,12 @@ function notesOf(phrase: string): NoteRef[] {
 
 const linkTo = (note: NoteRef) => `[[${note.name}]]`;
 
+const STYLE = defaultLinkStyle();
+
 test("presets are Add dates and Set reminders, both adding dates as links", () => {
 	assert.deepEqual(presetActions(), [
-		{ id: "set-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
-		{ id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
+		{ ...STYLE, id: "set-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
+		{ ...STYLE, id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
 	]);
 	assert.deepEqual(mergeSettings({ weekStart: "monday" }).actions, presetActions());
 });
@@ -44,7 +47,7 @@ test("no stored actions gives the presets, an empty list stays empty, unknown ke
 	assert.deepEqual(mergeActions({ not: "a list" }), presetActions());
 	assert.deepEqual(mergeActions([]), []);
 	const [action] = mergeActions([{ id: "x", name: "X", property: "p", asks: "date", link: false, extra: 1, inputs: "junk" }, "broken", 3]);
-	assert.deepEqual(action, { id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false });
+	assert.deepEqual(action, { ...STYLE, id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false });
 });
 
 test("stored ids are kept unique, and loading what was saved changes nothing", () => {
@@ -53,9 +56,11 @@ test("stored ids are kept unique, and loading what was saved changes nothing", (
 	assert.deepEqual(mergeActions(JSON.parse(JSON.stringify(once))), once);
 });
 
-test("stored v2 fields fall back field by field", () => {
+test("stored fields fall back field by field, the link style included", () => {
+	const [styled] = mergeActions([{ id: "s", linkPath: "fullPath", targets: ["week", "decade"], separator: "tab", template: " " }]);
+	assert.deepEqual(styled, { ...STYLE, id: "s", name: "", property: "", mode: "add", asks: "dates", link: true, linkPath: "fullPath", targets: ["week"] });
 	const [action] = mergeActions([{ id: "p", asks: "dates", name: 3, enabled: "yes", property: null, link: "no" }]);
-	assert.deepEqual(action, { id: "p", name: "", property: "", mode: "add", asks: "dates", link: true });
+	assert.deepEqual(action, { ...STYLE, id: "p", name: "", property: "", mode: "add", asks: "dates", link: true });
 });
 
 const kinds = ["date", "datetime", "other", "list"] as const;
@@ -155,7 +160,7 @@ test("the action controls read and write every field of an action and refuse bad
 	assert.equal(writeControl(settings, key("asks"), "date"), true);
 	assert.equal(readControl(settings, key("mode")), "add");
 	assert.equal(writeControl(settings, key("mode"), "replace"), true);
-	assert.deepEqual(settings.actions[0], { id: "set-dates", name: "Mine", property: "when", mode: "replace", asks: "date", link: false });
+	assert.deepEqual(settings.actions[0], { ...STYLE, id: "set-dates", name: "Mine", property: "when", mode: "replace", asks: "date", link: false });
 	assert.equal(writeControl(settings, key("asks"), "periodicNote"), false);
 	assert.equal(writeControl(settings, key("mode"), "append"), false);
 	assert.equal(writeControl(settings, key("link"), "no"), false);
@@ -215,7 +220,7 @@ test("the action row says whether it adds or sets and what it asks", () => {
 
 test("an action stored as disabled loads as an action and gets its command", () => {
 	const actions = mergeActions([{ id: "x", name: "X", enabled: false, property: "p", mode: "add", asks: "date", link: false }]);
-	assert.deepEqual(actions, [{ id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false }]);
+	assert.deepEqual(actions, [{ ...STYLE, id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false }]);
 	assert.deepEqual(actionCommands(actions).map((command) => command.name), ["X"]);
 });
 

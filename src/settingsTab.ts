@@ -4,30 +4,25 @@ import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage } from "./settings.ts";
-import {
-	INSERTION_ALIAS_SHAPE_KEY,
-	MENTIONS_ENABLED_KEY,
-	MENTIONS_TRIGGER_KEY,
-	isActionKey,
-	isTypedActionKey,
-	readControl,
-	writeControl,
-} from "./settings/controlKeys.ts";
+import { isActionKey, isTypedActionKey, mentionKeyParts, readControl, writeControl } from "./settings/controlKeys.ts";
+import type { MentionControlField } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup } from "./settings/dateNotesPage.ts";
 import { copyFromSource, dateNoteMismatches } from "./dateNotes/import.ts";
 import type { DateNoteSource } from "./dateNotes/import.ts";
 import { enabledExternalDateNotes, obsidianMoment } from "./dateNotes/obsidianHost.ts";
-import { mentionGroups } from "./settings/mentionsPage.ts";
-import { insertionGroups } from "./settings/insertionPage.ts";
+import { mentionsPage } from "./settings/mentionsPage.ts";
+import type { LinkStyleHost } from "./settings/linkStylePage.ts";
 import type { SampleHost } from "./settings/todaySample.ts";
-import { sameTriggerPlugins } from "./mentions/conflicts.ts";
-import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
+import { clashWarning, triggerClashes } from "./mentions/clashes.ts";
+import type { TriggerClash } from "./mentions/clashes.ts";
+import { enabledPluginsWithTriggers, slashCommandsEnabled } from "./mentions/obsidianHost.ts";
+import type { Mention } from "./mentions/settings.ts";
 import { actionsPage } from "./settings/actionsPage.ts";
 import { localizationPage } from "./settings/localizationPage.ts";
 import { pagePath } from "./settings/pages.ts";
 
-const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, INSERTION_ALIAS_SHAPE_KEY];
+const MENTION_FIELDS_THAT_CHANGE_THE_PAGE: readonly MentionControlField[] = ["targets", "aliasShape"];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -42,6 +37,8 @@ function sectionPage(name: TranslationKey, desc: TranslationKey, items: SettingD
 export class DateCompassSettingTab extends PluginSettingTab {
 	private readonly plugin: DateCompassPlugin;
 	private readonly updateAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
+	private readonly showTriggerAfterTyping = debounce((mentionId: string) => this.showTypedTrigger(mentionId), TYPING_PAUSE_MS, true);
+	private readonly warnedTriggers = new Map<string, string>();
 
 	constructor(app: App, plugin: DateCompassPlugin) {
 		super(app, plugin);
@@ -67,12 +64,17 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						notify: (message) => new Notice(message),
 					}),
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
-					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
-					sectionPage("insertionSection", "insertionSectionDesc", insertionGroups(() => this.plugin.settings.insertion, this.sampleHost())),
+					mentionsPage({
+						...this.linkStyleHost(),
+						mentions: () => this.plugin.settings.mentions,
+						clashesOf: (mention) => this.clashesOf(mention),
+						openPage: (pageId) => this.openPage(pageId),
+						change: (mutate) => this.changeEntries(mutate),
+					}),
 					actionsPage({
 						actions: () => this.plugin.settings.actions,
 						openPage: (pageId) => this.openPage(pageId),
-						change: (mutate) => this.changeActions(mutate),
+						change: (mutate) => this.changeEntries(mutate),
 					}),
 				],
 			},
@@ -105,9 +107,35 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		return [...mismatchGroups(mismatches, (source) => void this.copyDateNotesFrom(source)), templateRunnerGroup(), ...periodGroups()];
 	}
 
-	private mentionsItems(): SettingDefinitionItem[] {
-		const sameTrigger = sameTriggerPlugins(this.plugin.settings.mentions.trigger, enabledPluginsWithTriggers(this.app));
-		return mentionGroups(() => this.plugin.settings.mentions, sameTrigger);
+	private linkStyleHost(): LinkStyleHost {
+		return {
+			...this.sampleHost(),
+			isEnabledInDateNotes: (period) => this.plugin.settings.dateNotes.periods[period].enabled,
+			chooseTarget: (anchor, choices, pick) => {
+				const menu = new Menu();
+				for (const choice of choices) menu.addItem((item) => item.setTitle(choice.name).onClick(() => pick(choice.period)));
+				const box = anchor.getBoundingClientRect();
+				menu.showAtPosition({ x: box.left, y: box.bottom });
+			},
+			notify: (message) => new Notice(message),
+		};
+	}
+
+	private clashesOf(mention: Mention): TriggerClash[] {
+		return triggerClashes(mention, this.plugin.settings.mentions, enabledPluginsWithTriggers(this.app), slashCommandsEnabled(this.app));
+	}
+
+	private showTypedTrigger(mentionId: string): void {
+		this.update();
+		const mention = this.plugin.settings.mentions.find((candidate) => candidate.id === mentionId);
+		const warning = mention && clashWarning(this.clashesOf(mention));
+		if (!mention || !warning) {
+			this.warnedTriggers.delete(mentionId);
+			return;
+		}
+		if (this.warnedTriggers.get(mentionId) === mention.trigger) return;
+		this.warnedTriggers.set(mentionId, mention.trigger);
+		new Notice(warning);
 	}
 
 	private async copyDateNotesFrom(source: DateNoteSource): Promise<void> {
@@ -122,7 +150,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
-	private async changeActions(mutate: () => unknown): Promise<void> {
+	private async changeEntries(mutate: () => unknown): Promise<void> {
 		mutate();
 		await this.plugin.saveSettings();
 		this.update();
@@ -144,8 +172,9 @@ export class DateCompassSettingTab extends PluginSettingTab {
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		if (!writeControl(this.plugin.settings, key, value)) return;
 		await this.plugin.saveSettings();
-		if (CONTROLS_THAT_SHOW_OR_HIDE_ITEMS.includes(key)) this.update();
-		else if (key === MENTIONS_TRIGGER_KEY) this.updateAfterTyping();
+		const mentionKey = mentionKeyParts(key);
+		if (mentionKey?.field === "trigger") this.showTriggerAfterTyping(mentionKey.mentionId);
+		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
 		else if (isTypedActionKey(key)) this.updateAfterTyping();
 		else if (isActionKey(key)) this.update();
 	}

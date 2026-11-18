@@ -202,9 +202,9 @@ test("parse offers no completions, nothing for blank text, and nothing past the 
 	assert.equal(api.sequence("every day for 300 days", NOW).length, 300);
 });
 
-test("parse ignores the Mentions period toggles and reads every period phrase of the manual", () => {
+test("parse ignores the targets of the mentions and reads every period phrase of the manual", () => {
 	const { api } = fakeApi((settings) => {
-		for (const period of PERIODS) settings.mentions.periods[period] = false;
+		for (const mention of settings.mentions) mention.targets = ["year"];
 	});
 	assert.equal(api.resolve("today", NOW)?.notes[0].path, "2026-11-17.md");
 	assert.equal(api.resolve("2026-Q1", NOW)?.notes[0].path, "2026-Q1.md");

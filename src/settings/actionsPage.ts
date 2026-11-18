@@ -1,9 +1,10 @@
 import type { SettingDefinitionList, SettingDefinitionRender } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { actionName, actionWarning, moveEntry, newAction } from "../actions/settings.ts";
+import { actionName, actionWarning, newAction } from "../actions/settings.ts";
 import type { AskKind, DateAction, WriteMode } from "../actions/settings.ts";
 import { actionKey } from "./controlKeys.ts";
+import { moveEntry } from "./entryList.ts";
 import type { IdentifiedPage } from "./pages.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
 

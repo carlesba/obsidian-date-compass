@@ -5,6 +5,8 @@ import { obsidianRowContext } from "../obsidianParseOptions.ts";
 import { addDatesToProperty, obsidianLinks } from "../insertion/obsidianHost.ts";
 import { effectiveDestination } from "../insertion/destination.ts";
 import type { DatesDestination } from "../insertion/destination.ts";
+import type { LinkStyle } from "../insertion/linkStyle.ts";
+import type { Period } from "../dateNotes/periods.ts";
 import type { NoteRef } from "../mentions/rows.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { insertLinks, previewSequence } from "./preview.ts";
@@ -13,10 +15,10 @@ import type { InsertionRange, SequencePreview } from "./preview.ts";
 export interface DatesQuestion {
 	title: string;
 	initialText: string;
+	targets?: readonly Period[];
 	propertyName?: string;
 	replacesProperty?: boolean;
 	links?: (notes: NoteRef[], phrase: string, withAlias: boolean) => string[];
-	withAliasInitially?: boolean;
 }
 
 export type DatesAccept = (preview: SequencePreview, withAlias: boolean, phrase: string) => boolean;
@@ -27,7 +29,7 @@ export class DatesModal extends Modal {
 	private readonly accept: DatesAccept;
 	private readonly closed: () => void;
 	private preview: SequencePreview = { kind: "empty" };
-	private withAlias: boolean;
+	private withAlias = false;
 
 	constructor(app: App, settings: () => DateCompassSettings, question: DatesQuestion, accept: DatesAccept, closed: () => void = () => undefined) {
 		super(app);
@@ -35,7 +37,6 @@ export class DatesModal extends Modal {
 		this.question = question;
 		this.accept = accept;
 		this.closed = closed;
-		this.withAlias = question.withAliasInitially ?? false;
 	}
 
 	onOpen(): void {
@@ -46,7 +47,7 @@ export class DatesModal extends Modal {
 		const previewEl = this.contentEl.createDiv({ cls: "date-compass-dates-reading" });
 		const linksEl = this.contentEl.createDiv({ cls: "date-compass-dates-links" });
 		const showPreview = () => {
-			this.preview = previewSequence(input.value, obsidianRowContext(this.settings()));
+			this.preview = previewSequence(input.value, obsidianRowContext(this.settings(), this.question.targets));
 			previewEl.setText(this.preview.kind === "empty" ? "" : this.preview.text);
 			linksEl.setText(this.linksLine(input.value));
 		};
@@ -93,21 +94,20 @@ export interface InsertDatesTarget {
 	range?: InsertionRange;
 }
 
-export function openInsertDatesModal(settings: () => DateCompassSettings, target: InsertDatesTarget, initialText: string): void {
+export function openInsertDatesModal(settings: () => DateCompassSettings, style: LinkStyle, target: InsertDatesTarget, initialText: string): void {
 	const { app, editor, file, range } = target;
 	const destination = effectiveDestination(target.destination, file !== undefined);
-	const linksOf = (notes: NoteRef[], phrase: string, withAlias: boolean) => obsidianLinks(app, file?.path ?? "", settings())(notes, phrase, withAlias);
 	const propertyTarget = destination.kind === "property" && file ? { name: destination.name, file } : undefined;
+	const linksOf = (notes: readonly NoteRef[], phrase: string, withAlias: boolean) => obsidianLinks(app, file?.path ?? "", style)(propertyTarget ? "property" : "body", notes, phrase, withAlias);
 	new DatesModal(
 		app,
 		settings,
-		propertyTarget
-			? { title: t("insertDates"), initialText, propertyName: propertyTarget.name }
-			: { title: t("insertDates"), initialText, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
+		{ title: t("insertDates"), initialText, targets: style.targets, propertyName: propertyTarget?.name, links: linksOf },
 		(preview, withAlias, phrase) => {
 			if (preview.kind !== "dates") return false;
-			if (propertyTarget) addDatesToProperty(app, editor, propertyTarget.file, propertyTarget.name, preview.notes, settings().insertion.linkPath, range);
-			else insertLinks(editor, linksOf(preview.notes, phrase, withAlias), settings().insertion.separator, range);
+			const links = linksOf(preview.notes, phrase, withAlias);
+			if (propertyTarget) addDatesToProperty(app, editor, propertyTarget.file, propertyTarget.name, links, range);
+			else insertLinks(editor, links, style.separator, range);
 			return true;
 		},
 	).open();

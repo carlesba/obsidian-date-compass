@@ -1,3 +1,6 @@
+import { isRecord } from "../dateNotes/periods.ts";
+import { t } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
 import { sameTriggerPlugins } from "./conflicts.ts";
 import type { EnabledPlugin } from "./conflicts.ts";
 
@@ -40,4 +43,47 @@ export function triggerClashes(mention: TriggerOwner, mentions: readonly Trigger
 
 function overlaps(one: string, other: string): boolean {
 	return one.startsWith(other) || other.startsWith(one);
+}
+
+const BUILTIN_FEATURE_NAMES: Record<BuiltinFeature, TranslationKey> = {
+	links: "builtinLinks",
+	tags: "builtinTags",
+	footnotes: "builtinFootnotes",
+	highlight: "builtinHighlight",
+	slashCommands: "builtinSlashCommands",
+};
+
+export function clashText(clash: TriggerClash): string {
+	switch (clash.kind) {
+		case "duplicate":
+			return t("clashDuplicate");
+		case "prefix":
+			return t("clashPrefix", { trigger: clash.trigger });
+		case "builtin":
+			return t("clashBuiltin", { feature: t(BUILTIN_FEATURE_NAMES[clash.feature]), sequence: clash.sequence });
+		case "plugin":
+			return t("clashPlugin", { plugin: clash.name });
+	}
+}
+
+export function clashWarning(clashes: readonly TriggerClash[]): string | undefined {
+	return clashes.length === 0 ? undefined : clashes.map(clashText).join(" ");
+}
+
+const SLASH_COMMANDS_PLUGIN_ID = "slash-command";
+
+interface InternalPluginRegistry {
+	getPluginById?: (id: string) => unknown;
+	plugins?: unknown;
+}
+
+export function slashCommandsEnabledIn(internalPlugins: unknown): boolean | undefined {
+	if (!isRecord(internalPlugins)) return undefined;
+	const registry: InternalPluginRegistry = internalPlugins;
+	const plugin = typeof registry.getPluginById === "function" ? registry.getPluginById(SLASH_COMMANDS_PLUGIN_ID) : pluginIn(registry.plugins);
+	return isRecord(plugin) && typeof plugin.enabled === "boolean" ? plugin.enabled : undefined;
+}
+
+function pluginIn(plugins: unknown): unknown {
+	return isRecord(plugins) ? plugins[SLASH_COMMANDS_PLUGIN_ID] : undefined;
 }

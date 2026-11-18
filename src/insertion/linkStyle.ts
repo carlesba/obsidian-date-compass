@@ -2,8 +2,23 @@ import { PERIODS, isPeriod, isRecord } from "../dateNotes/periods.ts";
 import type { Period } from "../dateNotes/periods.ts";
 import { LINK_PATHS } from "./linkPath.ts";
 import type { LinkPath } from "./linkPath.ts";
-import { ALIAS_SHAPES, DEFAULT_ALIAS_FORMAT, DEFAULT_LINK_TEMPLATE, LINK_SEPARATORS, isLinkTemplate } from "./settings.ts";
-import type { AliasShape, LinkSeparator } from "./settings.ts";
+
+export const DEFAULT_LINK_TEMPLATE = "{{link}}";
+
+export const DEFAULT_ALIAS_FORMAT = "ddd D MMM";
+
+export const LINK_SEPARATORS = ["commaSpace", "space", "bulletLines", "lines"] as const;
+export type LinkSeparator = (typeof LINK_SEPARATORS)[number];
+
+export const ALIAS_SHAPES = ["typed", "format"] as const;
+export type AliasShape = (typeof ALIAS_SHAPES)[number];
+
+export const LINK_STYLE_FIELDS = ["targets", "template", "linkPath", "separator", "aliasShape", "aliasFormat"] as const;
+export type LinkStyleField = (typeof LINK_STYLE_FIELDS)[number];
+
+export function isLinkTemplate(value: string): boolean {
+	return value.trim() !== "";
+}
 
 export interface LinkStyle {
 	targets: Period[];
@@ -38,10 +53,14 @@ export function mergeLinkStyle(stored: unknown): LinkStyle {
 	};
 }
 
-function mergeTargets(stored: unknown): Period[] {
+export function validTargets(stored: unknown): Period[] {
 	const valid = Array.isArray(stored) ? (stored as unknown[]).filter(isPeriod) : [];
-	const unique = valid.filter((period, index) => valid.indexOf(period) === index);
-	return unique.length > 0 ? unique : [...PERIODS];
+	return valid.filter((period, index) => valid.indexOf(period) === index);
+}
+
+function mergeTargets(stored: unknown): Period[] {
+	const targets = validTargets(stored);
+	return targets.length > 0 ? targets : [...PERIODS];
 }
 
 export function effectiveTargets(targets: readonly Period[], isEnabledInDateNotes: (period: Period) => boolean): Period[] {

@@ -6,7 +6,7 @@ export interface MoreRow {
 
 export type Suggestion = DateRow | MoreRow;
 
-export type SelectionIntent = "insert" | "insertFlippingAlias" | "openDatesModal";
+export type SelectionIntent = "insert" | "insertWithAlias" | "openDatesModal";
 
 export const MORE_ROW: MoreRow = { source: "more" };
 
@@ -20,5 +20,5 @@ export function isMoreRow(suggestion: Suggestion): suggestion is MoreRow {
 
 export function selectionIntent(suggestion: Suggestion, keys: { altKey: boolean; shiftKey: boolean }): SelectionIntent {
 	if (isMoreRow(suggestion) || keys.shiftKey) return "openDatesModal";
-	return keys.altKey ? "insertFlippingAlias" : "insert";
+	return keys.altKey ? "insertWithAlias" : "insert";
 }

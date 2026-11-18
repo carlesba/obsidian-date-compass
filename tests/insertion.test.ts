@@ -3,11 +3,11 @@ import { strict as assert } from "node:assert";
 import { moment } from "./moment.ts";
 import type { NoteRef } from "../src/mentions/rows.ts";
 import { MORE_ROW, selectionIntent, withMoreRow } from "../src/mentions/selection.ts";
-import { aliasFor, formattedItems, insertionLinks, insertionText, renderLink, usesAlias } from "../src/insertion/render.ts";
-import { mergeInsertion } from "../src/insertion/settings.ts";
+import { aliasFor, formattedItems, insertionText, renderLink } from "../src/insertion/render.ts";
+import { defaultLinkStyle } from "../src/insertion/linkStyle.ts";
+import { linksToWrite } from "../src/insertion/linksToWrite.ts";
 import { chooseDestination, effectiveDestination, propertyAtLine } from "../src/insertion/destination.ts";
 import { propertyWithLinks } from "../src/insertion/property.ts";
-import { mergeSettings } from "../src/settings.ts";
 
 function dayNote(isoDate: string): NoteRef {
 	const start = moment(isoDate, "YYYY-MM-DD");
@@ -32,16 +32,10 @@ test("the alias is the typed phrase for one date, a date format otherwise, and o
 	assert.equal(aliasFor(typed, "tomorrow", NOTES.slice(0, 1), NOTES[0]), "tomorrow");
 	assert.equal(aliasFor(typed, "mon to wed", NOTES, NOTES[0]), undefined);
 	assert.equal(aliasFor({ aliasShape: "format", aliasFormat: "D MMM" }, "x", NOTES, NOTES[1]), "24 Nov");
-	const insertion = mergeInsertion({ aliasShape: "format", aliasFormat: "D MMM", aliasByDefault: false });
-	assert.deepEqual(insertionLinks(NOTES.slice(0, 2), "x", insertion, false, obsidianLink), ["[[2026-11-23]]", "[[2026-11-24]]"]);
-	assert.deepEqual(insertionLinks(NOTES.slice(0, 2), "x", insertion, true, obsidianLink), ["[[2026-11-23|23 Nov]]", "[[2026-11-24|24 Nov]]"]);
-});
-
-test("the alias flip inverts the default for one insert", () => {
-	assert.equal(usesAlias({ aliasByDefault: false }, false), false);
-	assert.equal(usesAlias({ aliasByDefault: false }, true), true);
-	assert.equal(usesAlias({ aliasByDefault: true }, false), true);
-	assert.equal(usesAlias({ aliasByDefault: true }, true), false);
+	const style = { ...defaultLinkStyle(), aliasFormat: "D MMM" };
+	const written = (withAlias: boolean) => linksToWrite({ destination: "body", notes: NOTES.slice(0, 2), phrase: "x", style, withAlias, links: { body: obsidianLink, property: obsidianLink } });
+	assert.deepEqual(written(false), ["[[2026-11-23]]", "[[2026-11-24]]"]);
+	assert.deepEqual(written(true), ["[[2026-11-23|23 Nov]]", "[[2026-11-24|24 Nov]]"]);
 });
 
 test("links are placed with the chosen separator in the list they are typed in", () => {
@@ -63,16 +57,10 @@ test("action items go through the link template with the formatted item as the l
 	assert.deepEqual(formattedItems(["x", "y"], NOTES, "- {{link}} {{name}}"), ["- x 2026-11-23", "- y 2026-11-24"]);
 });
 
-test("settings without any stored insertion load the defaults, and unknown keys are ignored", () => {
-	const defaults = { linkPath: "shortestWhenSafe", linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false };
-	assert.deepEqual(mergeSettings(undefined).insertion, defaults);
-	assert.deepEqual(mergeSettings({ insertion: { linkTemplate: " ", separator: "tab", extra: 1 }, other: true }).insertion, defaults);
-	assert.deepEqual(mergeSettings({ mentions: { enabled: true, surprise: 1 }, insertSequence: "broken" }).insertion, defaults);
-});
-
 test("the default template and separator write one link and a comma-separated list", () => {
-	const { insertion } = mergeSettings({});
-	assert.equal(insertionText(insertionLinks(NOTES, "x", insertion, false, obsidianLink), insertion.separator, "Due "), "[[2026-11-23]], [[2026-11-24]], [[2026-11-25]]");
+	const style = defaultLinkStyle();
+	const links = linksToWrite({ destination: "body", notes: NOTES, phrase: "x", style, withAlias: false, links: { body: obsidianLink, property: obsidianLink } });
+	assert.equal(insertionText(links, style.separator, "Due "), "[[2026-11-23]], [[2026-11-24]], [[2026-11-25]]");
 });
 
 const NOTE_WITH_PROPERTIES = ["---", "title: Trip", "dates:", "  - 2026-11-01", "  - 2026-11-02", "status: open", "---", "Body text"];
@@ -101,14 +89,16 @@ test("dates go to the property under the cursor in the frontmatter and to the bo
 	assert.deepEqual(chooseDestination(state(0, undefined, [])), { kind: "body" });
 });
 
-test("the More row is always last and Enter, Alt+Enter and Shift+Enter pick what to do", () => {
+test("the More row is always last, Enter inserts without link text, Alt+Enter with it, and Shift+Enter opens the modal", () => {
 	const row = { source: "interpretation" as const, text: "x", language: "en", notes: [NOTES[0]] };
 	assert.deepEqual(withMoreRow([]), [MORE_ROW]);
 	assert.deepEqual(withMoreRow([row, row]).at(-1), MORE_ROW);
 	assert.equal(selectionIntent(row, { altKey: false, shiftKey: false }), "insert");
-	assert.equal(selectionIntent(row, { altKey: true, shiftKey: false }), "insertFlippingAlias");
+	assert.equal(selectionIntent(row, { altKey: true, shiftKey: false }), "insertWithAlias");
 	assert.equal(selectionIntent(row, { altKey: false, shiftKey: true }), "openDatesModal");
+	assert.equal(selectionIntent(row, { altKey: true, shiftKey: true }), "openDatesModal");
 	assert.equal(selectionIntent(MORE_ROW, { altKey: true, shiftKey: false }), "openDatesModal");
+	assert.equal(selectionIntent(MORE_ROW, { altKey: false, shiftKey: false }), "openDatesModal");
 });
 
 test("a nested key is not a property destination, and a list under it is not either", () => {
@@ -137,4 +127,15 @@ test("the property write appends only the missing links and keeps what was there
 	assert.deepEqual(propertyWithLinks(["z"], ["[[a]]", "[[a]]"]), ["z", "[[a]]"]);
 	const mapping = { due: "x" };
 	assert.deepEqual(propertyWithLinks(mapping, links), [mapping, ...links]);
+});
+
+test("a link with link text is not added when the property already links to the same note, whatever its text", () => {
+	assert.equal(propertyWithLinks(["[[2026-11-23]]"], ["[[2026-11-23|Mon 23 Nov]]"]), undefined);
+	assert.equal(propertyWithLinks(["[[2026-11-23|next monday]]"], ["[[2026-11-23|Mon 23 Nov]]"]), undefined);
+	assert.deepEqual(propertyWithLinks(["[[2026-11-23|Mon]]"], ["[[2026-11-23|Mon 23 Nov]]", "[[2026-11-24|Tue 24 Nov]]"]), ["[[2026-11-23|Mon]]", "[[2026-11-24|Tue 24 Nov]]"]);
+});
+
+test("the empty list item a mention was typed in does not stay in the property", () => {
+	assert.deepEqual(propertyWithLinks([null], ["[[2026-11-23]]"]), ["[[2026-11-23]]"]);
+	assert.deepEqual(propertyWithLinks(["[[2026-11-01]]", null], ["[[2026-11-23]]"]), ["[[2026-11-01]]", "[[2026-11-23]]"]);
 });

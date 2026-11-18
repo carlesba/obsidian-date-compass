@@ -4,6 +4,7 @@ import { fileNameParts } from "../dateNotes/paths.ts";
 import type { NoteRef } from "./rows.ts";
 import type { EnabledPlugin } from "./conflicts.ts";
 import { PLUGINS_WITH_TRIGGERS } from "./conflicts.ts";
+import { slashCommandsEnabledIn } from "./clashes.ts";
 import { linkTarget, linktextOf, markdownLink, parentFolder, wikilink } from "../insertion/linkPath.ts";
 import type { LinkPath, LinkTarget, NoteLinkFacts } from "../insertion/linkPath.ts";
 
@@ -30,6 +31,14 @@ export function enabledPluginsWithTriggers(app: App): EnabledPlugin[] {
 	}
 }
 
+export function slashCommandsEnabled(app: App): boolean | undefined {
+	try {
+		return slashCommandsEnabledIn((app as App & { internalPlugins?: unknown }).internalPlugins);
+	} catch {
+		return undefined;
+	}
+}
+
 export function markdownLinkTo(app: App, note: NoteRef, sourcePath: string, alias: string | undefined, linkPath: LinkPath): string {
 	const file = app.vault.getFileByPath(note.path);
 	const generated = app.fileManager.generateMarkdownLink(file ?? unsavedFile(note.path), sourcePath, undefined, alias);
@@ -39,10 +48,10 @@ export function markdownLinkTo(app: App, note: NoteRef, sourcePath: string, alia
 	return generated.startsWith("[[") ? wikilink(linktext, alias) : markdownLink(linktext, alias ?? note.name);
 }
 
-export function propertyLinkTo(app: App, note: NoteRef, sourcePath: string, linkPath: LinkPath): string {
+export function propertyLinkTo(app: App, note: NoteRef, sourcePath: string, alias: string | undefined, linkPath: LinkPath): string {
 	const file = app.vault.getFileByPath(note.path);
 	const target = noteLinkTarget(app, note, file, sourcePath, linkPath);
-	return `[[${target === "obsidian" ? app.metadataCache.fileToLinktext(file ?? unsavedFile(note.path), sourcePath, true) : linktextOf(target, note)}]]`;
+	return wikilink(target === "obsidian" ? app.metadataCache.fileToLinktext(file ?? unsavedFile(note.path), sourcePath, true) : linktextOf(target, note), alias);
 }
 
 function noteLinkTarget(app: App, note: NoteRef, file: TFile | null, sourcePath: string, linkPath: LinkPath): LinkTarget {

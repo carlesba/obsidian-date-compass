@@ -13,7 +13,7 @@ const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 const options: ParseOptions = { languages: ["en"], weekStart: "monday", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth" };
 
 function context(overrides: Partial<SequenceContext> = {}): SequenceContext {
-	return { now, moment, options, periods: defaultDateNotes().periods, allows: () => true, ...overrides };
+	return { now, moment, options, periods: defaultDateNotes().periods, ...overrides };
 }
 
 const NO_PARSE: DateParser = { parse: () => [], complete: () => [] };

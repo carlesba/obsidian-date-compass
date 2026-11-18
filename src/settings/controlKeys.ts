@@ -3,8 +3,10 @@ import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, WEEK_STARTS } from "../setting
 import type { DateCompassSettings } from "../settings.ts";
 import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } from "../dateNotes/periods.ts";
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
-import { withoutWhitespace } from "../mentions/settings.ts";
-import { ALIAS_SHAPES, LINK_SEPARATORS, isLinkTemplate } from "../insertion/settings.ts";
+import { MENTION_FIELDS, withoutWhitespace } from "../mentions/settings.ts";
+import type { Mention, MentionField } from "../mentions/settings.ts";
+import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
+import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
 import { ACTION_FIELDS, ASK_KINDS, WRITE_MODES } from "../actions/settings.ts";
 import type { ActionField, DateAction } from "../actions/settings.ts";
@@ -17,34 +19,80 @@ export const DAY_MONTH_ORDER_KEY = "dayMonthOrder";
 
 export const TEMPLATE_RUNNER_KEY = "dateNotes/templateRunner";
 
-export const MENTIONS_ENABLED_KEY = "mentions/enabled";
+const MENTION_KEY_PREFIX = "mentions/";
 
-export const MENTIONS_TRIGGER_KEY = "mentions/trigger";
+export type MentionControlField = MentionField | LinkStyleField;
 
-export const INSERTION_LINK_PATH_KEY = "insertion/linkPath";
+const MENTION_CONTROL_FIELDS: readonly MentionControlField[] = [...MENTION_FIELDS, ...LINK_STYLE_FIELDS];
 
-export const INSERTION_LINK_TEMPLATE_KEY = "insertion/linkTemplate";
-
-export const INSERTION_SEPARATOR_KEY = "insertion/separator";
-
-export const INSERTION_ALIAS_BY_DEFAULT_KEY = "insertion/aliasByDefault";
-
-export const INSERTION_ALIAS_SHAPE_KEY = "insertion/aliasShape";
-
-export const INSERTION_ALIAS_FORMAT_KEY = "insertion/aliasFormat";
-
-const INSERTION_KEY_PREFIX = "insertion/";
-
-const MENTION_PERIOD_KEY_PREFIX = "mentions/periods/";
-
-export function mentionPeriodKey(period: Period): string {
-	return `${MENTION_PERIOD_KEY_PREFIX}${period}`;
+export function mentionKeyPrefix(mentionId: string): string {
+	return `${MENTION_KEY_PREFIX}${mentionId}`;
 }
 
-function mentionPeriodOfKey(key: string): Period | undefined {
-	if (!key.startsWith(MENTION_PERIOD_KEY_PREFIX)) return undefined;
-	const period = key.slice(MENTION_PERIOD_KEY_PREFIX.length);
-	return isPeriod(period) ? period : undefined;
+export function linkStyleKey(keyPrefix: string, field: LinkStyleField): string {
+	return `${keyPrefix}/${field}`;
+}
+
+export function mentionKey(mentionId: string, field: MentionControlField): string {
+	return `${mentionKeyPrefix(mentionId)}/${field}`;
+}
+
+export interface MentionKeyParts {
+	mentionId: string;
+	field: MentionControlField;
+}
+
+export function mentionKeyParts(key: string): MentionKeyParts | undefined {
+	if (!key.startsWith(MENTION_KEY_PREFIX)) return undefined;
+	const parts = key.slice(MENTION_KEY_PREFIX.length).split("/");
+	const field = MENTION_CONTROL_FIELDS.find((known) => known === parts[1]);
+	return parts.length === 2 && field ? { mentionId: parts[0], field } : undefined;
+}
+
+interface MentionControl {
+	mention: Mention;
+	field: MentionControlField;
+}
+
+function mentionControlOfKey(settings: DateCompassSettings, key: string): MentionControl | undefined {
+	const parts = mentionKeyParts(key);
+	const mention = parts && settings.mentions.find((candidate) => candidate.id === parts.mentionId);
+	return parts && mention ? { mention, field: parts.field } : undefined;
+}
+
+function writeMentionControl({ mention, field }: MentionControl, value: unknown): boolean {
+	if (field !== "trigger") return writeLinkStyleControl(mention, field, value);
+	if (typeof value !== "string" || triggerError(value)) return false;
+	mention.trigger = withoutWhitespace(value);
+	return true;
+}
+
+function writeLinkStyleControl(style: LinkStyle, field: LinkStyleField, value: unknown): boolean {
+	switch (field) {
+		case "targets":
+			return writeTargets(style, value);
+		case "linkPath":
+			return writeChoice(LINK_PATHS, value, (choice) => (style.linkPath = choice));
+		case "separator":
+			return writeChoice(LINK_SEPARATORS, value, (choice) => (style.separator = choice));
+		case "aliasShape":
+			return writeChoice(ALIAS_SHAPES, value, (choice) => (style.aliasShape = choice));
+		case "template":
+			if (typeof value !== "string" || linkTemplateError(value)) return false;
+			style.template = value;
+			return true;
+		case "aliasFormat":
+			if (typeof value !== "string" || formatError(value)) return false;
+			style.aliasFormat = value.trim();
+			return true;
+	}
+}
+
+function writeTargets(style: LinkStyle, value: unknown): boolean {
+	const targets = validTargets(value);
+	if (!Array.isArray(value) || targets.length === 0 || targets.length !== value.length) return false;
+	style.targets = targets;
+	return true;
 }
 
 const PERIOD_KEY_PREFIX = "dateNotes/";
@@ -129,17 +177,8 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === TEMPLATE_RUNNER_KEY) return settings.dateNotes.templateRunner;
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
-	if (key === MENTIONS_ENABLED_KEY) return settings.mentions.enabled;
-	if (key === MENTIONS_TRIGGER_KEY) return settings.mentions.trigger;
-	if (key === INSERTION_LINK_PATH_KEY) return settings.insertion.linkPath;
-	if (key === INSERTION_LINK_TEMPLATE_KEY) return settings.insertion.linkTemplate;
-	if (key === INSERTION_SEPARATOR_KEY) return settings.insertion.separator;
-	if (key === INSERTION_ALIAS_BY_DEFAULT_KEY) return settings.insertion.aliasByDefault;
-	if (key === INSERTION_ALIAS_SHAPE_KEY) return settings.insertion.aliasShape;
-	if (key === INSERTION_ALIAS_FORMAT_KEY) return settings.insertion.aliasFormat;
-	const mentionPeriod = mentionPeriodOfKey(key);
-	if (mentionPeriod) return settings.mentions.periods[mentionPeriod];
-	return undefined;
+	const mentionControl = mentionControlOfKey(settings, key);
+	return mentionControl ? mentionControl.mention[mentionControl.field] : undefined;
 }
 
 export function writeControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
@@ -151,45 +190,8 @@ export function writeControl(settings: DateCompassSettings, key: string, value: 
 	if (key === TEMPLATE_RUNNER_KEY) return writeChoice(TEMPLATE_RUNNER_CHOICES, value, (choice) => (settings.dateNotes.templateRunner = choice));
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return writePeriodField(settings, periodField.period, periodField.field, value);
-	if (key.startsWith(INSERTION_KEY_PREFIX)) return writeInsertionControl(settings, key, value);
-	return writeMentionControl(settings, key, value);
-}
-
-function writeMentionControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
-	const { mentions } = settings;
-	const mentionPeriod = mentionPeriodOfKey(key);
-	if (key === MENTIONS_ENABLED_KEY || mentionPeriod) {
-		if (typeof value !== "boolean") return false;
-		if (mentionPeriod) mentions.periods[mentionPeriod] = value;
-		else mentions.enabled = value;
-		return true;
-	}
-	if (typeof value !== "string") return false;
-	if (key === MENTIONS_TRIGGER_KEY) {
-		if (triggerError(value)) return false;
-		mentions.trigger = withoutWhitespace(value);
-		return true;
-	}
-	return false;
-}
-
-function writeInsertionControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
-	const { insertion } = settings;
-	if (key === INSERTION_LINK_PATH_KEY) return writeChoice(LINK_PATHS, value, (choice) => (insertion.linkPath = choice));
-	if (key === INSERTION_SEPARATOR_KEY) return writeChoice(LINK_SEPARATORS, value, (choice) => (insertion.separator = choice));
-	if (key === INSERTION_ALIAS_SHAPE_KEY) return writeChoice(ALIAS_SHAPES, value, (choice) => (insertion.aliasShape = choice));
-	if (key === INSERTION_ALIAS_BY_DEFAULT_KEY) return writeBoolean(value, (checked) => (insertion.aliasByDefault = checked));
-	if (key === INSERTION_LINK_TEMPLATE_KEY) {
-		if (typeof value !== "string" || linkTemplateError(value)) return false;
-		insertion.linkTemplate = value;
-		return true;
-	}
-	if (key === INSERTION_ALIAS_FORMAT_KEY) {
-		if (typeof value !== "string" || formatError(value)) return false;
-		insertion.aliasFormat = value.trim();
-		return true;
-	}
-	return false;
+	const mentionControl = mentionControlOfKey(settings, key);
+	return mentionControl ? writeMentionControl(mentionControl, value) : false;
 }
 
 export function triggerError(value: string): string | undefined {

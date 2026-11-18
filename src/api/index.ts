@@ -73,7 +73,6 @@ export function createDateCompassApi(host: DateCompassApiHost): DateCompassApi {
 			moment: host.moment,
 			options: host.parseOptions(),
 			periods: host.settings().dateNotes.periods,
-			allows: () => true,
 			parser,
 		});
 	const parse = (text: string, now?: Date | Moment): DateCompassInterpretation[] =>
