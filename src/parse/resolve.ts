@@ -92,7 +92,8 @@ function resolveEvery(node: EveryNode, today: CivilDate, options: ParseOptions):
 	} else if ("for" in bound && bound.for.amount < 1) return undefined;
 	const pattern = node.pattern;
 	if ("step" in pattern && pattern.step.amount < 1) return undefined;
-	const first = firstCandidate(pattern, today);
+	const first = firstCandidate(node, today, options);
+	if (!first) return undefined;
 	const accepts = acceptance(bound, first, today, options);
 	if (!accepts) return undefined;
 	if ("step" in pattern) {
@@ -113,8 +114,15 @@ function resolveEvery(node: EveryNode, today: CivilDate, options: ParseOptions):
 	}));
 }
 
-function firstCandidate(pattern: EveryNode["pattern"], today: CivilDate): CivilDate {
-	return "step" in pattern ? addUnits(today, pattern.step.amount, pattern.step.unit) : today;
+function firstCandidate(node: EveryNode, today: CivilDate, options: ParseOptions): CivilDate | undefined {
+	if (node.start) return startOfSpan(node.start, today, options);
+	return "step" in node.pattern ? addUnits(today, node.pattern.step.amount, node.pattern.step.unit) : today;
+}
+
+function startOfSpan(node: DateNode | PeriodNode, today: CivilDate, options: ParseOptions): CivilDate | undefined {
+	if (node.kind !== "period") return resolveDate(node, today, options);
+	const date = periodDate(node, today, options);
+	return date && periodStart(node.unit, date, options);
 }
 
 function untilDate(node: DateNode, today: CivilDate, options: ParseOptions): CivilDate | undefined {

@@ -71,14 +71,20 @@ Ranges and sequences give several dates at once:
 | `every other day for 6 days` | every second day for 6 days, the first in two days: 19, 21, 23 Nov |
 | `every other wed for 3 months` | alternate Wednesdays over the next 3 months |
 | `wed for 5 weeks` | a Wednesday a week for the next 5 weeks, like `every wed for 5 weeks` |
+| `every week 3 times starting next week`, `every week from next week 3 times` | 23 Nov, 30 Nov, 7 Dec: the first date is the start of `next week` |
+| `every wed 3 times starting next week` | the first Wednesday on or after that start: 25 Nov, 2 Dec, 9 Dec |
+| `every day from dec 3 until dec 7` | 3 to 7 Dec |
 | `W48 to W50`, `weeks of december` | the week notes W48 to W50; the five weeks that touch December |
 
 A sequence that names a step (`every day`, `every 2 weeks`, `every month`) starts one step after
-today, while one that names weekdays (`every wed`) starts today. `until` takes a date without a year as the next time it comes: when `dec 20` is already past this
+today, while one that names weekdays (`every wed`) starts today. Add `starting` or `from` and a date
+or period, before or after `for`, `times` or `until`, to start somewhere else; `for` then counts
+from that start. `until` takes a date without a year as the next time it comes: when `dec 20` is already past this
 year, it means 20 Dec next year. `every other wed` counts alternate weeks from the start of the
 current week, as set by **Week starts on**, so a weekday that has already passed this week first
 appears the week after next. While you type a sequence, the `@` list shows rows with the dates each way of going on would give,
-such as `@every` or `@every wed for 5`, and equal results share one row. Insert dates says "Keep
+such as `@every` or `@every wed for 5`, and equal results share one row. Once the sequence is complete, as in
+`@every week 3 times`, the list also offers it `starting tomorrow`, `starting next week` and `starting next month`. Insert dates says "Keep
 typing, as in every wed for 5 times." under the box.
 
 A range or sequence longer than 366 dates is refused with a message, and the API returns nothing
@@ -109,6 +115,8 @@ Add **Spanish** under **Understand dates in** to use these.
 | `cada otro día durante 6 días` | every second day for 6 days, the first in two days |
 | `cada otro miércoles durante 3 meses` | alternate Wednesdays over the next 3 months |
 | `miércoles durante 5 semanas` | a Wednesday a week for the next 5 weeks |
+| `cada semana 3 veces empezando la semana que viene`, `cada semana 3 veces a partir del lunes` | 23 Nov, 30 Nov, 7 Dec |
+| `cada día durante 5 días desde el 3 de diciembre` | 3 to 7 Dec |
 
 ## Date notes and templates
 

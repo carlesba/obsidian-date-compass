@@ -1,4 +1,4 @@
-import type { Category, DateNode, Element, Meaning, MeaningType, ParsedNode, Part, PeriodNode, Unit, Weekday } from "./types.ts";
+import type { Category, DateNode, Element, EveryNode, Meaning, MeaningType, ParsedNode, Part, PeriodNode, Shape, Unit, Weekday } from "./types.ts";
 
 export function token(type: MeaningType, test?: (meaning: Meaning) => boolean): Element {
 	return test ? { type, test } : { type };
@@ -72,4 +72,40 @@ export function weekdaysOf(part: Part): Weekday[] {
 	if (part.type === "weekday") return [part.value];
 	if (part.type !== "node" || part.value.kind !== "weekdays") throw new TypeError(`expected weekdays, got ${part.type}`);
 	return part.value.days;
+}
+
+export interface EveryPart<T> {
+	elements: Element[];
+	read: (parts: Part[]) => T;
+}
+
+export type EveryStart = EveryPart<DateNode | PeriodNode>;
+
+export const everyStarts: EveryStart[] = (["date", "period"] as const).map((category) => ({
+	elements: [token("starting"), phrase(category)],
+	read: ([, start]) => rangeEndOf(start),
+}));
+
+export function everyShape(leading: Element[], pattern: EveryPart<EveryNode["pattern"]>, bound: EveryPart<EveryNode["bound"]>, start?: EveryStart, startComesFirst = false): Shape {
+	const startElements = start?.elements ?? [];
+	const patternEnd = leading.length + pattern.elements.length;
+	const boundAt = patternEnd + (startComesFirst ? startElements.length : 0);
+	const startAt = patternEnd + (startComesFirst ? 0 : bound.elements.length);
+	return {
+		produces: "sequence",
+		elements: [...leading, ...pattern.elements, ...(startComesFirst ? [...startElements, ...bound.elements] : [...bound.elements, ...startElements])],
+		build: (parts) => ({
+			kind: "every",
+			pattern: pattern.read(parts.slice(leading.length, patternEnd)),
+			bound: bound.read(parts.slice(boundAt, boundAt + bound.elements.length)),
+			...(start ? { start: start.read(parts.slice(startAt, startAt + startElements.length)) } : {}),
+		}),
+	};
+}
+
+export function everyShapesWithStarts(leading: Element[], pattern: EveryPart<EveryNode["pattern"]>, bound: EveryPart<EveryNode["bound"]>): Shape[] {
+	return [
+		everyShape(leading, pattern, bound),
+		...everyStarts.flatMap((start) => [everyShape(leading, pattern, bound, start), everyShape(leading, pattern, bound, start, true)]),
+	];
 }

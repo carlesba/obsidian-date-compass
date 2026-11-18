@@ -3,7 +3,7 @@ import type { Language } from "../types.ts";
 
 export const shared: Language = {
 	id: "shared",
-	hintWords: { plain: [], singularUnits: [], pluralUnits: [] },
+	hintWords: { plain: [], singularUnits: [], pluralUnits: [], startDates: [] },
 	lexicon: [
 		{ words: ["d"], meaning: { type: "unit", value: "day" } },
 		{ words: ["w"], meaning: { type: "unit", value: "week" } },

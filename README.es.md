@@ -73,14 +73,20 @@ Los rangos y las secuencias dan varias fechas a la vez:
 | `every other day for 6 days` | un día sí y otro no durante 6 días, el primero dentro de dos días: 19, 21 y 23 nov |
 | `every other wed for 3 months` | miércoles alternos durante los próximos 3 meses |
 | `wed for 5 weeks` | un miércoles por semana durante 5 semanas, como `every wed for 5 weeks` |
+| `every week 3 times starting next week`, `every week from next week 3 times` | 23 nov, 30 nov, 7 dic: la primera fecha es el inicio de `next week` |
+| `every wed 3 times starting next week` | el primer miércoles desde ese inicio: 25 nov, 2 dic, 9 dic |
+| `every day from dec 3 until dec 7` | del 3 al 7 dic |
 | `W48 to W50`, `weeks of december` | las notas semanales de W48 a W50; las cinco semanas que tocan diciembre |
 
 Una secuencia que nombra un paso (`every day`, `every 2 weeks`, `every month`) empieza un paso
-después de hoy, y una que nombra días de la semana (`every wed`) empieza hoy. Con `until`, una fecha sin año es la próxima vez que llega: si el `dec 20` ya pasó este año, se
+después de hoy, y una que nombra días de la semana (`every wed`) empieza hoy. Añade `starting` o
+`from` y una fecha o un periodo, antes o después de `for`, `times` o `until`, para empezar en otro
+momento; `for` cuenta entonces desde ese inicio. Con `until`, una fecha sin año es la próxima vez que llega: si el `dec 20` ya pasó este año, se
 entiende el 20 dic del año que viene. `every other wed` cuenta las semanas alternas desde el inicio
 de la semana actual, según **La semana empieza el**, así que un día que ya pasó esta semana
 aparece por primera vez dentro de dos semanas. Mientras escribes una secuencia, la lista de `@` muestra filas con las fechas que daría cada forma de
-seguir, como con `@every` o `@every wed for 5`, y los resultados iguales comparten fila. Insertar
+seguir, como con `@every` o `@every wed for 5`, y los resultados iguales comparten fila. Cuando la secuencia está completa, como en
+`@every week 3 times`, la lista la ofrece también con `starting tomorrow`, `starting next week` y `starting next month`. Insertar
 fechas dice «Sigue escribiendo, como en every wed for 5 times.» bajo el cuadro.
 
 Un rango o una secuencia de más de 366 fechas se rechaza con un mensaje, y la API no devuelve nada
@@ -111,6 +117,8 @@ Añade **Español** en **Entender fechas en** para usarlas.
 | `cada otro día durante 6 días` | un día sí y otro no durante 6 días, el primero dentro de dos días |
 | `cada otro miércoles durante 3 meses` | miércoles alternos durante los próximos 3 meses |
 | `miércoles durante 5 semanas` | un miércoles por semana durante 5 semanas |
+| `cada semana 3 veces empezando la semana que viene`, `cada semana 3 veces a partir del lunes` | 23 nov, 30 nov, 7 dic |
+| `cada día durante 5 días desde el 3 de diciembre` | del 3 al 7 dic |
 
 ## Notas de fecha y plantillas
 

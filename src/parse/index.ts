@@ -83,7 +83,17 @@ export function complete(text: string, now: Date, options: ParseOptions = DEFAUL
 		const { interpretations } = interpret(candidate, now, options, parser);
 		if (interpretations.length > 0 || needsMoreWords(candidate, parser)) completions.push({ text: candidate, interpretations });
 	}
-	return completions;
+	return [...completions, ...startHints(text.trimEnd(), now, options, parser)];
+}
+
+function startHints(typed: string, now: Date, options: ParseOptions, parser: Parser): Completion[] {
+	const takesStart = interpret(typed, now, options, parser).interpretations.some(({ node }) => node.kind === "every" && node.start === undefined);
+	if (!takesStart) return [];
+	return parser.hintWords
+		.flatMap((hints) => (hints.startWord === undefined ? [] : hints.startDates.map((date) => `${typed} ${hints.startWord} ${date}`)))
+		.map((candidate) => ({ text: candidate, interpretations: interpret(candidate, now, options, parser).interpretations }))
+		.filter((hint) => hint.interpretations.length > 0)
+		.slice(0, HINT_LIMIT);
 }
 
 function completionCandidates(normalized: string, index: LexiconIndex): string[] {
@@ -170,7 +180,12 @@ function endsWithTimesWord(text: string, parser: Parser): boolean {
 	return last !== undefined && (parser.index.alternatives.get(last.text) ?? []).some((alternative) => alternative.meaning.type === "times");
 }
 
+function endsWithStartWord(prefix: string, parser: Parser): boolean {
+	return tokenize(prefix, parser.index).some((tokens) => tokens[tokens.length - 1]?.alternatives.some((alternative) => alternative.meaning.type === "starting"));
+}
+
 function hintWordsAfter(prefix: string, parser: Parser): string[] {
+	if (endsWithStartWord(prefix, parser)) return [...new Set(parser.hintWords.flatMap((hints) => hints.startDates))];
 	const afterNumber = rawTokens(normalize(prefix)).pop()?.kind === "digits";
 	const words = parser.hintWords.flatMap((hints) => [...hints.plain, ...(afterNumber ? hints.pluralUnits : hints.singularUnits)]);
 	return [...new Set(words)];

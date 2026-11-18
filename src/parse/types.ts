@@ -11,7 +11,7 @@ export type Meaning =
 	| { type: "relativeDay"; value: number }
 	| { type: "number"; value: number; digits?: number }
 	| { type: "symbol"; value: string }
-	| { type: "next" | "last" | "this" | "ago" | "in" | "of" | "ordinal" | "article" | "rangeJoin" | "from" | "every" | "for" | "times" | "and" | "other" | "until" };
+	| { type: "next" | "last" | "this" | "ago" | "in" | "of" | "ordinal" | "article" | "rangeJoin" | "from" | "every" | "for" | "times" | "and" | "other" | "until" | "starting" };
 
 export type MeaningType = Meaning["type"];
 
@@ -69,6 +69,7 @@ export interface EveryNode {
 	kind: "every";
 	pattern: { weekdays: Weekday[]; weekStep?: number } | { step: Amount };
 	bound: { for: Amount } | { times: number } | { until: DateNode };
+	start?: DateNode | PeriodNode;
 }
 
 export interface WithinNode {
@@ -104,6 +105,8 @@ export interface HintWords {
 	plain: string[];
 	singularUnits: string[];
 	pluralUnits: string[];
+	startWord?: string;
+	startDates: string[];
 }
 
 export interface Language {

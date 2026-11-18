@@ -1,5 +1,6 @@
-import { dateOf, fourDigitNumber, monthOf, numberOf, periodOf, phrase, rangeEndOf, relativeDayOf, symbol, token, unitOf, weekdayOf, weekdaysOf } from "../shape.ts";
-import type { Amount, Category, Element, EveryNode, Language, LexiconEntry, Part, Shape, Weekday } from "../types.ts";
+import { dateOf, everyShapesWithStarts, fourDigitNumber, monthOf, numberOf, periodOf, phrase, rangeEndOf, relativeDayOf, symbol, token, unitOf, weekdayOf, weekdaysOf } from "../shape.ts";
+import type { EveryPart } from "../shape.ts";
+import type { Amount, Category, Element, EveryNode, Language, LexiconEntry, Shape, Weekday } from "../types.ts";
 
 const weekdays: Array<[Weekday, string[]]> = [
 	[0, ["dom", "domingo"]],
@@ -70,6 +71,7 @@ const lexicon: LexiconEntry[] = [
 	{ words: ["y"], meaning: { type: "and" } },
 	{ words: ["otro", "otra"], meaning: { type: "other" } },
 	{ words: ["hasta"], meaning: { type: "until" } },
+	{ words: ["empezando", "empezando en", "comenzando", "comenzando en", "a partir de", "a partir del", "desde"], meaning: { type: "starting" } },
 ];
 
 function withArticle(shape: Shape): Shape[] {
@@ -110,11 +112,6 @@ const weekdayListShapes: Shape[] = [
 	})),
 ];
 
-interface EveryPart<T> {
-	elements: Element[];
-	read: (parts: Part[]) => T;
-}
-
 const everyPatterns: Array<EveryPart<EveryNode["pattern"]>> = [
 	{ elements: [phrase("weekdays")], read: ([days]) => ({ weekdays: weekdaysOf(days) }) },
 	{ elements: [token("other"), phrase("weekdays")], read: ([, days]) => ({ weekdays: weekdaysOf(days), weekStep: 2 }) },
@@ -136,21 +133,9 @@ const everyBounds: Array<EveryPart<EveryNode["bound"]>> = [
 	{ elements: [token("until"), phrase("date")], read: ([, end]) => ({ until: dateOf(end) }) },
 ];
 
-function everyShape(leading: Element[], pattern: EveryPart<EveryNode["pattern"]>, bound: EveryPart<EveryNode["bound"]>): Shape {
-	return {
-		produces: "sequence",
-		elements: [...leading, ...pattern.elements, ...bound.elements],
-		build: (parts) => {
-			const patternParts = parts.slice(leading.length, leading.length + pattern.elements.length);
-			const boundParts = parts.slice(leading.length + pattern.elements.length);
-			return { kind: "every", pattern: pattern.read(patternParts), bound: bound.read(boundParts) };
-		},
-	};
-}
-
 const everyShapes: Shape[] = [
-	...everyPatterns.flatMap((pattern) => everyBounds.map((bound) => everyShape([token("every")], pattern, bound))),
-	everyShape([], everyPatterns[0], forBound),
+	...everyPatterns.flatMap((pattern) => everyBounds.flatMap((bound) => everyShapesWithStarts([token("every")], pattern, bound))),
+	...everyShapesWithStarts([], everyPatterns[0], forBound),
 ];
 
 const countShapes: Shape[] = (["next", "last"] as const).flatMap((which) =>
@@ -300,4 +285,4 @@ const shapes: Shape[] = [
 	...weekdayListShapes,
 ];
 
-export const es: Language = { id: "es", lexicon, shapes, hintWords: { plain: ["cada", "otro", "miércoles", "durante", "veces", "2", "5"], singularUnits: ["día", "semana", "mes"], pluralUnits: ["días", "semanas", "meses"] } };
+export const es: Language = { id: "es", lexicon, shapes, hintWords: { plain: ["cada", "otro", "miércoles", "durante", "veces", "2", "5"], singularUnits: ["día", "semana", "mes"], pluralUnits: ["días", "semanas", "meses"], startWord: "empezando", startDates: ["mañana", "la semana que viene", "el mes que viene"] } };
