@@ -25,11 +25,13 @@ const NEXT_PERIOD_COMMANDS: Record<Period, { id: string; name: TranslationKey }>
 	year: { id: "open-next-year", name: "openNextYearNote" },
 };
 
-export async function openDateNote(app: App, settings: DateNotesSettings, date: Moment, period: Period): Promise<void> {
+export type DateNotePane = "current" | "split";
+
+export async function openDateNote(app: App, settings: DateNotesSettings, date: Moment, period: Period, pane: DateNotePane = "current"): Promise<void> {
 	try {
 		const path = await ensureDateNote(createDateNoteHost(app), settings, date, period);
 		const file = path ? app.vault.getFileByPath(path) : null;
-		if (file) await app.workspace.getLeaf(false).openFile(file);
+		if (file) await app.workspace.getLeaf(pane === "split" ? "split" : false).openFile(file);
 	} catch (error) {
 		new Notice(t("openDateNoteFailed", { error: error instanceof Error ? error.message : String(error) }));
 	}
