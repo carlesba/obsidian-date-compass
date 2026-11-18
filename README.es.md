@@ -373,8 +373,9 @@ su periodo está activado; una parte cuyo periodo está desactivado es texto nor
 mueven un mes, y **Hoy** vuelve al mes actual. A medianoche, un calendario que muestra el mes
 actual avanza solo.
 
-**Columna de semanas.** Con **Mostrar números de semana** activado y las notas semanales
-activadas, la primera columna muestra el número de cada semana y abre la nota semanal. El primer
+**Columna de semanas.** Con **Mostrar números de semana** activado, la primera columna muestra el
+número de cada semana. El número abre la nota semanal cuando las notas semanales están activadas,
+y es texto normal cuando están desactivadas. El primer
 día de la semana y los números de semana siguen **La semana empieza el** de Localización. Cuando
 ese ajuste y el formato de nombre de las notas semanales numeran las semanas de forma distinta,
 por ejemplo semanas que empiezan en domingo con el formato ISO `GGGG-[W]WW`, una semana puede

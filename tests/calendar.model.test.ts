@@ -94,13 +94,24 @@ test("the week column shows each row's week number and targets its weekly note",
 	assert.deepEqual(weekClasses(missing), ["week-num", "is-clickable"]);
 });
 
-test("the week column is hidden when week numbers are off or weekly notes are off", () => {
-	const hiddenBySetting = modelOf({ showWeekNumbers: false });
-	assert.equal(hiddenBySetting.showsWeekColumn, false);
-	assert.ok(hiddenBySetting.rows.every((row) => row.week === undefined));
-	const hiddenByPeriod = modelOf({ change: (periods) => (periods.week.enabled = false) });
-	assert.equal(hiddenByPeriod.showsWeekColumn, false);
-	assert.ok(hiddenByPeriod.rows.every((row) => row.week === undefined));
+test("the week column is hidden when week numbers are off", () => {
+	const hidden = modelOf({ showWeekNumbers: false });
+	assert.equal(hidden.showsWeekColumn, false);
+	assert.ok(hidden.rows.every((row) => row.week === undefined));
+});
+
+test("week numbers are shown but not clickable when weekly notes are off", () => {
+	const model = modelOf({ existing: ["2026-W47.md"], activePath: "2026-W47.md", change: (periods) => (periods.week.enabled = false) });
+	assert.equal(model.showsWeekColumn, true);
+	assert.deepEqual(model.rows.map((row) => row.week?.label), ["44", "45", "46", "47", "48", "49"]);
+	for (const { week } of model.rows) {
+		assert.ok(week);
+		assert.equal(week.target, undefined);
+		assert.equal(week.hasNote, false);
+		assert.equal(week.active, false);
+		assert.deepEqual(week.dots, []);
+		assert.deepEqual(weekClasses(week), ["week-num"]);
+	}
 });
 
 test("the title shows month and year, and the quarter only when quarterly notes are on", () => {

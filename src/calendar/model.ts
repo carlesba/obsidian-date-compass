@@ -69,7 +69,6 @@ export const CLICKABLE_CLASS = "is-clickable";
 export function calendarModel(input: CalendarModelInput): CalendarModel {
 	const { grid, notes, parts, rule, weekdayNames, showWeekNumbers } = input;
 	const displayed = firstDayOf(grid.month);
-	const showsWeekColumn = showWeekNumbers && notes.rows.some((row) => row.week !== undefined);
 	return {
 		title: parts.map((part) => ({
 			...noteCell(input, part.period, displayed, part.clickable ? notes.header[part.period] : undefined, false),
@@ -77,9 +76,9 @@ export function calendarModel(input: CalendarModelInput): CalendarModel {
 			label: part.label,
 		})),
 		weekdays: weekdayOrder(rule).map(({ weekday, weekend }) => ({ label: weekdayNames[weekday] ?? "", weekend })),
-		showsWeekColumn,
+		showsWeekColumn: showWeekNumbers,
 		rows: grid.rows.map((row, rowIndex) => ({
-			week: showsWeekColumn
+			week: showWeekNumbers
 				? { ...noteCell(input, "week", row.weekNoteDate, notes.rows[rowIndex]?.week, true), label: String(row.weekNumber) }
 				: undefined,
 			days: row.days.map((day, column) => ({

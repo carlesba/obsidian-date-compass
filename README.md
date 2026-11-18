@@ -355,8 +355,9 @@ and the year. Each part opens its own note with the same clicks as a day, when i
 enabled; a part whose period is off is plain text. The arrows move one month, and **Today**
 returns to the current month. At midnight a calendar showing the current month moves on by itself.
 
-**Week column.** With **Show week numbers** on and weekly notes enabled, the first column shows
-each week's number and opens the weekly note. The first weekday and the week numbers follow
+**Week column.** With **Show week numbers** on, the first column shows each week's number. The
+number opens the weekly note when weekly notes are enabled, and is plain text when they are off.
+The first weekday and the week numbers follow
 **Week starts on** in Localization. When that setting and the name format of weekly notes number
 weeks differently, for example weeks starting on Sunday with the ISO format `GGGG-[W]WW`, a week
 can show one number in the calendar and another in its note; the Date notes page warns about it
