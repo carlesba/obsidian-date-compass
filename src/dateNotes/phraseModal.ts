@@ -1,6 +1,6 @@
 import { SuggestModal } from "obsidian";
 import type { App } from "obsidian";
-import { phrasePickerTextOf, pickerNoteTextOf } from "../actions/pickerText.ts";
+import { phrasePickerTextOf, pickerNoteTextOf } from "../commands/pickerText.ts";
 import { t } from "../i18n/index.ts";
 import { buildRows, rowLabel, singleNoteRows } from "../mentions/rows.ts";
 import type { DateRow } from "../mentions/rows.ts";

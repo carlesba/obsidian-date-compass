@@ -8,20 +8,20 @@ import { importDateNotes } from "./dateNotes/import.ts";
 import { installedExternalDateNotes } from "./dateNotes/obsidianHost.ts";
 import { OpenDateNoteByPhraseModal } from "./dateNotes/phraseModal.ts";
 import { DateMentionSuggest } from "./mentions/suggest.ts";
-import { ActionCommands } from "./actions/commands.ts";
-import { canRunAction, runActionInActiveNote } from "./actions/ask.ts";
+import { PaletteCommands } from "./commands/palette.ts";
+import { canRunCommand, runCommandInActiveNote } from "./commands/ask.ts";
 import { createObsidianDateCompassApi } from "./api/obsidianHost.ts";
 
 export default class DateCompassPlugin extends Plugin {
 	settings: DateCompassSettings = defaultSettings();
 	readonly api = createObsidianDateCompassApi(this.app, () => this.settings);
 	private interfaceLanguage = DEFAULT_LANGUAGE;
-	private readonly actionCommands = new ActionCommands(this, ({ id, name, action }) => ({
+	private readonly paletteCommands = new PaletteCommands(this, ({ id, name, command }) => ({
 		id,
 		name,
 		checkCallback: (checking) => {
-			if (!canRunAction(this.app)) return false;
-			if (!checking) void runActionInActiveNote(this.app, () => this.settings, action);
+			if (!canRunCommand(this.app)) return false;
+			if (!checking) void runCommandInActiveNote(this.app, () => this.settings, command);
 			return true;
 		},
 	}));
@@ -42,7 +42,7 @@ export default class DateCompassPlugin extends Plugin {
 			callback: () => new OpenDateNoteByPhraseModal(this.app, () => this.settings).open(),
 		});
 		this.registerEditorSuggest(new DateMentionSuggest(this.app, () => this.settings));
-		this.actionCommands.sync(this.settings.actions);
+		this.paletteCommands.sync(this.settings.commands);
 		this.app.workspace.onLayoutReady(() => void this.importDateNotesOnce());
 	}
 
@@ -60,6 +60,6 @@ export default class DateCompassPlugin extends Plugin {
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
-		this.actionCommands.sync(this.settings.actions);
+		this.paletteCommands.sync(this.settings.commands);
 	}
 }

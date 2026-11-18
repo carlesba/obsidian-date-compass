@@ -4,7 +4,7 @@ import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage } from "./settings.ts";
-import { isActionKey, isTypedActionKey, mentionKeyParts, readControl, writeControl } from "./settings/controlKeys.ts";
+import { isCommandKey, isTypedCommandKey, mentionKeyParts, readControl, writeControl } from "./settings/controlKeys.ts";
 import type { MentionControlField } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup } from "./settings/dateNotesPage.ts";
@@ -18,7 +18,7 @@ import { clashWarning, triggerClashes } from "./mentions/clashes.ts";
 import type { TriggerClash } from "./mentions/clashes.ts";
 import { enabledPluginsWithTriggers, slashCommandsEnabled } from "./mentions/obsidianHost.ts";
 import type { Mention } from "./mentions/settings.ts";
-import { actionsPage } from "./settings/actionsPage.ts";
+import { commandsPage } from "./settings/commandsPage.ts";
 import { localizationPage } from "./settings/localizationPage.ts";
 import { pagePath } from "./settings/pages.ts";
 
@@ -71,8 +71,8 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						openPage: (pageId) => this.openPage(pageId),
 						change: (mutate) => this.changeEntries(mutate),
 					}),
-					actionsPage({
-						actions: () => this.plugin.settings.actions,
+					commandsPage({
+						commands: () => this.plugin.settings.commands,
 						openPage: (pageId) => this.openPage(pageId),
 						change: (mutate) => this.changeEntries(mutate),
 					}),
@@ -175,8 +175,8 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		const mentionKey = mentionKeyParts(key);
 		if (mentionKey?.field === "trigger") this.showTriggerAfterTyping(mentionKey.mentionId);
 		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
-		else if (isTypedActionKey(key)) this.updateAfterTyping();
-		else if (isActionKey(key)) this.update();
+		else if (isTypedCommandKey(key)) this.updateAfterTyping();
+		else if (isCommandKey(key)) this.update();
 	}
 
 	private async resetSettings(): Promise<void> {

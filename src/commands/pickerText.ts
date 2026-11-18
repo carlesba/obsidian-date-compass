@@ -1,11 +1,11 @@
 import { t } from "../i18n/index.ts";
 import { questionOf } from "./settings.ts";
-import type { DateAction, WriteMode } from "./settings.ts";
+import type { DateCommand, WriteMode } from "./settings.ts";
 
-export function pickerTextOf(action: DateAction, mode: WriteMode = action.mode): { placeholder: string; note: string } {
+export function pickerTextOf(command: DateCommand, mode: WriteMode = command.mode): { placeholder: string; note: string } {
 	return {
-		placeholder: questionOf(action),
-		note: t(mode === "add" ? "dateToProperty" : "dateReplacesProperty", { name: action.property.trim() }),
+		placeholder: questionOf(command),
+		note: t(mode === "add" ? "dateToProperty" : "dateReplacesProperty", { name: command.property.trim() }),
 	};
 }
 

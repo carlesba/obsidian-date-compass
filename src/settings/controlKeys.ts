@@ -8,8 +8,8 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
-import { ACTION_FIELDS, ASK_KINDS, WRITE_MODES } from "../actions/settings.ts";
-import type { ActionField, DateAction } from "../actions/settings.ts";
+import { COMMAND_FIELDS, ASK_KINDS, WRITE_MODES } from "../commands/settings.ts";
+import type { CommandField, DateCommand } from "../commands/settings.ts";
 
 export const WEEK_START_KEY = "weekStart";
 
@@ -108,51 +108,51 @@ function periodFieldOfKey(key: string): { period: Period; field: PeriodField } |
 	return isPeriod(period) && knownField ? { period, field: knownField } : undefined;
 }
 
-const ACTION_KEY_PREFIX = "actions/";
+const COMMAND_KEY_PREFIX = "commands/";
 
-const TYPED_ACTION_FIELDS = ["name", "property"];
+const TYPED_COMMAND_FIELDS = ["name", "property"];
 
-export function isActionKey(key: string): boolean {
-	return key.startsWith(ACTION_KEY_PREFIX);
+export function isCommandKey(key: string): boolean {
+	return key.startsWith(COMMAND_KEY_PREFIX);
 }
 
-export function isTypedActionKey(key: string): boolean {
-	return isActionKey(key) && TYPED_ACTION_FIELDS.includes(key.split("/").pop() ?? "");
+export function isTypedCommandKey(key: string): boolean {
+	return isCommandKey(key) && TYPED_COMMAND_FIELDS.includes(key.split("/").pop() ?? "");
 }
 
-export function actionKey(actionId: string, field: ActionField): string {
-	return `${ACTION_KEY_PREFIX}${actionId}/${field}`;
+export function commandKey(commandId: string, field: CommandField): string {
+	return `${COMMAND_KEY_PREFIX}${commandId}/${field}`;
 }
 
-interface ActionControl {
-	action: DateAction;
-	field: ActionField;
+interface CommandControl {
+	command: DateCommand;
+	field: CommandField;
 }
 
-function actionControlOfKey(settings: DateCompassSettings, key: string): ActionControl | undefined {
-	if (!key.startsWith(ACTION_KEY_PREFIX)) return undefined;
-	const parts = key.slice(ACTION_KEY_PREFIX.length).split("/");
-	const action = settings.actions.find((candidate) => candidate.id === parts[0]);
-	const field = ACTION_FIELDS.find((known) => known === parts[1]);
-	return parts.length === 2 && action && field ? { action, field } : undefined;
+function commandControlOfKey(settings: DateCompassSettings, key: string): CommandControl | undefined {
+	if (!key.startsWith(COMMAND_KEY_PREFIX)) return undefined;
+	const parts = key.slice(COMMAND_KEY_PREFIX.length).split("/");
+	const command = settings.commands.find((candidate) => candidate.id === parts[0]);
+	const field = COMMAND_FIELDS.find((known) => known === parts[1]);
+	return parts.length === 2 && command && field ? { command, field } : undefined;
 }
 
-function readActionControl({ action, field }: ActionControl): unknown {
-	return action[field];
+function readCommandControl({ command, field }: CommandControl): unknown {
+	return command[field];
 }
 
-function writeActionControl({ action, field }: ActionControl, value: unknown): boolean {
+function writeCommandControl({ command, field }: CommandControl, value: unknown): boolean {
 	switch (field) {
 		case "link":
-			return writeBoolean(value, (link) => (action.link = link));
+			return writeBoolean(value, (link) => (command.link = link));
 		case "asks":
-			return writeChoice(ASK_KINDS, value, (asks) => (action.asks = asks));
+			return writeChoice(ASK_KINDS, value, (asks) => (command.asks = asks));
 		case "mode":
-			return writeChoice(WRITE_MODES, value, (mode) => (action.mode = mode));
+			return writeChoice(WRITE_MODES, value, (mode) => (command.mode = mode));
 		case "name":
-			return writeText(value, (name) => (action.name = name));
+			return writeText(value, (name) => (command.name = name));
 		case "property":
-			return writeText(value, (property) => (action.property = property));
+			return writeText(value, (property) => (command.property = property));
 	}
 }
 
@@ -169,8 +169,8 @@ function writeText(value: unknown, write: (value: string) => unknown): boolean {
 }
 
 export function readControl(settings: DateCompassSettings, key: string): unknown {
-	const actionControl = actionControlOfKey(settings, key);
-	if (actionControl) return readActionControl(actionControl);
+	const commandControl = commandControlOfKey(settings, key);
+	if (commandControl) return readCommandControl(commandControl);
 	if (key === WEEK_START_KEY) return settings.weekStart;
 	if (key === NEXT_WEEKDAY_KEY) return settings.nextWeekday;
 	if (key === DAY_MONTH_ORDER_KEY) return settings.dayMonthOrder;
@@ -182,8 +182,8 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 }
 
 export function writeControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
-	const actionControl = actionControlOfKey(settings, key);
-	if (actionControl) return writeActionControl(actionControl, value);
+	const commandControl = commandControlOfKey(settings, key);
+	if (commandControl) return writeCommandControl(commandControl, value);
 	if (key === WEEK_START_KEY) return writeChoice(WEEK_STARTS, value, (choice) => (settings.weekStart = choice));
 	if (key === NEXT_WEEKDAY_KEY) return writeChoice(NEXT_WEEKDAY_MEANINGS, value, (choice) => (settings.nextWeekday = choice));
 	if (key === DAY_MONTH_ORDER_KEY) return writeChoice(DAY_MONTH_ORDERS, value, (choice) => (settings.dayMonthOrder = choice));

@@ -10,12 +10,12 @@ export type AskKind = (typeof ASK_KINDS)[number];
 export const WRITE_MODES = ["add", "replace"] as const;
 export type WriteMode = (typeof WRITE_MODES)[number];
 
-const ACTION_ID_PREFIX = "action";
+const COMMAND_ID_PREFIX = "command";
 
-export const ACTION_FIELDS = ["name", "property", "mode", "asks", "link"] as const;
-export type ActionField = (typeof ACTION_FIELDS)[number];
+export const COMMAND_FIELDS = ["name", "property", "mode", "asks", "link"] as const;
+export type CommandField = (typeof COMMAND_FIELDS)[number];
 
-export interface DateAction extends LinkStyle {
+export interface DateCommand extends LinkStyle {
 	id: string;
 	name: string;
 	property: string;
@@ -24,7 +24,7 @@ export interface DateAction extends LinkStyle {
 	link: boolean;
 }
 
-export function presetActions(): DateAction[] {
+export function presetCommands(): DateCommand[] {
 	return [
 		{ ...defaultLinkStyle(), id: "set-dates", name: t("presetAddDates"), property: "dates", mode: "add", asks: "dates", link: true },
 		{ ...defaultLinkStyle(), id: "set-reminders", name: t("presetSetReminders"), property: "reminders", mode: "add", asks: "dates", link: true },
@@ -35,24 +35,24 @@ function isWriteMode(value: unknown): value is WriteMode {
 	return WRITE_MODES.some((mode) => mode === value);
 }
 
-export function mergeActions(stored: unknown): DateAction[] {
-	if (!Array.isArray(stored)) return presetActions();
-	const actions: DateAction[] = [];
+export function mergeCommands(stored: unknown): DateCommand[] {
+	if (!Array.isArray(stored)) return presetCommands();
+	const commands: DateCommand[] = [];
 	for (const entry of stored) {
 		if (!isRecord(entry)) continue;
-		actions.push(mergeAction(entry, actions));
+		commands.push(mergeCommand(entry, commands));
 	}
-	return actions;
+	return commands;
 }
 
 function isAskKind(value: unknown): value is AskKind {
 	return ASK_KINDS.some((kind) => kind === value);
 }
 
-function mergeAction(data: Record<string, unknown>, earlier: readonly DateAction[]): DateAction {
+function mergeCommand(data: Record<string, unknown>, earlier: readonly DateCommand[]): DateCommand {
 	return {
 		...mergeLinkStyle(data),
-		id: uniqueId(data.id, earlier, ACTION_ID_PREFIX),
+		id: uniqueId(data.id, earlier, COMMAND_ID_PREFIX),
 		name: text(data.name),
 		property: text(data.property),
 		mode: isWriteMode(data.mode) ? data.mode : "add",
@@ -61,20 +61,20 @@ function mergeAction(data: Record<string, unknown>, earlier: readonly DateAction
 	};
 }
 
-export function newAction(actions: readonly DateAction[], now: number = Date.now()): DateAction {
-	return { ...defaultLinkStyle(), id: freeId(actions, `${ACTION_ID_PREFIX}-${now.toString(36)}`), name: "", property: "", mode: "add", asks: "dates", link: true };
+export function newCommand(commands: readonly DateCommand[], now: number = Date.now()): DateCommand {
+	return { ...defaultLinkStyle(), id: freeId(commands, `${COMMAND_ID_PREFIX}-${now.toString(36)}`), name: "", property: "", mode: "add", asks: "dates", link: true };
 }
 
-export function actionName(action: DateAction): string {
-	return action.name.trim() === "" ? t("untitledAction") : action.name.trim();
+export function commandName(command: DateCommand): string {
+	return command.name.trim() === "" ? t("untitledCommand") : command.name.trim();
 }
 
-export function actionWarning(action: DateAction): string | undefined {
-	return action.property.trim() === "" ? t("actionNeedsProperty") : undefined;
+export function commandWarning(command: DateCommand): string | undefined {
+	return command.property.trim() === "" ? t("commandNeedsProperty") : undefined;
 }
 
-export function questionOf(action: DateAction): string {
-	return t(action.asks === "date" ? "actionAsksDate" : "actionAsksDates", { name: action.property.trim() });
+export function questionOf(command: DateCommand): string {
+	return t(command.asks === "date" ? "commandAsksDate" : "commandAsksDates", { name: command.property.trim() });
 }
 
 function text(value: unknown, fallback = ""): string {

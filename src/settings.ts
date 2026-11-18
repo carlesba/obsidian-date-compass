@@ -1,5 +1,5 @@
-import { mergeActions } from "./actions/settings.ts";
-import type { DateAction } from "./actions/settings.ts";
+import { mergeCommands } from "./commands/settings.ts";
+import type { DateCommand } from "./commands/settings.ts";
 import { mergeDateNotes } from "./dateNotes/periods.ts";
 import type { DateNotesSettings } from "./dateNotes/periods.ts";
 import { mergeMentions } from "./mentions/settings.ts";
@@ -24,7 +24,7 @@ export interface DateCompassSettings {
 	dayMonthOrder: DayMonthOrder;
 	dateNotes: DateNotesSettings;
 	mentions: Mention[];
-	actions: DateAction[];
+	commands: DateCommand[];
 }
 
 export function isParserLanguage(value: unknown): value is ParserLanguage {
@@ -48,7 +48,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		dayMonthOrder: oneOf(DAY_MONTH_ORDERS, data.dayMonthOrder, "dayMonth"),
 		dateNotes: mergeDateNotes(data.dateNotes),
 		mentions: mergeMentions(data.mentions),
-		actions: mergeActions(data.actions),
+		commands: mergeCommands(data.commands),
 	};
 }
 

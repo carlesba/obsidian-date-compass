@@ -15,7 +15,7 @@ import type { LanguageChoice, LocalizationPageContext } from "../src/settings/lo
 import { pagePath } from "../src/settings/pages.ts";
 import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 import type { DateCompassSettings, ParserLanguage } from "../src/settings.ts";
-import { presetActions } from "../src/actions/settings.ts";
+import { presetCommands } from "../src/commands/settings.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
 
 test("a fresh install gets the defaults, with English as the only parser language", () => {
@@ -38,7 +38,7 @@ test("a fresh install gets the defaults, with English as the only parser languag
 		mentions: [
 			{ id: "mention-1", trigger: "@", targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" },
 		],
-		actions: presetActions(),
+		commands: presetCommands(),
 	});
 });
 
@@ -55,7 +55,7 @@ test("stored partial settings merge over the defaults", () => {
 		dayMonthOrder: "monthDay",
 		dateNotes: defaultDateNotes(),
 		mentions: defaultMentions(),
-		actions: presetActions(),
+		commands: presetCommands(),
 	});
 });
 
@@ -104,7 +104,7 @@ test("date-note controls read and write each period's fields and the template ru
 
 test("stored values the plugin does not know fall back to the defaults", () => {
 	const merged = mergeSettings({ languages: ["es", "fr"], weekStart: "friday", nextWeekday: 3, dayMonthOrder: null });
-	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: defaultMentions(), actions: presetActions() });
+	assert.deepEqual(merged, { languages: ["es"], weekStart: "locale", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth", dateNotes: defaultDateNotes(), mentions: defaultMentions(), commands: presetCommands() });
 	assert.deepEqual(mergeSettings([1, 2]), defaultSettings());
 	assert.deepEqual(mergeSettings("broken"), defaultSettings());
 });
@@ -153,7 +153,7 @@ test("a mention control names an existing mention and one of its fields, nothing
 	assert.deepEqual(mentionKeyParts("mentions/mention-1/trigger"), { mentionId: "mention-1", field: "trigger" });
 	assert.equal(mentionKeyParts("mentions/mention-1/id"), undefined);
 	assert.equal(mentionKeyParts("mentions/mention-1/trigger/extra"), undefined);
-	assert.equal(mentionKeyParts("actions/set-dates/name"), undefined);
+	assert.equal(mentionKeyParts("commands/set-dates/name"), undefined);
 	assert.equal(writeControl(settings, mentionKey("missing", "trigger"), "!"), false);
 	assert.equal(readControl(settings, mentionKey("missing", "trigger")), undefined);
 	assert.equal(writeControl(settings, "mentions/enabled", false), false);
