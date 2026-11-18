@@ -25,12 +25,8 @@ export function isLinkTemplate(value: string): boolean {
 	return value.trim() !== "";
 }
 
-export function mergeInsertion(stored: unknown, storedMentions?: unknown, storedSequence?: unknown): InsertionSettings {
-	if (isRecord(stored)) return readInsertion(stored);
-	return readInsertion(migratedFromV1(storedMentions, storedSequence));
-}
-
-function readInsertion(data: Record<string, unknown>): InsertionSettings {
+export function mergeInsertion(stored: unknown): InsertionSettings {
+	const data = isRecord(stored) ? stored : {};
 	return {
 		linkPath: LINK_PATHS.find((linkPath) => linkPath === data.linkPath) ?? "shortestWhenSafe",
 		linkTemplate: typeof data.linkTemplate === "string" && isLinkTemplate(data.linkTemplate) ? data.linkTemplate : DEFAULT_LINK_TEMPLATE,
@@ -39,23 +35,4 @@ function readInsertion(data: Record<string, unknown>): InsertionSettings {
 		aliasFormat: typeof data.aliasFormat === "string" && data.aliasFormat.trim() !== "" ? data.aliasFormat.trim() : DEFAULT_ALIAS_FORMAT,
 		aliasByDefault: data.aliasByDefault === true,
 	};
-}
-
-function migratedFromV1(storedMentions: unknown, storedSequence: unknown): Record<string, unknown> {
-	const mentions = isRecord(storedMentions) ? storedMentions : {};
-	const sequence = isRecord(storedSequence) ? storedSequence : {};
-	const aliasMode = mentions.aliasMode;
-	return {
-		linkTemplate: typeof sequence.itemTemplate === "string" && sequence.itemTemplate.includes(DEFAULT_LINK_TEMPLATE) ? sequence.itemTemplate : DEFAULT_LINK_TEMPLATE,
-		separator: separatorFromV1(mentions.separator, sequence.layout),
-		aliasShape: aliasMode === "typed" ? "typed" : "format",
-		aliasFormat: mentions.aliasFormat,
-		aliasByDefault: aliasMode === "typed" || aliasMode === "format",
-	};
-}
-
-function separatorFromV1(separator: unknown, layout: unknown): unknown {
-	if (layout === "bulletList") return "bulletLines";
-	if (layout === "linePerItem") return "lines";
-	return separator;
 }

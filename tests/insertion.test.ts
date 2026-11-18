@@ -8,8 +8,6 @@ import { mergeInsertion } from "../src/insertion/settings.ts";
 import { chooseDestination, effectiveDestination, propertyAtLine } from "../src/insertion/destination.ts";
 import { propertyWithLinks } from "../src/insertion/property.ts";
 import { mergeSettings } from "../src/settings.ts";
-import { v1AliasOf, v1InsertionText, v1SequenceInsertion } from "./v1Insertion.ts";
-import type { V1AliasMode, V1Layout, V1Separator } from "./v1Insertion.ts";
 
 function dayNote(isoDate: string): NoteRef {
 	const start = moment(isoDate, "YYYY-MM-DD");
@@ -19,11 +17,6 @@ function dayNote(isoDate: string): NoteRef {
 const NOTES = [dayNote("2026-11-23"), dayNote("2026-11-24"), dayNote("2026-11-25")];
 
 const obsidianLink = (note: NoteRef, alias: string | undefined) => (alias === undefined ? `[[${note.name}]]` : `[[${note.name}|${alias}]]`);
-
-const ALIAS_MODES: V1AliasMode[] = ["none", "typed", "format"];
-const SEPARATORS: V1Separator[] = ["commaSpace", "space", "bulletLines"];
-const LAYOUTS: V1Layout[] = ["inline", "bulletList", "linePerItem"];
-const TEXTS_BEFORE = ["", "Due ", "  ", "  - ", "1. "];
 
 test("a template renders the link, name, path, alias and a formatted date", () => {
 	const [note] = NOTES;
@@ -77,69 +70,7 @@ test("settings without any stored insertion load the defaults, and unknown keys 
 	assert.deepEqual(mergeSettings({ mentions: { enabled: true, surprise: 1 }, insertSequence: "broken" }).insertion, defaults);
 });
 
-test("a v1 data.json migrates field by field", () => {
-	const migrated = (mentions: object, insertSequence?: object) => mergeSettings({ mentions, insertSequence }).insertion;
-	assert.deepEqual(migrated({ aliasMode: "none", aliasFormat: "D MMM", separator: "space" }), { linkPath: "shortestWhenSafe", linkTemplate: "{{link}}", separator: "space", aliasShape: "format", aliasFormat: "D MMM", aliasByDefault: false });
-	assert.equal(migrated({ aliasMode: "typed" }).aliasShape, "typed");
-	assert.equal(migrated({ aliasMode: "typed" }).aliasByDefault, true);
-	assert.equal(migrated({ aliasMode: "format" }).aliasByDefault, true);
-	assert.equal(migrated({ aliasFormat: "  " }).aliasFormat, "ddd D MMM");
-	assert.equal(migrated({ separator: "space" }, { layout: "bulletList" }).separator, "bulletLines");
-	assert.equal(migrated({ separator: "space" }, { layout: "linePerItem" }).separator, "lines");
-	assert.equal(migrated({ separator: "bulletLines" }, { layout: "inline" }).separator, "bulletLines");
-	assert.equal(migrated({}, { itemTemplate: "Review {{link}}" }).linkTemplate, "Review {{link}}");
-	assert.equal(migrated({}, { itemTemplate: "no link" }).linkTemplate, "{{link}}");
-});
-
-test("migrating twice, or migrating already migrated data, changes nothing", () => {
-	const v1 = { weekStart: "monday", mentions: { aliasMode: "typed", aliasFormat: "D MMM", separator: "space" }, insertSequence: { layout: "linePerItem", itemTemplate: "- {{link}}" } };
-	const once = mergeSettings(v1);
-	const twice = mergeSettings(JSON.parse(JSON.stringify(once)));
-	assert.deepEqual(twice, once);
-	assert.equal("aliasMode" in twice.mentions, false);
-	assert.equal("insertSequence" in twice, false);
-	const afterEdit = mergeSettings({ ...JSON.parse(JSON.stringify(once)), mentions: { aliasMode: "none", separator: "commaSpace" } });
-	assert.deepEqual(afterEdit.insertion, once.insertion);
-});
-
-test("a migrated v1 popup mention inserts the same string as v1 for every alias mode, format and separator", () => {
-	for (const aliasMode of ALIAS_MODES) {
-		for (const aliasFormat of ["ddd D MMM", "D/M"]) {
-			for (const separator of SEPARATORS) {
-				for (const textBefore of TEXTS_BEFORE) {
-					for (const notes of [NOTES.slice(0, 1), NOTES]) {
-						const v1Mentions = { aliasMode, aliasFormat, separator };
-						const row = { text: "mon to wed", notes };
-						const v1Links = notes.map((note) => obsidianLink(note, v1AliasOf(row, note, v1Mentions)));
-						const { insertion } = mergeSettings({ mentions: v1Mentions });
-						const links = insertionLinks(notes, row.text, insertion, usesAlias(insertion, false), obsidianLink);
-						assert.equal(insertionText(links, insertion.separator, textBefore), v1InsertionText(v1Links, separator, textBefore), JSON.stringify({ v1Mentions, textBefore, count: notes.length }));
-					}
-				}
-			}
-		}
-	}
-});
-
-test("a migrated v1 Insert date sequence inserts the same string as v1 for every layout, separator and item template", () => {
-	for (const layout of LAYOUTS) {
-		for (const itemTemplate of ["{{link}}", "- [ ] review {{link}} ({{link}})", "on {{link}}"]) {
-			for (const separator of SEPARATORS) {
-				for (const textBefore of TEXTS_BEFORE) {
-					for (const notes of [NOTES.slice(0, 2), NOTES]) {
-						const v1Links = notes.map((note) => obsidianLink(note, undefined));
-						const expected = v1SequenceInsertion(v1Links, { layout, itemTemplate }, separator, textBefore);
-						const { insertion } = mergeSettings({ mentions: { separator }, insertSequence: { layout, itemTemplate } });
-						const links = insertionLinks(notes, "mon to wed", insertion, false, obsidianLink);
-						assert.equal(insertionText(links, insertion.separator, textBefore), expected, JSON.stringify({ layout, itemTemplate, separator, textBefore, count: notes.length }));
-					}
-				}
-			}
-		}
-	}
-});
-
-test("the default template and separator write one link and a comma-separated list as v1 did", () => {
+test("the default template and separator write one link and a comma-separated list", () => {
 	const { insertion } = mergeSettings({});
 	assert.equal(insertionText(insertionLinks(NOTES, "x", insertion, false, obsidianLink), insertion.separator, "Due "), "[[2026-11-23]], [[2026-11-24]], [[2026-11-25]]");
 });
@@ -206,40 +137,4 @@ test("the property write appends only the missing links and keeps what was there
 	assert.deepEqual(propertyWithLinks(["z"], ["[[a]]", "[[a]]"]), ["z", "[[a]]"]);
 	const mapping = { due: "x" };
 	assert.deepEqual(propertyWithLinks(mapping, links), [mapping, ...links]);
-});
-
-const TWO = NOTES.slice(0, 2);
-const aliasedLink = (note: NoteRef, alias: string | undefined) => (alias === undefined ? `[[${note.name}]]` : `[[${note.name}|${alias}]]`);
-const v2Text = (stored: object, notes: NoteRef[], textBefore: string, withAlias: boolean) => {
-	const { insertion } = mergeSettings(stored);
-	return insertionText(insertionLinks(notes, "mon to wed", insertion, withAlias, aliasedLink), insertion.separator, textBefore);
-};
-
-test("known difference from v1: a stored format alias now also shows in the modal", () => {
-	const stored = { mentions: { aliasMode: "format", aliasFormat: "ddd D MMM" } };
-	const v1 = v1SequenceInsertion(TWO.map((note) => aliasedLink(note, undefined)), { layout: "inline", itemTemplate: "{{link}}" }, "commaSpace", "Due ");
-	const aliasByDefault = mergeSettings(stored).insertion.aliasByDefault;
-	assert.equal(v1, "[[2026-11-23]], [[2026-11-24]]");
-	assert.equal(v2Text(stored, TWO, "Due ", aliasByDefault), "[[2026-11-23|Mon 23 Nov]], [[2026-11-24|Tue 24 Nov]]");
-});
-
-test("known difference from v1: a stored bullet layout and item template now also shape the popup", () => {
-	const stored = { insertSequence: { layout: "bulletList", itemTemplate: "Review {{link}}" } };
-	const v1 = v1InsertionText(TWO.map((note) => aliasedLink(note, undefined)), "commaSpace", "Due ");
-	assert.equal(v1, "[[2026-11-23]], [[2026-11-24]]");
-	assert.equal(v2Text(stored, TWO, "Due ", false), "\n- Review [[2026-11-23]]\n- Review [[2026-11-24]]");
-});
-
-test("known difference from v1: the {{name}} placeholder in a stored item template now renders", () => {
-	const stored = { insertSequence: { layout: "inline", itemTemplate: "{{name}} {{link}}" } };
-	const v1 = v1SequenceInsertion([aliasedLink(NOTES[0], undefined)], { layout: "inline", itemTemplate: "{{name}} {{link}}" }, "commaSpace", "");
-	assert.equal(v1, "{{name}} [[2026-11-23]]");
-	assert.equal(v2Text(stored, NOTES.slice(0, 1), "", false), "2026-11-23 [[2026-11-23]]");
-});
-
-test("known difference from v1: a stored bullet list with one date writes a bare link", () => {
-	const stored = { insertSequence: { layout: "bulletList", itemTemplate: "{{link}}" } };
-	const v1 = v1SequenceInsertion([aliasedLink(NOTES[0], undefined)], { layout: "bulletList", itemTemplate: "{{link}}" }, "commaSpace", "");
-	assert.equal(v1, "- [[2026-11-23]]");
-	assert.equal(v2Text(stored, NOTES.slice(0, 1), "", false), "[[2026-11-23]]");
 });

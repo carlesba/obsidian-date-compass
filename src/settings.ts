@@ -51,7 +51,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		dayMonthOrder: oneOf(DAY_MONTH_ORDERS, data.dayMonthOrder, "dayMonth"),
 		dateNotes: mergeDateNotes(data.dateNotes),
 		mentions: mergeMentions(data.mentions),
-		insertion: mergeInsertion(data.insertion, data.mentions, data.insertSequence),
+		insertion: mergeInsertion(data.insertion),
 		actions: mergeActions(data.actions),
 	};
 }

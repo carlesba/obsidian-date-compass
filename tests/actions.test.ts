@@ -31,87 +31,12 @@ function notesOf(phrase: string): NoteRef[] {
 
 const linkTo = (note: NoteRef) => `[[${note.name}]]`;
 
-const v1AddDates = {
-	id: "add-dates",
-	name: "Add dates",
-	enabled: true,
-	inputs: [
-		{ id: "dates", key: "dates", question: "Dates", type: "dates", optional: false, defaultText: "" },
-		{ id: "update-start-and-end", key: "updateStartAndEnd", question: "Update start and end?", type: "yesNo", optional: false, defaultText: "" },
-	],
-	writes: [
-		{ id: "dates", target: "property", property: "dates", input: "dates", value: "links", format: "link", mode: "append", condition: "" },
-		{ id: "start", target: "property", property: "start", input: "dates", value: "first", format: "dateText", mode: "replace", condition: "update-start-and-end" },
-		{ id: "end", target: "property", property: "end", input: "dates", value: "last", format: "dateText", mode: "replace", condition: "update-start-and-end" },
-	],
-};
-
-const v1SetReminders = {
-	id: "set-reminders",
-	name: "Set reminders",
-	enabled: true,
-	inputs: [{ id: "reminders", key: "reminders", question: "Reminders", type: "dates", optional: false, defaultText: "" }],
-	writes: [{ id: "reminders", target: "property", property: "reminders", input: "reminders", value: "links", format: "link", mode: "append", condition: "" }],
-};
-
 test("presets are Add dates and Set reminders, both adding dates as links", () => {
 	assert.deepEqual(presetActions(), [
 		{ id: "set-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
 		{ id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
 	]);
 	assert.deepEqual(mergeSettings({ weekStart: "monday" }).actions, presetActions());
-});
-
-test("the two stored v1 presets keep their names and ids and still add", () => {
-	const migrated = mergeSettings({ actions: [v1AddDates, v1SetReminders] }).actions;
-	assert.deepEqual(migrated, [
-		{ id: "add-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true },
-		{ id: "set-reminders", name: "Set reminders", property: "reminders", mode: "add", asks: "dates", link: true },
-	]);
-});
-
-test("a custom v1 action keeps its name, comes back enabled, and takes its first property write", () => {
-	const [action] = mergeActions([
-		{
-			id: "trip",
-			name: "Plan trip",
-			enabled: false,
-			inputs: [{ id: "when", key: "when", question: "When?", type: "date", optional: true, defaultText: "today" }],
-			writes: [{ id: "w", target: "property", property: " due ", input: "when", value: "first", format: "dateText", mode: "replace", condition: "" }],
-		},
-	]);
-	assert.deepEqual(action, { id: "trip", name: "Plan trip", property: "due", mode: "replace", asks: "date", link: false });
-});
-
-test("a v1 action with several writes uses the first property write, skipping body writes", () => {
-	const [action] = mergeActions([
-		{
-			id: "mix",
-			name: "Mix",
-			inputs: [
-				{ id: "one", type: "periodicNote" },
-				{ id: "many", type: "dates" },
-			],
-			writes: [
-				{ id: "a", target: "body", property: "", input: "many", format: "link" },
-				{ id: "b", target: "property", property: "week", input: "one", format: "link" },
-				{ id: "c", target: "property", property: "other", input: "many", format: "dateText" },
-			],
-		},
-	]);
-	assert.deepEqual(action, { id: "mix", name: "Mix", property: "week", mode: "add", asks: "date", link: true });
-});
-
-test("a v1 action with no property write is dropped, and one whose question is missing asks for dates", () => {
-	const noWrites = { id: "empty", name: "Empty", inputs: [], writes: [] };
-	const bodyOnly = { id: "body", name: "Body", inputs: [{ id: "d", type: "dates" }], writes: [{ id: "w", target: "body", input: "d" }] };
-	const noProperty = { id: "blank", name: "Blank", inputs: [], writes: [{ id: "w", target: "property", property: "  ", input: "d" }] };
-	const missingQuestion = { id: "lost", name: "Lost", inputs: [], writes: [{ id: "w", target: "property", property: "when", input: "gone", format: "link" }] };
-	const yesNoQuestion = { id: "yn", name: "YN", inputs: [{ id: "q", type: "yesNo" }], writes: [{ id: "w", target: "property", property: "flag", input: "q", format: "dateText" }] };
-	assert.deepEqual(mergeActions([noWrites, bodyOnly, noProperty, missingQuestion, yesNoQuestion]), [
-		{ id: "lost", name: "Lost", property: "when", mode: "add", asks: "dates", link: true },
-		{ id: "yn", name: "YN", property: "flag", mode: "add", asks: "dates", link: false },
-	]);
 });
 
 test("no stored actions gives the presets, an empty list stays empty, unknown keys are dropped", () => {
@@ -122,10 +47,10 @@ test("no stored actions gives the presets, an empty list stays empty, unknown ke
 	assert.deepEqual(action, { id: "x", name: "X", property: "p", mode: "add", asks: "date", link: false });
 });
 
-test("migrating twice changes nothing, and ids are kept unique", () => {
-	const once = mergeActions([v1AddDates, v1SetReminders, { ...v1SetReminders, name: "Again" }, { id: "a/b", name: "Slash", asks: "dates", property: "p" }]);
+test("stored ids are kept unique, and loading what was saved changes nothing", () => {
+	const once = mergeActions([{ id: "trip", name: "Trip", property: "p" }, { id: "trip", name: "Again", property: "p" }, { id: "a/b", name: "Slash", property: "p" }, { name: "No id" }]);
+	assert.deepEqual(once.map((action) => action.id), ["trip", "action-1", "action-2", "action-3"]);
 	assert.deepEqual(mergeActions(JSON.parse(JSON.stringify(once))), once);
-	assert.deepEqual(once.map((action) => action.id), ["add-dates", "set-reminders", "action-1", "action-2"]);
 });
 
 test("stored v2 fields fall back field by field", () => {
@@ -299,11 +224,6 @@ test("an action with no property is not offered as a command", () => {
 	assert.deepEqual(actionCommands([unfinished, ...presetActions()]).map((command) => command.name), ["Add dates", "Set reminders"]);
 });
 
-test("a custom v1 action named like the preset keeps its name", () => {
-	const custom = { ...v1AddDates, id: "mine" };
-	assert.deepEqual(mergeActions([custom]).map((action) => action.name), ["Add dates"]);
-});
-
 test("the One date picker asks the question as placeholder and says add or replace in its own text", async () => {
 	const { setLanguage, DEFAULT_LANGUAGE } = await import("../src/i18n/index.ts");
 	const { pickerTextOf } = await import("../src/actions/pickerText.ts");
@@ -411,20 +331,6 @@ test("a stored action with no mode adds, a stored mode is kept, and an unknown o
 	const stored = (mode?: unknown) => ({ id: "x", name: "X", property: "p", asks: "dates", link: true, ...(mode === undefined ? {} : { mode }) });
 	assert.deepEqual([stored(), stored("replace"), stored("add"), stored("sort")].map((entry) => mergeActions([entry])[0].mode), ["add", "replace", "add", "add"]);
 	assert.equal(newAction([]).mode, "add");
-});
-
-test("a v1 write keeps replace and turns append and sort into add", () => {
-	const v1 = (mode: string) => ({ id: mode, name: mode, inputs: [{ id: "d", type: "dates" }], writes: [{ target: "property", property: "p", input: "d", format: "link", mode }] });
-	assert.deepEqual(mergeActions([v1("append"), v1("replace"), v1("sort")]).map((action) => action.mode), ["add", "replace", "add"]);
-});
-
-test("the preset stored as Set dates before modes existed is renamed Add dates, once", () => {
-	const stored = { id: "add-dates", name: "Set dates", enabled: true, property: "dates", asks: "dates", link: true };
-	const [loaded] = mergeActions([stored]);
-	assert.deepEqual(loaded, { id: "add-dates", name: "Add dates", property: "dates", mode: "add", asks: "dates", link: true });
-	assert.equal(mergeActions([{ ...loaded, name: "Set dates" }])[0].name, "Set dates");
-	assert.equal(mergeActions([{ ...stored, id: "set-dates", name: "Poner fechas" }])[0].name, "Add dates");
-	assert.equal(mergeActions([{ ...stored, id: "mine" }])[0].name, "Set dates");
 });
 
 test("the action page offers Add and Replace right after the property", () => {
