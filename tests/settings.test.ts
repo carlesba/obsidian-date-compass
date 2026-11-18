@@ -19,6 +19,11 @@ import { mergeMentions } from "../src/mentions/settings.ts";
 import { mergeInsertion } from "../src/insertion/settings.ts";
 import { aliasFormatSample, insertionGroups } from "../src/settings/insertionPage.ts";
 import { moment } from "./moment.ts";
+import { localizationPage } from "../src/settings/localizationPage.ts";
+import type { LocalizationPageContext } from "../src/settings/localizationPage.ts";
+import { pagePath } from "../src/settings/pages.ts";
+import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
+import type { DateCompassSettings, ParserLanguage } from "../src/settings.ts";
 import { presetActions } from "../src/actions/settings.ts";
 import { sameTriggerWarning } from "../src/settings/mentionsPage.ts";
 import { defaultDateNotes, mergeDateNotes } from "../src/dateNotes/periods.ts";
@@ -219,6 +224,86 @@ test("the link text format shows today in the typed format and follows every key
 	assert.equal(row.shown(), "Enter a name format.");
 	assert.deepEqual(written, [[INSERTION_ALIAS_FORMAT_KEY, "D/M/YY"], [INSERTION_ALIAS_FORMAT_KEY, "dddd"], [INSERTION_ALIAS_FORMAT_KEY, "  "]]);
 	assert.equal(aliasFormatSample(" YYYY ", moment(TODAY)), "Today: 2026");
+});
+
+interface LanguageListLike {
+	type: string;
+	heading: string;
+	items: Array<{ name: string; desc?: string }>;
+	onReorder?: unknown;
+	onDelete?: (position: number) => void;
+	addItem?: { name: string; action: (anchor: HTMLElement) => void };
+}
+
+function localization(settings: DateCompassSettings, written: Array<[string, unknown]> = []) {
+	const context: LocalizationPageContext = {
+		...sampleHost(written),
+		languages: () => settings.languages,
+		dayMonthOrder: () => settings.dayMonthOrder,
+		changeLanguages: (languages: ParserLanguage[]) => void (settings.languages = languages),
+		chooseLanguage: () => assert.fail("one remaining language is added without asking"),
+	};
+	const page = () => localizationPage(context);
+	const languages = () => (page().items ?? [])[0] as unknown as LanguageListLike;
+	const reading = () => ((page().items ?? [])[1] as unknown as { items: unknown[] }).items;
+	return { page, languages, reading };
+}
+
+test("Localization is a page of its own with the language list and the reading settings", () => {
+	const { page, languages, reading } = localization(mergeSettings({ languages: ["es", "en"] }));
+	assert.equal(page().name, "Localization");
+	assert.deepEqual(pagePath([{ type: "group", items: [page()] }], "localization"), ["localization"]);
+	assert.equal(languages().type, "list");
+	assert.equal(languages().heading, "Understand dates in");
+	assert.deepEqual(languages().items.map((row) => row.name), ["Spanish", "English"]);
+	assert.match(languages().items[0].desc ?? "", /wins/);
+	assert.equal(languages().items[1].desc, undefined);
+	assert.equal(languages().onReorder, undefined);
+	assert.deepEqual(reading().map((item) => (item as { name: string }).name), ["Week starts on", "\"Next\" weekday means", "Read typed dates like"]);
+});
+
+test("a language is removed with its row button, down to the last one, and added back last with the add button", () => {
+	const settings = mergeSettings({ languages: ["es", "en"] });
+	const { languages } = localization(settings);
+	assert.equal(languages().addItem, undefined);
+	languages().onDelete?.(0);
+	assert.deepEqual(settings.languages, ["en"]);
+	assert.equal(languages().onDelete, undefined);
+	assert.equal(languages().items[0].desc, undefined);
+	assert.equal(languages().addItem?.name, "Add language");
+	languages().addItem?.action({} as HTMLElement);
+	assert.deepEqual(settings.languages, ["en", "es"]);
+	assert.equal(languages().addItem, undefined);
+	languages().onDelete?.(1);
+	assert.deepEqual(settings.languages, ["en"]);
+});
+
+test("the typed date order offers Day/Month and Month/Day and shows today in the chosen order", () => {
+	const settings = defaultSettings();
+	const written: Array<[string, unknown]> = [];
+	const { reading } = localization(settings, written);
+	const row = renderedRow(renderOf(reading(), "Read typed dates like"));
+	assert.deepEqual(row.field.options, { dayMonth: "Day/Month", monthDay: "Month/Day" });
+	assert.equal(row.field.value, "dayMonth");
+	assert.equal(row.shown(), "Today: 17/11");
+	row.pick("monthDay");
+	assert.equal(row.shown(), "Today: 11/17");
+	row.pick("yearFirst");
+	assert.equal(row.shown(), "Today: 11/17");
+	assert.deepEqual(written, [["dayMonthOrder", "monthDay"]]);
+	assert.equal(mergeSettings({ dayMonthOrder: "monthDay" }).dayMonthOrder, "monthDay");
+});
+
+test("the typed date order reads Día/Mes and Mes/Día in Spanish", () => {
+	try {
+		setLanguage("es");
+		const { reading } = localization(defaultSettings());
+		const row = renderedRow(renderOf(reading(), "Leer fechas escritas como"));
+		assert.deepEqual(row.field.options, { dayMonth: "Día/Mes", monthDay: "Mes/Día" });
+		assert.equal(row.shown(), "Hoy: 17/11");
+	} finally {
+		setLanguage(DEFAULT_LANGUAGE);
+	}
 });
 
 test("the Mentions page warns only when another plugin shares the trigger", () => {

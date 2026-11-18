@@ -1,27 +1,3 @@
-.date-compass-language-chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--size-4-2);
-	align-items: center;
-	justify-content: flex-end;
-}
-
-.date-compass-language-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--size-4-1);
-}
-
-.is-mobile .date-compass-language-chip {
-	min-height: 44px;
-	padding-inline: var(--size-4-3);
-}
-
-.is-mobile .date-compass-language-chip .multi-select-pill-remove-button {
-	min-width: 44px;
-	min-height: 44px;
-}
-
 .date-compass-dates-modal {
 	width: min(40rem, 94vw);
 }

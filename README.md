@@ -340,18 +340,21 @@ single date, or an empty list.
 
 ## Settings layout
 
-The main page has a **Localization** group:
+On the main page, click a row to open its page: **Localization**, **Date notes**, **Mentions**,
+**Insertion** and **Actions**. Last is **Reset all settings**, which puts every option back to the
+defaults after you confirm.
 
-- **Understand dates in**: the languages as chips in priority order. **Add language** adds one
-  last; each chip has a remove button except the last remaining one. When a word means different
-  things, such as "mar", the first language wins the top row.
+The **Localization** page has:
+
+- **Understand dates in**: a list with one row per language, in priority order. Each row has a
+  remove button, except when one language is left, and the **+** button adds a language that is
+  not listed yet, last. When a word means different things, such as "mar", the first language
+  wins the top row. To change the order, remove a language and add it again.
 - **Week starts on**: **Locale default** (default), **Monday** or **Sunday**.
 - **"Next" weekday means**: **That day of next week** (default) or **The next time that day
   comes**.
-- **Read typed dates like**: **D/M, as in 31/12** (default) or **M/D, as in 12/31**, for `3/12`.
-
-Below it, click a row to open its page: **Date notes**, **Mentions**, **Insertion** and **Actions**.
-Last is **Reset all settings**, which puts every option back to the defaults after you confirm.
+- **Read typed dates like**: **Day/Month** (default) or **Month/Day**, for `3/12`. Below it,
+  "Today: 17/11" shows today in the chosen order.
 
 Nothing is hidden: every behaviour that picks or hides something is a setting above.
 

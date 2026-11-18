@@ -1,16 +1,13 @@
-import { Notice, PluginSettingTab, debounce } from "obsidian";
+import { Menu, Notice, PluginSettingTab, debounce } from "obsidian";
 import type { App, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
-import { t, translatedLabels } from "./i18n/index.ts";
+import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
-import type { ParserLanguage, DayMonthOrder, NextWeekdayMeaning, WeekStart } from "./settings.ts";
+import type { ParserLanguage } from "./settings.ts";
 import {
-	DAY_MONTH_ORDER_KEY,
 	INSERTION_ALIAS_SHAPE_KEY,
 	MENTIONS_ENABLED_KEY,
 	MENTIONS_TRIGGER_KEY,
-	NEXT_WEEKDAY_KEY,
-	WEEK_START_KEY,
 	isActionKey,
 	isTypedActionKey,
 	readControl,
@@ -27,24 +24,8 @@ import type { SampleHost } from "./settings/todaySample.ts";
 import { sameTriggerPlugins } from "./mentions/conflicts.ts";
 import { enabledPluginsWithTriggers } from "./mentions/obsidianHost.ts";
 import { actionsPage } from "./settings/actionsPage.ts";
-import { renderLanguagePicker } from "./settings/languagePicker.ts";
+import { localizationPage } from "./settings/localizationPage.ts";
 import { pagePath } from "./settings/pages.ts";
-
-const WEEK_START_LABELS: Record<WeekStart, TranslationKey> = {
-	locale: "weekStartLocale",
-	monday: "weekStartMonday",
-	sunday: "weekStartSunday",
-};
-
-const NEXT_WEEKDAY_LABELS: Record<NextWeekdayMeaning, TranslationKey> = {
-	nextWeek: "nextWeekdayNextWeek",
-	nextOccurrence: "nextWeekdayNextOccurrence",
-};
-
-const DAY_MONTH_ORDER_LABELS: Record<DayMonthOrder, TranslationKey> = {
-	dayMonth: "dayMonthOrderDayMonth",
-	monthDay: "dayMonthOrderMonthDay",
-};
 
 const CONTROLS_THAT_SHOW_OR_HIDE_ITEMS = [MENTIONS_ENABLED_KEY, INSERTION_ALIAS_SHAPE_KEY];
 
@@ -71,37 +52,19 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		return [
 			{
 				type: "group",
-				heading: t("localizationSection"),
 				items: [
-					{
-						name: t("parserLanguages"),
-						desc: t("parserLanguagesDesc"),
-						render: (setting) =>
-							renderLanguagePicker(setting, {
-								languages: () => this.plugin.settings.languages,
-								change: (languages) => void this.changeLanguages(languages),
-							}),
-					},
-					{
-						name: t("weekStart"),
-						desc: t("weekStartDesc"),
-						control: { type: "dropdown", key: WEEK_START_KEY, options: translatedLabels(WEEK_START_LABELS) },
-					},
-					{
-						name: t("nextWeekday"),
-						desc: t("nextWeekdayDesc"),
-						control: { type: "dropdown", key: NEXT_WEEKDAY_KEY, options: translatedLabels(NEXT_WEEKDAY_LABELS) },
-					},
-					{
-						name: t("dayMonthOrder"),
-						desc: t("dayMonthOrderDesc"),
-						control: { type: "dropdown", key: DAY_MONTH_ORDER_KEY, options: translatedLabels(DAY_MONTH_ORDER_LABELS) },
-					},
-				],
-			},
-			{
-				type: "group",
-				items: [
+					localizationPage({
+						...this.sampleHost(),
+						languages: () => this.plugin.settings.languages,
+						dayMonthOrder: () => this.plugin.settings.dayMonthOrder,
+						changeLanguages: (languages) => void this.changeLanguages(languages),
+						chooseLanguage: (anchor, choices, pick) => {
+							const menu = new Menu();
+							for (const choice of choices) menu.addItem((item) => item.setTitle(choice.name).onClick(() => pick(choice.language)));
+							const box = anchor.getBoundingClientRect();
+							menu.showAtPosition({ x: box.left, y: box.bottom });
+						},
+					}),
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					sectionPage("mentionsSection", "mentionsSectionDesc", this.mentionsItems()),
 					sectionPage("insertionSection", "insertionSectionDesc", insertionGroups(() => this.plugin.settings.insertion, this.sampleHost())),

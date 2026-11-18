@@ -5,10 +5,10 @@ export const es: Translation = {
 	languageSpanish: "Español",
 
 	localizationSection: "Localización",
+	localizationSectionDesc: "Los idiomas de las expresiones de fecha, el primer día de la semana y cómo se leen las fechas escritas.",
 	parserLanguages: "Entender fechas en",
 	addLanguage: "Añadir idioma",
-	removeLanguage: "Quitar {language}",
-	parserLanguagesDesc: "Las expresiones de fecha se entienden en estos idiomas. Cuando una palabra significa cosas distintas, como \"mar\", gana el primer idioma.",
+	firstLanguageDesc: "El primero de la lista, así que gana cuando una palabra significa cosas distintas, como \"mar\".",
 	weekStart: "La semana empieza el",
 	weekStartDesc: "El primer día de la semana, para las notas semanales y expresiones como \"este miércoles\".",
 	weekStartLocale: "Según la configuración regional",
@@ -20,8 +20,8 @@ export const es: Translation = {
 	nextWeekdayNextOccurrence: "La próxima vez que llegue ese día",
 	dayMonthOrder: "Leer fechas escritas como",
 	dayMonthOrderDesc: "Qué número va primero en una fecha como 3/12.",
-	dayMonthOrderDayMonth: "D/M, como en 31/12",
-	dayMonthOrderMonthDay: "M/D, como en 12/31",
+	dayMonthOrderDayMonth: "Día/Mes",
+	dayMonthOrderMonthDay: "Mes/Día",
 
 	dateNotesSection: "Notas de fecha",
 	dateNotesSectionDesc: "Carpetas, formatos de nombre y plantillas de las notas diarias, semanales, mensuales, trimestrales y anuales.",

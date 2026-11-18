@@ -354,21 +354,23 @@ para una fecha suelta, o una lista vacía.
 
 ## Organización de los ajustes
 
-La página principal tiene un grupo **Localización**:
+En la página principal, haz clic en una fila para abrir su página: **Localización**, **Notas de
+fecha**, **Menciones**, **Inserción** y **Acciones**. Al final está **Restablecer todos los
+ajustes**, que devuelve cada opción a los valores predeterminados tras confirmarlo.
 
-- **Entender fechas en**: los idiomas como fichas, por orden de prioridad. **Añadir idioma** añade
-  uno al final; cada ficha tiene un botón para quitarla, salvo la última que queda. Cuando una
-  palabra significa cosas distintas, como "mar", la primera fila es la del primer idioma.
+La página **Localización** tiene:
+
+- **Entender fechas en**: una lista con una fila por idioma, por orden de prioridad. Cada fila
+  tiene un botón para quitarla, salvo cuando queda un solo idioma, y el botón **+** añade al final
+  un idioma que aún no está en la lista. Cuando una palabra significa cosas distintas, como "mar",
+  la primera fila es la del primer idioma. Para cambiar el orden, quita un idioma y vuelve a
+  añadirlo.
 - **La semana empieza el**: **Según la configuración regional** (por defecto), **Lunes** o
   **Domingo**.
 - **"Próximo" día de la semana significa**: **Ese día de la semana que viene** (por defecto) o **La
   próxima vez que llegue ese día**.
-- **Leer fechas escritas como**: **D/M, como en 31/12** (por defecto) o **M/D, como en 12/31**,
-  para `3/12`.
-
-Debajo, haz clic en una fila para abrir su página: **Notas de fecha**, **Menciones**, **Inserción**
-y **Acciones**. Al final está **Restablecer todos los ajustes**, que devuelve cada opción a los
-valores predeterminados tras confirmarlo.
+- **Leer fechas escritas como**: **Día/Mes** (por defecto) o **Mes/Día**, para `3/12`. Debajo,
+  «Hoy: 17/11» muestra el día de hoy en el orden elegido.
 
 No hay nada oculto: todo comportamiento que elige u oculta algo es uno de estos ajustes.
 

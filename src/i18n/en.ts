@@ -3,10 +3,10 @@ export const en = {
 	languageSpanish: "Spanish",
 
 	localizationSection: "Localization",
+	localizationSectionDesc: "The languages of date phrases, the first day of the week and how typed dates are read.",
 	parserLanguages: "Understand dates in",
 	addLanguage: "Add language",
-	removeLanguage: "Remove {language}",
-	parserLanguagesDesc: "Date phrases are understood in these languages. When a word means different things, such as \"mar\", the first language wins.",
+	firstLanguageDesc: "First in the list, so it wins when a word means different things, such as \"mar\".",
 	weekStart: "Week starts on",
 	weekStartDesc: "The first day of a week, for week notes and phrases such as \"this wed\".",
 	weekStartLocale: "Locale default",
@@ -18,8 +18,8 @@ export const en = {
 	nextWeekdayNextOccurrence: "The next time that day comes",
 	dayMonthOrder: "Read typed dates like",
 	dayMonthOrderDesc: "Which number comes first in a date such as 3/12.",
-	dayMonthOrderDayMonth: "D/M, as in 31/12",
-	dayMonthOrderMonthDay: "M/D, as in 12/31",
+	dayMonthOrderDayMonth: "Day/Month",
+	dayMonthOrderMonthDay: "Month/Day",
 
 	dateNotesSection: "Date notes",
 	dateNotesSectionDesc: "Folders, name formats and templates of daily, weekly, monthly, quarterly and yearly notes.",
