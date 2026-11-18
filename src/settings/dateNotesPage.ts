@@ -62,6 +62,14 @@ export function mismatchGroups(mismatches: SourceMismatch[], copyIn: (source: Da
 	}));
 }
 
+export function weekStartMismatchGroup(disagrees: () => boolean): SettingDefinitionGroup {
+	return {
+		type: "group",
+		visible: disagrees,
+		items: [{ name: t("weekStartFormatMismatch"), desc: t("weekStartFormatMismatchDesc") }],
+	};
+}
+
 export function templateRunnerGroup(): SettingDefinitionGroup {
 	return {
 		type: "group",

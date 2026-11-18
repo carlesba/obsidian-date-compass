@@ -8,6 +8,7 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
+import { isWordsPerDot } from "../calendar/settings.ts";
 import { ASK_KINDS, COMMAND_DESTINATIONS, COMMAND_FIELDS, WRITE_MODES } from "../commands/settings.ts";
 import type { CommandField, DateCommand } from "../commands/settings.ts";
 
@@ -18,6 +19,14 @@ export const NEXT_WEEKDAY_KEY = "nextWeekday";
 export const DAY_MONTH_ORDER_KEY = "dayMonthOrder";
 
 export const TEMPLATE_RUNNER_KEY = "dateNotes/templateRunner";
+
+export const CALENDAR_SHOW_WEEK_NUMBERS_KEY = "calendar/showWeekNumbers";
+
+export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate";
+
+export const CALENDAR_WORDS_PER_DOT_KEY = "calendar/wordsPerDot";
+
+const CALENDAR_KEY_PREFIX = "calendar/";
 
 const MENTION_KEY_PREFIX = "mentions/";
 
@@ -202,6 +211,9 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === TEMPLATE_RUNNER_KEY) return settings.dateNotes.templateRunner;
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
+	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return settings.calendar.showWeekNumbers;
+	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
+	if (key === CALENDAR_WORDS_PER_DOT_KEY) return settings.calendar.wordsPerDot;
 	const mentionControl = mentionControlOfKey(settings, key);
 	return mentionControl ? mentionControl.mention[mentionControl.field] : undefined;
 }
@@ -215,8 +227,21 @@ export function writeControl(settings: DateCompassSettings, key: string, value: 
 	if (key === TEMPLATE_RUNNER_KEY) return writeChoice(TEMPLATE_RUNNER_CHOICES, value, (choice) => (settings.dateNotes.templateRunner = choice));
 	const periodField = periodFieldOfKey(key);
 	if (periodField) return writePeriodField(settings, periodField.period, periodField.field, value);
+	if (key.startsWith(CALENDAR_KEY_PREFIX)) return writeCalendarControl(settings, key, value);
 	const mentionControl = mentionControlOfKey(settings, key);
 	return mentionControl ? writeMentionControl(mentionControl, value) : false;
+}
+
+function writeCalendarControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
+	const { calendar } = settings;
+	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return writeBoolean(value, (shown) => (calendar.showWeekNumbers = shown));
+	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return writeBoolean(value, (confirm) => (calendar.confirmBeforeCreate = confirm));
+	if (key === CALENDAR_WORDS_PER_DOT_KEY) {
+		if (!isWordsPerDot(value)) return false;
+		calendar.wordsPerDot = value;
+		return true;
+	}
+	return false;
 }
 
 export function triggerError(value: string): string | undefined {

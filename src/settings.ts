@@ -1,5 +1,7 @@
 import { mergeCommands } from "./commands/settings.ts";
 import type { DateCommand } from "./commands/settings.ts";
+import { mergeCalendar } from "./calendar/settings.ts";
+import type { CalendarSettings } from "./calendar/settings.ts";
 import { mergeDateNotes } from "./dateNotes/periods.ts";
 import type { DateNotesSettings } from "./dateNotes/periods.ts";
 import { mergeMentions } from "./mentions/settings.ts";
@@ -23,6 +25,7 @@ export interface DateCompassSettings {
 	nextWeekday: NextWeekdayMeaning;
 	dayMonthOrder: DayMonthOrder;
 	dateNotes: DateNotesSettings;
+	calendar: CalendarSettings;
 	mentions: Mention[];
 	commands: DateCommand[];
 }
@@ -47,6 +50,7 @@ export function mergeSettings(stored: unknown, interfaceLanguage = "en"): DateCo
 		nextWeekday: oneOf(NEXT_WEEKDAY_MEANINGS, data.nextWeekday, "nextWeek"),
 		dayMonthOrder: oneOf(DAY_MONTH_ORDERS, data.dayMonthOrder, "dayMonth"),
 		dateNotes: mergeDateNotes(data.dateNotes),
+		calendar: mergeCalendar(data.calendar),
 		mentions: mergeMentions(data.mentions),
 		commands: mergeCommands(data.commands),
 	};
