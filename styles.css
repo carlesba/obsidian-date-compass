@@ -322,3 +322,103 @@
 .date-compass-calendar .is-clickable:active .dot.hollow {
 	stroke: var(--text-on-accent);
 }
+
+.setting-item.date-compass-filter-setting {
+	flex-wrap: wrap;
+}
+
+.date-compass-filter.bases-query-container {
+	flex-basis: 100%;
+	align-self: stretch;
+	min-width: 0;
+	padding: var(--size-4-2) 0 0;
+}
+
+.date-compass-filter .filter-statement {
+	min-width: 0;
+}
+
+.date-compass-filter .filter-expression {
+	flex-wrap: wrap;
+	min-width: 0;
+}
+
+.date-compass-filter .filter-expression input:not([type="checkbox"]),
+.date-compass-filter .filter-expression select {
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	font-size: var(--font-ui-small);
+}
+
+.date-compass-filter .filter-expression .filter-property-select {
+	flex: 0 1 12em;
+	min-width: 6em;
+}
+
+.date-compass-filter .filter-expression .filter-operator {
+	border-inline: 1px solid var(--background-modifier-border);
+}
+
+.date-compass-filter .filter-rhs-container {
+	flex: 1 1 8em;
+	flex-wrap: wrap;
+	min-width: 0;
+	gap: var(--size-2-2);
+}
+
+.date-compass-filter .filter-rhs-container input:not([type="checkbox"]) {
+	flex: 1 1 6em;
+	min-width: 3em;
+	width: 100%;
+}
+
+.date-compass-filter .filter-rhs-container input[type="number"] {
+	flex: 0 1 5em;
+}
+
+.date-compass-filter .filter-group-actions {
+	gap: var(--size-4-2);
+}
+
+.date-compass-filter {
+	container: date-compass-filter / inline-size;
+}
+
+@container date-compass-filter (max-width: 28em) {
+	.date-compass-filter .filter-expression {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+
+	.date-compass-filter .filter-expression .filter-property-select {
+		grid-column: 1;
+		grid-row: 1;
+		width: 100%;
+	}
+
+	.date-compass-filter .filter-expression .filter-row-actions {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	.date-compass-filter .filter-expression .filter-operator {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		width: 100%;
+		max-width: none;
+		border-inline: none;
+		border-top: 1px solid var(--background-modifier-border);
+	}
+
+	.date-compass-filter .filter-expression .filter-rhs-container {
+		grid-column: 1 / -1;
+		grid-row: 3;
+		border-top: 1px solid var(--background-modifier-border);
+	}
+
+	.date-compass-filter .filter-expression .filter-rhs-container.is-empty {
+		display: none;
+	}
+}

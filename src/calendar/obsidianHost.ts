@@ -1,9 +1,12 @@
-import { getAllTags, moment } from "obsidian";
+import { moment } from "obsidian";
 import type { App, TFile } from "obsidian";
 import type { Moment } from "moment";
 import type { CivilDate } from "../parse/calendar.ts";
-import { backlinkIndex, dotsOfDecorators, matchesFilters } from "./decorators.ts";
-import type { BacklinkIndex, Dot, DotDecorator, DotPlace, LinkingNote } from "./decorators.ts";
+import { backlinkIndex, dotsOfDecorators, linkingNoteMatcher } from "./decorators.ts";
+import type { BacklinkIndex, Dot, DotDecorator, DotPlace } from "./decorators.ts";
+import { createFilterVault, propertyTypesOf } from "../filters/obsidianVault.ts";
+import type { VaultNote } from "../filters/vault.ts";
+import { FIXED_DATE_FORMAT } from "../filters/conditions.ts";
 import { countWords, openTaskCount, wordCountCache } from "./dots.ts";
 import { firstDayOf } from "./grid.ts";
 import type { CivilMonth } from "./grid.ts";
@@ -63,9 +66,19 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 		backlinks ??= backlinkIndex({ resolved: app.metadataCache.resolvedLinks, unresolved: app.metadataCache.unresolvedLinks });
 		return backlinks;
 	};
-	const linkingNoteOf = (path: string): LinkingNote => {
-		const cache = app.metadataCache.getCache(path);
-		return { path, tags: cache ? (getAllTags(cache) ?? []) : [], frontmatter: cache?.frontmatter };
+	const vault = createFilterVault(app);
+	const linkingNoteOf = (path: string): VaultNote[] => {
+		const file = app.vault.getFileByPath(path);
+		return file ? [{ path, basename: file.basename, ctime: file.stat.ctime }] : [];
+	};
+	let matchers = new Map<string, (note: VaultNote) => boolean>();
+	const matcherOf = (decorator: DotDecorator): ((note: VaultNote) => boolean) => {
+		const today = moment();
+		const { filter, legacyFilters, unreadableFilter } = decorator;
+		const compiledFor = JSON.stringify([today.format(FIXED_DATE_FORMAT), filter, legacyFilters, unreadableFilter !== undefined]);
+		const compiled = matchers.get(compiledFor) ?? linkingNoteMatcher(decorator, { vault, propertyTypes: propertyTypesOf(app), today });
+		matchers.set(compiledFor, compiled);
+		return compiled;
 	};
 	const wordsOf = (file: TFile): number => {
 		const counted = counts.get(file.path, file.stat.mtime);
@@ -75,7 +88,7 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 	return {
 		dotsOf: (path, place, hasNote, decorators) => {
 			const file = hasNote ? app.vault.getFileByPath(path) : null;
-			let linkingNotes: LinkingNote[] | undefined;
+			let linkingNotes: VaultNote[] | undefined;
 			return dotsOfDecorators(decorators, place, file !== null, (decorator) => {
 				switch (decorator.source) {
 					case "words":
@@ -83,13 +96,14 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 					case "openTasks":
 						return file ? openTaskCount(app.metadataCache.getFileCache(file)?.listItems) : 0;
 					case "links":
-						linkingNotes ??= backlinksNow().sourcesOf(path).map(linkingNoteOf);
-						return linkingNotes.filter((note) => matchesFilters(note, decorator.filters)).length;
+						linkingNotes ??= backlinksNow().sourcesOf(path).flatMap(linkingNoteOf);
+						return linkingNotes.filter(matcherOf(decorator)).length;
 				}
 			});
 		},
 		linksChanged: () => {
 			backlinks = undefined;
+			matchers = new Map();
 		},
 	};
 }

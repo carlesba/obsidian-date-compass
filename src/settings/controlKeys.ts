@@ -8,7 +8,7 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
-import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, validCells, validFilters, validTimes } from "../calendar/decorators.ts";
+import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, validCells, validTimes } from "../calendar/decorators.ts";
 import type { DecoratorField, DotDecorator } from "../calendar/decorators.ts";
 import { ASK_KINDS, COMMAND_DESTINATIONS, COMMAND_FIELDS, WRITE_MODES } from "../commands/settings.ts";
 import type { CommandField, DateCommand } from "../commands/settings.ts";
@@ -33,8 +33,6 @@ const DECORATOR_KEY_PREFIX = "calendar/dots/";
 
 const DECORATOR_FIELDS_SHOWN_IN_THE_LIST: readonly DecoratorField[] = ["name", "amountPerDot", "maxDots"];
 
-const DECORATOR_FIELDS_THAT_KEEP_THE_PAGE: readonly DecoratorField[] = ["filters"];
-
 export function decoratorKey(decoratorId: string, field: DecoratorField): string {
 	return `${DECORATOR_KEY_PREFIX}${decoratorId}/${field}`;
 }
@@ -54,8 +52,7 @@ export function decoratorKeyParts(key: string): DecoratorKeyParts | undefined {
 export function decoratorPageRefresh(key: string): PageRefresh | undefined {
 	const parts = decoratorKeyParts(key);
 	if (!parts) return undefined;
-	if (DECORATOR_FIELDS_SHOWN_IN_THE_LIST.includes(parts.field)) return "afterTyping";
-	return DECORATOR_FIELDS_THAT_KEEP_THE_PAGE.includes(parts.field) ? "none" : "now";
+	return DECORATOR_FIELDS_SHOWN_IN_THE_LIST.includes(parts.field) ? "afterTyping" : "now";
 }
 
 interface DecoratorControl {
@@ -108,12 +105,6 @@ function writeDecoratorControl({ decorators, index, field }: DecoratorControl, v
 			const times = validTimes(value);
 			if (!times) return false;
 			decorator.times = times;
-			return true;
-		}
-		case "filters": {
-			const filters = validFilters(value);
-			if (!filters) return false;
-			decorator.filters = filters;
 			return true;
 		}
 	}

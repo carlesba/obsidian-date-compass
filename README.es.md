@@ -402,9 +402,45 @@ días y semanas, en el orden de la lista. Una entrada tiene una fuente y un aspe
   resaltado.
 - **Mostrar en días sin nota**, solo para notas que enlazan: una nota de reunión que enlaza al
   martes que viene marca el martes antes de que exista su nota.
-- **Solo notas que cumplen todos los filtros**, solo para notas que enlazan: la ruta o el nombre
-  empieza por un texto, la nota tiene una etiqueta o una anidada bajo ella, o tiene una propiedad,
-  con un valor opcional escrito como `clave: valor`.
+- **Solo notas que cumplen**, solo para notas que enlazan: un filtro que decide qué notas que
+  enlazan cuentan. Si está vacío, cuenta toda nota que enlaza al día o a la semana.
+
+**Filtro de las notas que enlazan.** El filtro funciona como los filtros de notas de Note Compass
+y de Bases:
+
+- **Añadir filtro** pregunta qué campo mira la condición; después la fila recibe un operador y un
+  valor. La **X** al final de una fila la elimina.
+- Los campos son **archivo** (es una nota, enlaza a una nota, en la carpeta, tiene la etiqueta,
+  tiene la propiedad, y sus contrarios), **nombre de archivo**, **nombre de archivo base**,
+  **nombre de archivo completo**, **ruta del archivo**, **carpeta** y **extensión** como texto,
+  **creado** y **modificado** como fechas, **tamaño de archivo** como número, **enlaces de
+  archivo**, **enlaces de retorno del archivo**, **adjuntos del archivo** y **etiquetas del
+  archivo** como listas, y cualquier **propiedad** de la nota, comparada según el tipo que Obsidian
+  da a esa propiedad.
+- El texto admite es, empieza por, termina en, contiene, contiene alguno de, contiene todos, está
+  vacío y sus contrarios. Es, empieza por y termina en distinguen mayúsculas de minúsculas, y los
+  operadores de contiene no. Las listas admiten es exactamente, contiene, contiene alguno de,
+  contiene todos y está vacío, comparando elementos enteros. Los números admiten =, ≠, <, ≤, > y ≥.
+  Las fechas admiten en, antes de, en o antes de, después de y en o después de, frente a una fecha
+  fija o a un número de días antes o después de hoy. Las casillas admiten es y no es.
+- **tiene la etiqueta** también encuentra las etiquetas anidadas bajo la etiqueta, con o sin `#`,
+  sin distinguir mayúsculas. **en la carpeta** también encuentra las notas de las subcarpetas.
+- La lista al principio de un grupo elige cómo se combinan sus condiciones: **Todos los siguientes
+  son verdaderos**, **Cualquiera de los siguientes son verdaderos** o **Ninguno de los siguientes
+  son verdaderos**. **Añadir grupo de filtros** anida un grupo con su propia elección dentro de
+  otro, hasta tres niveles.
+- Una condición sin valor no encuentra nada, y su contraria encuentra todas las notas. Una
+  condición cuyo operador no encaja con el tipo de su propiedad no encuentra nada y muestra un
+  aviso.
+
+Los filtros guardados por la versión 0.5.0 siguen contando las mismas notas. Un filtro de etiqueta
+pasa a ser una condición **tiene la etiqueta**. Un prefijo de ruta o de nombre pasa a ser una
+condición **empieza por** cuando no tiene letras. Cualquier otro prefijo, y todos los filtros de
+propiedad, comparaban el texto sin distinguir mayúsculas, algo que las condiciones nuevas no
+hacen, así que se quedan en **Filtros de una versión anterior**: se siguen aplicando además del
+filtro, no se pueden editar, y los puntos muestran un aviso hasta que los elimines y los vuelvas a
+crear en el filtro. Un filtro guardado que no se puede leer también se conserva: los puntos no
+cuentan ninguna nota y muestran un aviso hasta que lo elimines.
 
 Por defecto la lista mantiene el aspecto anterior: un punto relleno cada 250 palabras, como mínimo
 uno y como máximo cinco, y después un punto hueco cuando la nota tiene una tarea sin terminar. Un

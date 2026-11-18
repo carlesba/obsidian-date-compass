@@ -1,5 +1,10 @@
 import { isRecord } from "../dateNotes/periods.ts";
 import { freeId, uniqueId } from "../settings/entryList.ts";
+import { emptyFilter, filterRules, noteMatcher, readFilter } from "../filters/filters.ts";
+import type { FilterContext, FilterGroup } from "../filters/filters.ts";
+import { matchesLegacyFilters, migrateLegacyFilters, readLegacyFilters } from "../filters/legacy.ts";
+import type { LegacyFilter } from "../filters/legacy.ts";
+import type { VaultNote } from "../filters/vault.ts";
 
 export const DOT_SOURCES = ["words", "openTasks", "links"] as const;
 export type DotSource = (typeof DOT_SOURCES)[number];
@@ -27,15 +32,7 @@ export interface DotPlace {
 export const DOT_POSITIONS = ["below", "above", "topLeft", "topRight"] as const;
 export type DotPosition = (typeof DOT_POSITIONS)[number];
 
-export const LINK_FILTER_KINDS = ["pathStartsWith", "nameStartsWith", "tag", "property"] as const;
-export type LinkFilterKind = (typeof LINK_FILTER_KINDS)[number];
-
-export interface LinkFilter {
-	kind: LinkFilterKind;
-	value: string;
-}
-
-export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "filters"] as const;
+export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times"] as const;
 export type DecoratorField = (typeof DECORATOR_FIELDS)[number];
 
 export interface DotDecorator {
@@ -51,8 +48,15 @@ export interface DotDecorator {
 	showWithoutNote: boolean;
 	cells: DotCell[];
 	times: DotTime[];
-	filters: LinkFilter[];
+	filter: FilterGroup;
+	legacyFilters: LegacyFilter[];
+	unreadableFilter?: unknown;
 }
+
+export type LinkingNoteFilters = Pick<DotDecorator, "filter" | "legacyFilters" | "unreadableFilter">;
+
+export const FILTER_PROBLEMS = ["unreadable", "legacy"] as const;
+export type FilterProblem = (typeof FILTER_PROBLEMS)[number];
 
 export interface Dot {
 	decoratorId: string;
@@ -62,19 +66,13 @@ export interface Dot {
 	position: DotPosition;
 }
 
-export interface LinkingNote {
-	path: string;
-	tags: readonly string[];
-	frontmatter: Readonly<Record<string, unknown>> | undefined;
-}
-
 export const MIN_DOTS = 1;
 export const MAX_DOTS = 5;
 export const DEFAULT_WORDS_PER_DOT = 250;
 
 const DECORATOR_ID_PREFIX = "dots";
 
-const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | "filters">> = {
+const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | keyof LinkingNoteFilters>> = {
 	words: { count: "perAmount", amountPerDot: DEFAULT_WORDS_PER_DOT, maxDots: MAX_DOTS, shape: "filled", color: "default", position: "below", showWithoutNote: false },
 	openTasks: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false },
 	links: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "accent", position: "below", showWithoutNote: true },
@@ -93,7 +91,7 @@ export function sourceCanShowWithoutNote(source: DotSource): boolean {
 }
 
 export function decoratorOf(source: DotSource, id: string): DotDecorator {
-	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], filters: [] };
+	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], filter: emptyFilter(), legacyFilters: [] };
 }
 
 export function newDecorator(decorators: readonly DotDecorator[], source: DotSource): DotDecorator {
@@ -134,8 +132,44 @@ function mergeDecorator(data: Record<string, unknown>, earlier: readonly DotDeco
 		showWithoutNote: typeof data.showWithoutNote === "boolean" ? data.showWithoutNote : defaults.showWithoutNote,
 		cells: validCells(data.cells) ?? [...DOT_CELLS],
 		times: validTimes(data.times) ?? [...DOT_TIMES],
-		filters: validFilters(data.filters) ?? [],
+		...(source === "links" ? mergeLinkingNoteFilters(data) : { filter: emptyFilter(), legacyFilters: [] }),
 	};
+}
+
+function mergeLinkingNoteFilters(data: Record<string, unknown>): LinkingNoteFilters {
+	const unreadable = (stored: unknown): LinkingNoteFilters => ({ filter: emptyFilter(), legacyFilters: [], unreadableFilter: stored });
+	if (data.unreadableFilter !== undefined) return unreadable(data.unreadableFilter);
+	const filter = data.filter === undefined ? emptyFilter() : readFilter(data.filter);
+	if (!filter) return unreadable(data.filter);
+	const legacy: LegacyFilter[] = [];
+	for (const stored of [data.filters, data.legacyFilters]) {
+		if (stored === undefined) continue;
+		const filters = readLegacyFilters(stored);
+		if (!filters) return unreadable(stored);
+		legacy.push(...filters);
+	}
+	if (filter.mode !== "all") return { filter, legacyFilters: legacy };
+	const { rules, kept } = migrateLegacyFilters(legacy);
+	return { filter: { ...filter, items: [...filter.items, ...rules] }, legacyFilters: kept };
+}
+
+export function filterProblem(decorator: DotDecorator): FilterProblem | undefined {
+	if (decorator.source !== "links") return undefined;
+	if (decorator.unreadableFilter !== undefined) return "unreadable";
+	return decorator.legacyFilters.length > 0 ? "legacy" : undefined;
+}
+
+export function filtersLinkingNotes(decorator: DotDecorator): boolean {
+	return decorator.source === "links" && (decorator.unreadableFilter !== undefined || decorator.legacyFilters.length > 0 || filterRules(decorator.filter).length > 0);
+}
+
+export function linkingNoteMatcher(filters: LinkingNoteFilters, context: FilterContext): (note: VaultNote) => boolean {
+	if (filters.unreadableFilter !== undefined) return () => false;
+	const matches = noteMatcher(filters.filter, context);
+	const { legacyFilters } = filters;
+	if (legacyFilters.length === 0) return matches;
+	const { vault } = context;
+	return (note) => matchesLegacyFilters({ path: note.path, tags: vault.tags(note.path), frontmatter: vault.frontmatter(note.path) }, legacyFilters) && matches(note);
 }
 
 export function validCells(value: unknown): DotCell[] | undefined {
@@ -170,18 +204,6 @@ export function showsEveryTime(times: readonly DotTime[]): boolean {
 	return timesToAdd(times).length === 0;
 }
 
-export function validFilters(value: unknown): LinkFilter[] | undefined {
-	if (!Array.isArray(value)) return undefined;
-	const filters: LinkFilter[] = [];
-	for (const entry of value) {
-		if (!isRecord(entry) || typeof entry.value !== "string") return undefined;
-		const kind = LINK_FILTER_KINDS.find((known) => known === entry.kind);
-		if (!kind) return undefined;
-		filters.push({ kind, value: entry.value });
-	}
-	return filters;
-}
-
 export function shows(decorator: DotDecorator, place: DotPlace, hasNote: boolean): boolean {
 	if (!decorator.cells.includes(place.cell) || !decorator.times.includes(place.time)) return false;
 	return hasNote || (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote);
@@ -199,62 +221,6 @@ export function dotsOfDecorators(decorators: readonly DotDecorator[], place: Dot
 		const dot: Dot = { decoratorId: decorator.id, source: decorator.source, shape: decorator.shape, color: decorator.color, position: decorator.position };
 		return Array.from({ length: dotCount(decorator, amountOf(decorator)) }, () => dot);
 	});
-}
-
-export function matchesFilters(note: LinkingNote, filters: readonly LinkFilter[]): boolean {
-	return filters.every((filter) => matchesFilter(note, filter));
-}
-
-function matchesFilter(note: LinkingNote, { kind, value }: LinkFilter): boolean {
-	const wanted = value.trim();
-	if (wanted === "") return true;
-	switch (kind) {
-		case "pathStartsWith":
-			return note.path.toLowerCase().startsWith(wanted.replace(/^\/+/, "").toLowerCase());
-		case "nameStartsWith":
-			return nameOf(note.path).toLowerCase().startsWith(wanted.toLowerCase());
-		case "tag":
-			return hasTag(note.tags, wanted);
-		case "property":
-			return hasProperty(note.frontmatter, wanted);
-	}
-}
-
-function nameOf(path: string): string {
-	return path.slice(path.lastIndexOf("/") + 1);
-}
-
-function hasTag(tags: readonly string[], wanted: string): boolean {
-	const tag = withoutHash(wanted).toLowerCase();
-	return tags.some((candidate) => {
-		const normalized = withoutHash(candidate).toLowerCase();
-		return normalized === tag || normalized.startsWith(`${tag}/`);
-	});
-}
-
-function withoutHash(tag: string): string {
-	return tag.trim().replace(/^#/, "");
-}
-
-function hasProperty(frontmatter: Readonly<Record<string, unknown>> | undefined, wanted: string): boolean {
-	if (!frontmatter) return false;
-	const separator = wanted.indexOf(":");
-	const key = (separator < 0 ? wanted : wanted.slice(0, separator)).trim().toLowerCase();
-	const entry = Object.entries(frontmatter).find(([candidate]) => candidate.toLowerCase() === key);
-	if (!entry) return false;
-	const [, stored] = entry;
-	if (separator < 0) return !isEmptyValue(stored);
-	const expected = wanted.slice(separator + 1).trim().toLowerCase();
-	return valuesOf(stored).some((candidate) => candidate.toLowerCase() === expected);
-}
-
-function isEmptyValue(value: unknown): boolean {
-	return value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
-}
-
-function valuesOf(value: unknown): string[] {
-	const values = Array.isArray(value) ? value : [value];
-	return values.filter((candidate) => ["string", "number", "boolean"].includes(typeof candidate)).map((candidate) => String(candidate).trim());
 }
 
 export interface LinkIndex {
@@ -289,6 +255,10 @@ export function backlinkIndex(index: LinkIndex): BacklinkIndex {
 			return [...sources];
 		},
 	};
+}
+
+function nameOf(path: string): string {
+	return path.slice(path.lastIndexOf("/") + 1);
 }
 
 function unresolvedKey(linkpath: string): string {

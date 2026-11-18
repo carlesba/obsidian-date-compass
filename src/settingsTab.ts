@@ -26,6 +26,9 @@ import type { Mention } from "./mentions/settings.ts";
 import { commandsPage } from "./settings/commandsPage.ts";
 import { localizationPage } from "./settings/localizationPage.ts";
 import { pagePath } from "./settings/pages.ts";
+import { renderFilter } from "./settings/filterEditor.ts";
+import { createFilterVault, propertySuggestions, propertyTypesOf } from "./filters/obsidianVault.ts";
+import type { PropertySuggestion } from "./filters/obsidianVault.ts";
 
 const MENTION_FIELDS_THAT_CHANGE_THE_PAGE: readonly MentionControlField[] = ["targets", "aliasShape"];
 
@@ -55,6 +58,8 @@ export class DateCompassSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
+		const propertyTypes = propertyTypesOf(this.app);
+		let suggestedProperties: PropertySuggestion[] | undefined;
 		return [
 			{
 				type: "group",
@@ -81,6 +86,15 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						write: (key, value) => void this.setControlValue(key, value),
 						notify: (message) => new Notice(message),
 						choose: (anchor, choices, pick) => this.choose(anchor, choices, pick),
+						propertyTypes: () => propertyTypes,
+						renderFilter: (settingEl, filter) =>
+							renderFilter(settingEl, filter, {
+								app: this.app,
+								propertyTypes,
+								propertySuggestions: () => (suggestedProperties ??= propertySuggestions(createFilterVault(this.app), propertyTypes)),
+								chooseField: (anchor, choices, pick) => this.choose(anchor, choices, pick),
+								change: (mutate) => void this.changeEntries(mutate),
+							}),
 					}),
 					mentionsPage({
 						...this.linkStyleHost(),

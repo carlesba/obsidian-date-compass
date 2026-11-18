@@ -12,7 +12,7 @@ import { weekStartMismatchGroup } from "../src/settings/dateNotesPage.ts";
 const DEFAULTS = { showWeekNumbers: true, confirmBeforeCreate: true, decorators: defaultDecorators(), themeCompatibility: false };
 
 function contextOf(shared: () => boolean = () => false): CalendarPageContext {
-	return { decorators: () => [], sharesRootIdWithOriginalCalendar: shared, openPage: () => undefined, change: async () => undefined, write: () => undefined, notify: () => undefined, choose: () => undefined };
+	return { decorators: () => [], sharesRootIdWithOriginalCalendar: shared, openPage: () => undefined, change: async () => undefined, write: () => undefined, notify: () => undefined, choose: () => undefined, propertyTypes: () => ({}), renderFilter: () => () => undefined };
 }
 
 function groupsOf(shared?: () => boolean): SettingDefinitionGroup[] {

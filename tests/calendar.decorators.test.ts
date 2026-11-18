@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { backlinkIndex, decoratorOf, defaultDecorators, dotCount, canRemoveTime, dotsOfDecorators, matchesFilters, mergeDecorators, shows, showsEveryTime, timesToAdd, validCells, validTimes } from "../src/calendar/decorators.ts";
-import type { DotDecorator, DotPlace, LinkingNote } from "../src/calendar/decorators.ts";
+import { backlinkIndex, decoratorOf, defaultDecorators, dotCount, canRemoveTime, dotsOfDecorators, mergeDecorators, shows, showsEveryTime, timesToAdd, validCells, validTimes } from "../src/calendar/decorators.ts";
+import type { DotDecorator, DotPlace } from "../src/calendar/decorators.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { decoratorKey, decoratorPageRefresh, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { decoratorName, decoratorSummary } from "../src/settings/calendarPage.ts";
@@ -88,34 +88,14 @@ test("stored dots merge field by field and drop what the plugin does not know", 
 	assert.deepEqual([merged.color, merged.position, merged.maxDots, merged.amountPerDot, merged.showWithoutNote], ["red", "topRight", 1, 1, true]);
 	assert.deepEqual(merged.cells, ["week"]);
 	assert.deepEqual(merged.times, ["current", "future"]);
-	assert.deepEqual(merged.filters, [{ kind: "tag", value: "#meeting" }]);
+	assert.deepEqual([merged.filter, merged.legacyFilters], [{ kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "has tag", value: "#meeting" } }] }, []]);
 	const [fallback] = mergeDecorators([{ source: "colors", shape: "square", filters: [{ kind: "regex", value: "x" }] }], undefined);
-	assert.deepEqual([fallback.source, fallback.shape, fallback.filters, fallback.cells], ["words", "filled", [], ["day", "week"]]);
+	assert.deepEqual([fallback.source, fallback.shape, fallback.filter.items, fallback.legacyFilters, fallback.cells], ["words", "filled", [], [], ["day", "week"]]);
 	assert.deepEqual(fallback.times, ["past", "current", "future"]);
 	const savedBeforeTimes = { id: "old", source: "openTasks", count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false, cells: ["day"], filters: [] };
 	assert.deepEqual(mergeDecorators([savedBeforeTimes], undefined)[0].times, ["past", "current", "future"]);
 	for (const invalid of [[], ["soon"], ["past", "past"], "future"]) assert.deepEqual(mergeDecorators([{ ...savedBeforeTimes, times: invalid }], undefined)[0].times, ["past", "current", "future"]);
 	assert.deepEqual(mergeDecorators(undefined, 0).map((decorator) => decorator.source), ["openTasks"]);
-});
-
-test("a linking note passes when it matches every filter", () => {
-	const note: LinkingNote = { path: "Meetings/Team sync.md", tags: ["#work/meeting"], frontmatter: { type: "meeting", people: ["Ana", "Luis"], empty: "" } };
-	assert.equal(matchesFilters(note, []), true);
-	assert.equal(matchesFilters(note, [{ kind: "pathStartsWith", value: "meetings/" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "pathStartsWith", value: "Projects/" }]), false);
-	assert.equal(matchesFilters(note, [{ kind: "nameStartsWith", value: "team" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "nameStartsWith", value: "Meetings" }]), false);
-	assert.equal(matchesFilters(note, [{ kind: "tag", value: "work" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "tag", value: "#work/meeting" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "tag", value: "wor" }]), false);
-	assert.equal(matchesFilters(note, [{ kind: "property", value: "type" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "property", value: "empty" }]), false);
-	assert.equal(matchesFilters(note, [{ kind: "property", value: "type: Meeting" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "property", value: "people: luis" }]), true);
-	assert.equal(matchesFilters(note, [{ kind: "property", value: "type: call" }]), false);
-	assert.equal(matchesFilters(note, [{ kind: "tag", value: "work" }, { kind: "property", value: "type: call" }]), false);
-	assert.equal(matchesFilters(note, [{ kind: "tag", value: " " }]), true);
-	assert.equal(matchesFilters({ path: "a.md", tags: [], frontmatter: undefined }, [{ kind: "property", value: "type" }]), false);
 });
 
 test("a date note is linked from resolved links, and from unresolved links by path or name before it exists", () => {
@@ -143,8 +123,6 @@ test("every dots field reads and writes through its control key and refuses bad 
 	assert.equal(writeControl(settings, key("times"), ["future", "current"]), true);
 	assert.equal(writeControl(settings, key("times"), []), false);
 	assert.equal(writeControl(settings, key("times"), ["soon"]), false);
-	assert.equal(writeControl(settings, key("filters"), [{ kind: "tag", value: "x" }]), true);
-	assert.equal(writeControl(settings, key("filters"), [{ kind: "tag" }]), false);
 	assert.equal(readControl(settings, key("color")), "green");
 	assert.deepEqual(readControl(settings, key("cells")), ["day"]);
 	assert.deepEqual(readControl(settings, key("times")), ["current", "future"]);
@@ -156,7 +134,6 @@ test("every dots field reads and writes through its control key and refuses bad 
 	assert.equal(decoratorPageRefresh(key("source")), "now");
 	assert.equal(decoratorPageRefresh(key("times")), "now");
 	assert.equal(decoratorPageRefresh(key("name")), "afterTyping");
-	assert.equal(decoratorPageRefresh(key("filters")), "none");
 	assert.equal(decoratorPageRefresh("commands/x/name"), undefined);
 });
 
@@ -165,7 +142,7 @@ test("a dots row is named after its source until it has a name, and its summary 
 	assert.equal(decoratorName({ ...links, name: " Meetings " }), "Meetings");
 	assert.equal(decoratorSummary(words()), "One dot per 250 words, up to 5 · filled, theme default, below the number");
 	assert.equal(
-		decoratorSummary({ ...links, name: "Meetings", color: "red", position: "topRight", cells: ["day"], filters: [{ kind: "tag", value: "meeting" }] }),
+		decoratorSummary({ ...links, name: "Meetings", color: "red", position: "topRight", cells: ["day"], filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "has tag", value: "meeting" } }] } }),
 		"Linking notes · one dot · filled, red, top-right corner · matching notes only · days only · also without a note",
 	);
 	assert.equal(decoratorSummary({ ...tasks, times: ["future"] }), "One dot · hollow, theme default, below the number · future only");

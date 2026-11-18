@@ -1,10 +1,14 @@
 import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionRender, SettingGroupItem } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { DOT_SOURCES, LINK_FILTER_KINDS, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, newDecorator, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
-import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, LinkFilterKind } from "../calendar/decorators.ts";
+import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, filterProblem, filtersLinkingNotes, newDecorator, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
+import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, FilterProblem } from "../calendar/decorators.ts";
+import { filterRules } from "../filters/filters.ts";
+import type { FilterGroup } from "../filters/filters.ts";
+import type { LegacyFilterKind } from "../filters/legacy.ts";
 import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_THEME_COMPATIBILITY_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
+import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
 import type { IdentifiedPage } from "./pages.ts";
 
@@ -21,6 +25,8 @@ export interface CalendarPageContext {
 	write: (key: string, value: unknown) => void;
 	notify: (message: string) => void;
 	choose: <Value extends string>(anchor: HTMLElement, choices: Choice<Value>[], pick: (value: Value) => void) => void;
+	propertyTypes: () => Record<string, string>;
+	renderFilter: (settingEl: HTMLElement, filter: FilterGroup) => () => void;
 }
 
 export const CALENDAR_PAGE_ID = "calendar";
@@ -90,25 +96,16 @@ const UNIT_LABELS: Record<DotSource, TranslationKey> = {
 	links: "dotUnitLinks",
 };
 
-const FILTER_LABELS: Record<LinkFilterKind, TranslationKey> = {
-	pathStartsWith: "linkFilterPathStartsWith",
-	nameStartsWith: "linkFilterNameStartsWith",
-	tag: "linkFilterTag",
-	property: "linkFilterProperty",
+const LEGACY_FILTER_LABELS: Record<LegacyFilterKind, TranslationKey> = {
+	pathStartsWith: "legacyLinkFilterPathStartsWith",
+	nameStartsWith: "legacyLinkFilterNameStartsWith",
+	tag: "legacyLinkFilterTag",
+	property: "legacyLinkFilterProperty",
 };
 
-const FILTER_DESCRIPTIONS: Record<LinkFilterKind, TranslationKey> = {
-	pathStartsWith: "linkFilterPathStartsWithDesc",
-	nameStartsWith: "linkFilterNameStartsWithDesc",
-	tag: "linkFilterTagDesc",
-	property: "linkFilterPropertyDesc",
-};
-
-const FILTER_PLACEHOLDERS: Record<LinkFilterKind, string> = {
-	pathStartsWith: "Meetings/",
-	nameStartsWith: "Meeting",
-	tag: "#meeting",
-	property: "type: meeting",
+const FILTER_PROBLEM_WARNINGS: Record<FilterProblem, TranslationKey> = {
+	unreadable: "unreadableLinkFilterWarning",
+	legacy: "legacyLinkFiltersWarning",
 };
 
 export function decoratorPageId(decorator: DotDecorator): string {
@@ -130,12 +127,18 @@ export function decoratorSummary(decorator: DotDecorator): string {
 		position: t(POSITION_LABELS[decorator.position]).toLowerCase(),
 	});
 	const parts = [...(decorator.name.trim() === "" ? [] : [t(SOURCE_LABELS[decorator.source])]), count, look];
-	if (decorator.source === "links" && decorator.filters.length > 0) parts.push(t("dotSummaryFilters"));
+	if (filtersLinkingNotes(decorator)) parts.push(t("dotSummaryFilters"));
 	if (decorator.cells.length === 1) parts.push(t(decorator.cells[0] === "day" ? "dotSummaryDaysOnly" : "dotSummaryWeeksOnly"));
 	if (!showsEveryTime(decorator.times)) parts.push(timesSummary(decorator.times));
 	if (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote) parts.push(t("dotSummaryWithoutNote"));
 	const summary = parts.join(" · ");
 	return summary.charAt(0).toLocaleUpperCase() + summary.slice(1);
+}
+
+export function decoratorWarning(decorator: DotDecorator, propertyTypes: Record<string, string>): string | undefined {
+	const problem = filterProblem(decorator);
+	if (problem) return t(FILTER_PROBLEM_WARNINGS[problem]);
+	return decorator.source === "links" && inapplicableFilter(decorator.filter, propertyTypes) ? t("inapplicableLinkFilterWarning") : undefined;
 }
 
 function timesSummary(times: readonly DotTime[]): string {
@@ -198,12 +201,13 @@ function decoratorsList(decorators: DotDecorator[], context: CalendarPageContext
 }
 
 function decoratorRow(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionRender {
+	const description = () => decoratorWarning(decorator, context.propertyTypes()) ?? decoratorSummary(decorator);
 	return {
 		name: decoratorName(decorator),
-		desc: decoratorSummary(decorator),
+		desc: description(),
 		render: (setting) => {
 			setting.setName(decoratorName(decorator));
-			setting.setDesc(decoratorSummary(decorator));
+			setting.setDesc(description());
 			setting.addExtraButton((button) =>
 				button
 					.setIcon("pencil")
@@ -239,6 +243,7 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 		get name() {
 			return decoratorName(decorator);
 		},
+		status: () => (decoratorWarning(decorator, context.propertyTypes()) ? "warning" : null),
 		items: [
 			{ type: "group", items: sourceItems },
 			cellsList(decorator, context),
@@ -252,7 +257,7 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 					{ name: t("dotsPosition"), desc: t("dotsPositionDesc"), control: { type: "dropdown", key: key("position"), options: translatedLabels(POSITION_LABELS) } },
 				],
 			},
-			...(decorator.source === "links" ? [filtersList(decorator, context)] : []),
+			...(decorator.source === "links" ? filterItems(decorator, context) : []),
 		],
 	};
 }
@@ -301,39 +306,38 @@ function timesList(decorator: DotDecorator, context: CalendarPageContext): Setti
 	};
 }
 
-function filtersList(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionList {
-	const filtersKey = decoratorKey(decorator.id, "filters");
-	const { filters } = decorator;
-	return {
+function filterItems(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionItem[] {
+	const { legacyFilters } = decorator;
+	const filter: SettingDefinitionRender =
+		decorator.unreadableFilter === undefined
+			? {
+					name: t("linkFilter"),
+					desc: filterRules(decorator.filter).length === 0 ? t("linkFilterEmptyDesc") : t("linkFilterDesc"),
+					searchable: false,
+					render: (setting) => context.renderFilter(setting.settingEl, decorator.filter),
+				}
+			: {
+					name: t("unreadableLinkFilter"),
+					desc: t("unreadableLinkFilterWarning"),
+					searchable: false,
+					render: (setting) => {
+						setting.addButton((button) =>
+							button
+								.setButtonText(t("removeUnreadableLinkFilter"))
+								.setDestructive()
+								.onClick(() => void context.change(() => delete decorator.unreadableFilter)),
+						);
+					},
+				};
+	if (legacyFilters.length === 0) return [{ type: "group", heading: t("linkFilters"), items: [filter] }];
+	const legacy: SettingDefinitionList = {
 		type: "list",
-		heading: t("linkFilters"),
-		emptyState: t("noLinkFiltersYet"),
-		items: filters.map((filter, position) => ({
-			name: t(FILTER_LABELS[filter.kind]),
-			desc: t(FILTER_DESCRIPTIONS[filter.kind]),
-			render: (setting) => {
-				setting.setName(t(FILTER_LABELS[filter.kind]));
-				setting.setDesc(t(FILTER_DESCRIPTIONS[filter.kind]));
-				setting.addText((text) =>
-					text
-						.setPlaceholder(FILTER_PLACEHOLDERS[filter.kind])
-						.setValue(filter.value)
-						.onChange((value) => {
-							const current = decorator.filters;
-							context.write(filtersKey, current.map((kept, index) => (index === position ? { ...kept, value } : kept)));
-						}),
-				);
-			},
-		})),
-		onDelete: (index) => void context.change(() => decorator.filters.splice(index, 1)),
-		addItem: {
-			name: t("addLinkFilter"),
-			action: (anchor: HTMLElement) =>
-				context.choose(
-					anchor,
-					LINK_FILTER_KINDS.map((kind) => ({ value: kind, name: t(FILTER_LABELS[kind]) })),
-					(kind) => void context.change(() => decorator.filters.push({ kind, value: "" })),
-				),
-		},
+		items: legacyFilters.map(({ kind, value }) => ({ name: t(LEGACY_FILTER_LABELS[kind], { value: value.trim() }) })),
+		onDelete: (index) => void context.change(() => legacyFilters.splice(index, 1)),
 	};
+	return [
+		{ type: "group", heading: t("linkFilters"), items: [filter] },
+		{ type: "group", heading: t("legacyLinkFilters"), items: [{ name: t("legacyLinkFiltersNotice"), desc: t("legacyLinkFiltersWarning"), searchable: false }] },
+		legacy,
+	];
 }

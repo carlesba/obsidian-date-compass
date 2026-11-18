@@ -382,9 +382,39 @@ weeks, in list order. An entry has a source and a look:
   On the highlighted day of the open note every dot takes the highlighted text color.
 - **Show on days without a note**, for linking notes only: a meeting note that links to next
   Tuesday marks Tuesday before its note exists.
-- **Only notes that match every filter**, for linking notes only: the path or the name starts with
-  a text, the note has a tag or one nested under it, or it has a property, optionally with a value
-  written as `key: value`.
+- **Only notes that match**, for linking notes only: a filter that decides which linking notes
+  count. Left empty, every note that links to the day or week counts.
+
+**Filter of linking notes.** The filter works like the note filters of Note Compass and of Bases:
+
+- **Add filter** asks which field the condition looks at, then the row takes an operator and a
+  value. The **X** at the end of a row removes it.
+- The fields are **file** (is a note, links to a note, in folder, has tag, has property, and their
+  opposites), **file name**, **file base name**, **file full name**, **file path**, **folder** and
+  **file extension** as text, **created time** and **modified time** as dates, **file size** as a
+  number, **file links**, **file backlinks**, **file embeds** and **file tags** as lists, and any
+  **property** of the note, compared by the type Obsidian gives that property.
+- Text takes is, starts with, ends with, contains, contains any of, contains all of, is empty and
+  their opposites. Is, starts with and ends with respect letter case, and the contains operators
+  ignore it. Lists take is exactly, contains, contains any of, contains all of and is empty,
+  comparing whole items. Numbers take =, ≠, <, ≤, > and ≥. Dates take on, before, on or before,
+  after and on or after, against a fixed date or a number of days before or after today.
+  Checkboxes take is and is not.
+- **has tag** also matches tags nested under the tag, with or without `#`, in any letter case.
+  **in folder** also matches notes in subfolders.
+- The list at the top of a group chooses how its conditions combine: **All the following are
+  true**, **Any of the following are true** or **None of the following are true**.
+  **Add filter group** nests a group with its own choice inside another, up to three levels.
+- A condition without a value matches nothing, and its opposite matches every note. A condition
+  whose operator does not fit the type of its property matches nothing and shows a warning.
+
+Filters saved by version 0.5.0 keep counting the same notes. A tag filter becomes a **has tag**
+condition. A path or name prefix becomes a **starts with** condition when it has no letters. Any
+other prefix, and every property filter, compared text in any letter case, which the new
+conditions do not, so they stay under **Filters from an earlier version**: they still apply on top
+of the filter, cannot be edited, and the dots show a warning until you remove them and build them
+again in the filter. A saved filter that cannot be read is kept too: the dots count no note and
+show a warning until you remove it.
 
 By default the list keeps the earlier look: one filled dot per 250 words, at least one and at most
 five, then one hollow dot when the note has an unfinished task. A **Words per dot** value saved by
