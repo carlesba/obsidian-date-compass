@@ -11,6 +11,7 @@ import { DateMentionSuggest } from "./mentions/suggest.ts";
 import { PaletteCommands } from "./commands/palette.ts";
 import { canRunPropertyCommand, runCursorCommand, runPropertyCommand } from "./commands/ask.ts";
 import { createObsidianDateCompassApi } from "./api/obsidianHost.ts";
+import { refreshCalendars, registerCalendar } from "./calendar/commands.ts";
 
 export default class DateCompassPlugin extends Plugin {
 	settings: DateCompassSettings = defaultSettings();
@@ -47,6 +48,7 @@ export default class DateCompassPlugin extends Plugin {
 		this.settings = mergeSettings(await this.loadData(), this.interfaceLanguage);
 		this.addSettingTab(new DateCompassSettingTab(this.app, this));
 		registerDateNoteCommands(this, () => this.settings.dateNotes);
+		registerCalendar(this, () => this.settings);
 		this.addCommand({
 			id: "open-date-note-by-phrase",
 			name: t("openDateNoteByPhrase"),
@@ -72,5 +74,6 @@ export default class DateCompassPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 		this.paletteCommands.sync(this.settings.commands);
+		refreshCalendars(this.app);
 	}
 }
