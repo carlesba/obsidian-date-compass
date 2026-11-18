@@ -235,7 +235,7 @@ function isoWeekYear(date: CivilDate): number {
 	return addDays(date, 3 - ((weekdayOf(date) + 6) % 7)).year;
 }
 
-function periodStart(unit: Unit, date: CivilDate, options: ParseOptions): CivilDate {
+export function periodStart(unit: Unit, date: CivilDate, options: ParseOptions): CivilDate {
 	switch (unit) {
 		case "day":
 			return date;
@@ -250,7 +250,7 @@ function periodStart(unit: Unit, date: CivilDate, options: ParseOptions): CivilD
 	}
 }
 
-function periodSpan(unit: Unit, date: CivilDate, options: ParseOptions): Span {
+export function periodSpan(unit: Unit, date: CivilDate, options: ParseOptions): Span {
 	const start = periodStart(unit, date, options);
 	const end = periodEnd(unit, start);
 	return { unit, start: isoDate(start), end: isoDate(end) };
