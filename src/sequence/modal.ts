@@ -106,7 +106,7 @@ export function openInsertDatesModal(settings: () => DateCompassSettings, target
 			: { title: t("insertDates"), initialText, links: linksOf, withAliasInitially: settings().insertion.aliasByDefault },
 		(preview, withAlias, phrase) => {
 			if (preview.kind !== "dates") return false;
-			if (propertyTarget) addDatesToProperty(app, editor, propertyTarget.file, propertyTarget.name, preview.notes, range);
+			if (propertyTarget) addDatesToProperty(app, editor, propertyTarget.file, propertyTarget.name, preview.notes, settings().insertion.linkPath, range);
 			else insertLinks(editor, linksOf(preview.notes, phrase, withAlias), settings().insertion.separator, range);
 			return true;
 		},

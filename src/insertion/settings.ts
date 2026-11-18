@@ -1,4 +1,6 @@
 import { isRecord } from "../dateNotes/periods.ts";
+import { LINK_PATHS } from "./linkPath.ts";
+import type { LinkPath } from "./linkPath.ts";
 
 export const DEFAULT_LINK_TEMPLATE = "{{link}}";
 
@@ -11,6 +13,7 @@ export const ALIAS_SHAPES = ["typed", "format"] as const;
 export type AliasShape = (typeof ALIAS_SHAPES)[number];
 
 export interface InsertionSettings {
+	linkPath: LinkPath;
 	linkTemplate: string;
 	separator: LinkSeparator;
 	aliasShape: AliasShape;
@@ -29,6 +32,7 @@ export function mergeInsertion(stored: unknown, storedMentions?: unknown, stored
 
 function readInsertion(data: Record<string, unknown>): InsertionSettings {
 	return {
+		linkPath: LINK_PATHS.find((linkPath) => linkPath === data.linkPath) ?? "shortestWhenSafe",
 		linkTemplate: typeof data.linkTemplate === "string" && isLinkTemplate(data.linkTemplate) ? data.linkTemplate : DEFAULT_LINK_TEMPLATE,
 		separator: LINK_SEPARATORS.find((separator) => separator === data.separator) ?? "commaSpace",
 		aliasShape: ALIAS_SHAPES.find((shape) => shape === data.aliasShape) ?? "format",

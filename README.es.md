@@ -216,12 +216,19 @@ nunca se escribe dentro del YAML.
 Ajustes → **Inserción** define cada enlace que escribe Date Compass, desde la lista de `@` y desde
 Insertar fechas:
 
-- **Forma de cada enlace**: el texto que se escribe por cada fecha; por defecto `{{link}}`.
-  Variables: `{{link}}` es el enlace que crea Obsidian, `{{name}}` el nombre de la nota, `{{path}}`
-  su ruta, `{{alias}}` el texto del enlace y `{{date:FORMATO}}` la fecha en formato moment.js.
-  Ejemplo: `Revisar {{link}}`. Una plantilla vacía se rechaza.
-- **Entre varios enlaces**: **Coma y espacio** (por defecto), **Espacio**, **Una viñeta por línea**
-  o **Un enlace por línea**. Una sola fecha es siempre un enlace sin más, nunca una viñeta.
+- Grupo **Enlaces**:
+  - **Ruta en cada enlace**: **La más corta si es seguro** (por defecto) escribe solo el nombre de
+    la nota, como `[[2020-12-31]]`, cuando ese nombre solo puede abrir esta nota y al pulsarlo una
+    nota que falta se crearía en su carpeta de notas de fecha; si no, sigue el formato de enlaces
+    nuevos de Obsidian, así que una nota que falta en otro sitio recibe `[[on/2020-12-31]]`.
+    **Siempre el nombre de la nota** y **Siempre la ruta completa** se saltan las comprobaciones.
+    La elección también vale para los enlaces escritos en propiedades.
+  - **Texto alrededor de cada enlace**: lo que se escribe por cada fecha; por defecto `{{link}}`.
+    `{{link}}` es el enlace, con su ruta y su texto, así que añade palabras a su alrededor, como
+    `Revisar {{link}}`. `{{name}}`, `{{path}}`, `{{alias}}` y `{{date:FORMATO}}` escriben texto sin
+    enlace. Una plantilla vacía se rechaza.
+  - **Entre varios enlaces**: **Coma y espacio** (por defecto), **Espacio**, **Una viñeta por línea**
+    o **Un enlace por línea**. Una sola fecha es siempre un enlace sin más, nunca una viñeta.
 - Grupo **Texto del enlace**:
   - **Mostrar un texto en lugar del nombre de la nota**: desactivado por defecto; ⌥↵ y el
     interruptor **Con texto en el enlace** lo invierten en una inserción.

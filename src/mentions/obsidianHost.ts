@@ -1,15 +1,21 @@
 import { TFile } from "obsidian";
-import type { App } from "obsidian";
+import type { App, Vault } from "obsidian";
 import { fileNameParts } from "../dateNotes/paths.ts";
 import type { NoteRef } from "./rows.ts";
 import type { EnabledPlugin } from "./conflicts.ts";
 import { PLUGINS_WITH_TRIGGERS } from "./conflicts.ts";
+import { linkTarget, linktextOf, markdownLink, parentFolder, wikilink } from "../insertion/linkPath.ts";
+import type { LinkPath, LinkTarget, NoteLinkFacts } from "../insertion/linkPath.ts";
 
 interface PluginRegistry {
 	plugins?: {
 		enabledPlugins?: Set<string>;
 		getPlugin?(id: string): { settings?: unknown; manifest?: { name?: string } } | null | undefined;
 	};
+}
+
+interface VaultConfig {
+	getConfig?(key: string): unknown;
 }
 
 export function enabledPluginsWithTriggers(app: App): EnabledPlugin[] {
@@ -24,13 +30,39 @@ export function enabledPluginsWithTriggers(app: App): EnabledPlugin[] {
 	}
 }
 
-export function markdownLinkTo(app: App, path: string, sourcePath: string, alias: string | undefined): string {
-	const target = app.vault.getFileByPath(path) ?? unsavedFile(path);
-	return app.fileManager.generateMarkdownLink(target, sourcePath, undefined, alias);
+export function markdownLinkTo(app: App, note: NoteRef, sourcePath: string, alias: string | undefined, linkPath: LinkPath): string {
+	const file = app.vault.getFileByPath(note.path);
+	const generated = app.fileManager.generateMarkdownLink(file ?? unsavedFile(note.path), sourcePath, undefined, alias);
+	const target = noteLinkTarget(app, note, file, sourcePath, linkPath);
+	if (target === "obsidian") return generated;
+	const linktext = linktextOf(target, note);
+	return generated.startsWith("[[") ? wikilink(linktext, alias) : markdownLink(linktext, alias ?? note.name);
 }
 
-export function propertyLinkTo(app: App, note: NoteRef, sourcePath: string): string {
-	return `[[${app.metadataCache.fileToLinktext(app.vault.getFileByPath(note.path) ?? unsavedFile(note.path), sourcePath, true)}]]`;
+export function propertyLinkTo(app: App, note: NoteRef, sourcePath: string, linkPath: LinkPath): string {
+	const file = app.vault.getFileByPath(note.path);
+	const target = noteLinkTarget(app, note, file, sourcePath, linkPath);
+	return `[[${target === "obsidian" ? app.metadataCache.fileToLinktext(file ?? unsavedFile(note.path), sourcePath, true) : linktextOf(target, note)}]]`;
+}
+
+function noteLinkTarget(app: App, note: NoteRef, file: TFile | null, sourcePath: string, linkPath: LinkPath): LinkTarget {
+	return linkTarget(linkPath, (): NoteLinkFacts => {
+		const newNoteParent = app.fileManager.getNewFileParent(sourcePath, `${note.name}.md`);
+		return {
+			exists: file !== null,
+			shortestLinks: linkFormat(app.vault) === "shortest",
+			nameTaken: app.metadataCache.getFirstLinkpathDest(note.name, sourcePath) !== null,
+			createdInItsFolder: (newNoteParent.isRoot() ? "" : newNoteParent.path) === parentFolder(note.path),
+		};
+	});
+}
+
+function linkFormat(vault: Vault): unknown {
+	try {
+		return (vault as Vault & VaultConfig).getConfig?.("newLinkFormat");
+	} catch {
+		return undefined;
+	}
 }
 
 function unsavedFile(path: string): TFile {

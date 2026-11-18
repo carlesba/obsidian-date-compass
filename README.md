@@ -207,12 +207,18 @@ dates to it."; the text is never written into the YAML.
 Settings → **Insertion** shapes every link Date Compass writes, from the `@` list and from Insert
 dates:
 
-- **Shape of each link**: the text written for each date; default `{{link}}`. Variables: `{{link}}`
-  is the link Obsidian builds, `{{name}}` the note name, `{{path}}` its path, `{{alias}}` the link
-  text and `{{date:FORMAT}}` the date in a moment.js format. Example: `Review {{link}}`. An empty
-  template is refused.
-- **Between several links**: **Comma and space** (default), **Space**, **One bullet per line** or
-  **One link per line**. A single date is always a bare link, never a bullet.
+- Group **Links**:
+  - **Path in each link**: **Shortest when safe** (default) writes only the note name, such as
+    `[[2020-12-31]]`, when that name can only open this note and clicking it would create a missing
+    note in its date notes folder; otherwise it follows Obsidian's new link format, so a missing
+    note elsewhere gets `[[on/2020-12-31]]`. **Always the note name** and **Always the full path**
+    skip the checks. The choice also applies to links written into properties.
+  - **Text around each link**: what is written for each date; default `{{link}}`. `{{link}}` is the
+    link, with its path and link text, so add words around it, such as `Review {{link}}`.
+    `{{name}}`, `{{path}}`, `{{alias}}` and `{{date:FORMAT}}` write plain text without a link. An
+    empty template is refused.
+  - **Between several links**: **Comma and space** (default), **Space**, **One bullet per line** or
+    **One link per line**. A single date is always a bare link, never a bullet.
 - Group **Link text**:
   - **Show a link text instead of the note name**: off by default; ⌥↵ and the **With link text**
     switch flip it for one insert.

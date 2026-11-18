@@ -5,6 +5,7 @@ import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } fro
 import type { Period, PeriodField } from "../dateNotes/periods.ts";
 import { withoutWhitespace } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, isLinkTemplate } from "../insertion/settings.ts";
+import { LINK_PATHS } from "../insertion/linkPath.ts";
 import { ACTION_FIELDS, ASK_KINDS, WRITE_MODES } from "../actions/settings.ts";
 import type { ActionField, DateAction } from "../actions/settings.ts";
 
@@ -19,6 +20,8 @@ export const TEMPLATE_RUNNER_KEY = "dateNotes/templateRunner";
 export const MENTIONS_ENABLED_KEY = "mentions/enabled";
 
 export const MENTIONS_TRIGGER_KEY = "mentions/trigger";
+
+export const INSERTION_LINK_PATH_KEY = "insertion/linkPath";
 
 export const INSERTION_LINK_TEMPLATE_KEY = "insertion/linkTemplate";
 
@@ -128,6 +131,7 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
 	if (key === MENTIONS_ENABLED_KEY) return settings.mentions.enabled;
 	if (key === MENTIONS_TRIGGER_KEY) return settings.mentions.trigger;
+	if (key === INSERTION_LINK_PATH_KEY) return settings.insertion.linkPath;
 	if (key === INSERTION_LINK_TEMPLATE_KEY) return settings.insertion.linkTemplate;
 	if (key === INSERTION_SEPARATOR_KEY) return settings.insertion.separator;
 	if (key === INSERTION_ALIAS_BY_DEFAULT_KEY) return settings.insertion.aliasByDefault;
@@ -171,6 +175,7 @@ function writeMentionControl(settings: DateCompassSettings, key: string, value: 
 
 function writeInsertionControl(settings: DateCompassSettings, key: string, value: unknown): boolean {
 	const { insertion } = settings;
+	if (key === INSERTION_LINK_PATH_KEY) return writeChoice(LINK_PATHS, value, (choice) => (insertion.linkPath = choice));
 	if (key === INSERTION_SEPARATOR_KEY) return writeChoice(LINK_SEPARATORS, value, (choice) => (insertion.separator = choice));
 	if (key === INSERTION_ALIAS_SHAPE_KEY) return writeChoice(ALIAS_SHAPES, value, (choice) => (insertion.aliasShape = choice));
 	if (key === INSERTION_ALIAS_BY_DEFAULT_KEY) return writeBoolean(value, (checked) => (insertion.aliasByDefault = checked));

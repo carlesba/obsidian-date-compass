@@ -105,9 +105,9 @@ export class DateMentionSuggest extends EditorSuggest<Suggestion> {
 	private insertLinks(row: DateRow, { editor, file, start, end }: EditorSuggestContext, flippingAlias: boolean): void {
 		const destination = destinationInActiveEditor(editor);
 		if (destination.kind === "frontmatterWithoutProperty") return noticeNoProperty();
-		if (destination.kind === "property") return addDatesToProperty(this.app, editor, file, destination.name, row.notes, { start, end });
+		if (destination.kind === "property") return addDatesToProperty(this.app, editor, file, destination.name, row.notes, this.settings().insertion.linkPath, { start, end });
 		const { insertion } = this.settings();
-		const links = insertionLinks(row.notes, row.text, insertion, usesAlias(insertion, flippingAlias), (note, alias) => markdownLinkTo(this.app, note.path, file.path, alias));
+		const links = insertionLinks(row.notes, row.text, insertion, usesAlias(insertion, flippingAlias), (note, alias) => markdownLinkTo(this.app, note, file.path, alias, insertion.linkPath));
 		insertLinks(editor, links, insertion.separator, { start, end });
 	}
 

@@ -71,7 +71,7 @@ test("action items go through the link template with the formatted item as the l
 });
 
 test("settings without any stored insertion load the defaults, and unknown keys are ignored", () => {
-	const defaults = { linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false };
+	const defaults = { linkPath: "shortestWhenSafe", linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false };
 	assert.deepEqual(mergeSettings(undefined).insertion, defaults);
 	assert.deepEqual(mergeSettings({ insertion: { linkTemplate: " ", separator: "tab", extra: 1 }, other: true }).insertion, defaults);
 	assert.deepEqual(mergeSettings({ mentions: { enabled: true, surprise: 1 }, insertSequence: "broken" }).insertion, defaults);
@@ -79,7 +79,7 @@ test("settings without any stored insertion load the defaults, and unknown keys 
 
 test("a v1 data.json migrates field by field", () => {
 	const migrated = (mentions: object, insertSequence?: object) => mergeSettings({ mentions, insertSequence }).insertion;
-	assert.deepEqual(migrated({ aliasMode: "none", aliasFormat: "D MMM", separator: "space" }), { linkTemplate: "{{link}}", separator: "space", aliasShape: "format", aliasFormat: "D MMM", aliasByDefault: false });
+	assert.deepEqual(migrated({ aliasMode: "none", aliasFormat: "D MMM", separator: "space" }), { linkPath: "shortestWhenSafe", linkTemplate: "{{link}}", separator: "space", aliasShape: "format", aliasFormat: "D MMM", aliasByDefault: false });
 	assert.equal(migrated({ aliasMode: "typed" }).aliasShape, "typed");
 	assert.equal(migrated({ aliasMode: "typed" }).aliasByDefault, true);
 	assert.equal(migrated({ aliasMode: "format" }).aliasByDefault, true);

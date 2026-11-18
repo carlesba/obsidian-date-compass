@@ -5,6 +5,7 @@ import {
 	INSERTION_ALIAS_BY_DEFAULT_KEY,
 	INSERTION_ALIAS_FORMAT_KEY,
 	INSERTION_ALIAS_SHAPE_KEY,
+	INSERTION_LINK_PATH_KEY,
 	INSERTION_LINK_TEMPLATE_KEY,
 	INSERTION_SEPARATOR_KEY,
 	MENTIONS_ENABLED_KEY,
@@ -50,7 +51,7 @@ test("a fresh install gets the defaults, with English as the only parser languag
 			trigger: "@",
 			periods: { day: true, week: true, month: true, quarter: true, year: true },
 		},
-		insertion: { linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false },
+		insertion: { linkPath: "shortestWhenSafe", linkTemplate: "{{link}}", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM", aliasByDefault: false },
 		actions: presetActions(),
 	});
 });
@@ -148,7 +149,9 @@ test("every Mentions control reads and writes its setting and refuses bad values
 test("every Insertion control reads and writes its setting and refuses bad values", () => {
 	const settings = defaultSettings();
 	const keys = insertionGroups(() => settings.insertion, sampleHost()).flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
-	assert.deepEqual(keys, [INSERTION_LINK_TEMPLATE_KEY, INSERTION_SEPARATOR_KEY, INSERTION_ALIAS_BY_DEFAULT_KEY, INSERTION_ALIAS_SHAPE_KEY]);
+	assert.deepEqual(keys, [INSERTION_LINK_PATH_KEY, INSERTION_LINK_TEMPLATE_KEY, INSERTION_SEPARATOR_KEY, INSERTION_ALIAS_BY_DEFAULT_KEY, INSERTION_ALIAS_SHAPE_KEY]);
+	assert.equal(writeControl(settings, INSERTION_LINK_PATH_KEY, "fullPath"), true);
+	assert.equal(writeControl(settings, INSERTION_LINK_PATH_KEY, "relative"), false);
 	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "- [ ] {{name}}"), true);
 	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, "  "), false);
 	assert.equal(writeControl(settings, INSERTION_LINK_TEMPLATE_KEY, 3), false);
@@ -160,7 +163,7 @@ test("every Insertion control reads and writes its setting and refuses bad value
 	assert.equal(writeControl(settings, INSERTION_ALIAS_SHAPE_KEY, "none"), false);
 	assert.equal(writeControl(settings, INSERTION_ALIAS_FORMAT_KEY, " D MMM "), true);
 	assert.equal(writeControl(settings, INSERTION_ALIAS_FORMAT_KEY, " "), false);
-	assert.deepEqual(settings.insertion, { linkTemplate: "- [ ] {{name}}", separator: "bulletLines", aliasShape: "typed", aliasFormat: "D MMM", aliasByDefault: true });
+	assert.deepEqual(settings.insertion, { linkPath: "fullPath", linkTemplate: "- [ ] {{name}}", separator: "bulletLines", aliasShape: "typed", aliasFormat: "D MMM", aliasByDefault: true });
 	assert.equal(readControl(settings, INSERTION_LINK_TEMPLATE_KEY), "- [ ] {{name}}");
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).insertion, settings.insertion);
 });

@@ -4,10 +4,12 @@ import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { DEFAULT_ALIAS_FORMAT, DEFAULT_LINK_TEMPLATE } from "../insertion/settings.ts";
 import type { AliasShape, InsertionSettings, LinkSeparator } from "../insertion/settings.ts";
+import type { LinkPath } from "../insertion/linkPath.ts";
 import {
 	INSERTION_ALIAS_BY_DEFAULT_KEY,
 	INSERTION_ALIAS_FORMAT_KEY,
 	INSERTION_ALIAS_SHAPE_KEY,
+	INSERTION_LINK_PATH_KEY,
 	INSERTION_LINK_TEMPLATE_KEY,
 	INSERTION_SEPARATOR_KEY,
 	formatError,
@@ -15,6 +17,12 @@ import {
 } from "./controlKeys.ts";
 import { addTodaySample, todayIn } from "./todaySample.ts";
 import type { SampleHost } from "./todaySample.ts";
+
+const LINK_PATH_LABELS: Record<LinkPath, TranslationKey> = {
+	shortestWhenSafe: "linkPathShortestWhenSafe",
+	name: "linkPathName",
+	fullPath: "linkPathFullPath",
+};
 
 const SEPARATOR_LABELS: Record<LinkSeparator, TranslationKey> = {
 	commaSpace: "separatorCommaSpace",
@@ -36,7 +44,13 @@ export function insertionGroups(insertion: () => InsertionSettings, host: Sample
 	return [
 		{
 			type: "group",
+			heading: t("linksSection"),
 			items: [
+				{
+					name: t("linkPath"),
+					desc: t("linkPathDesc"),
+					control: { type: "dropdown", key: INSERTION_LINK_PATH_KEY, options: translatedLabels(LINK_PATH_LABELS) },
+				},
 				{
 					name: t("linkTemplate"),
 					desc: t("linkTemplateDesc"),

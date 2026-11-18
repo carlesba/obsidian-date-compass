@@ -66,7 +66,7 @@ export async function runActionInActiveNote(app: App, settings: () => DateCompas
 				link: action.link,
 				kind,
 				mode: action.mode,
-				linkTo: (note) => propertyLinkTo(app, note, file.path),
+				linkTo: (note) => propertyLinkTo(app, note, file.path, settings().insertion.linkPath),
 			});
 		});
 	} catch (error) {
