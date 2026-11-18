@@ -13,8 +13,7 @@ The examples below assume today is **Tuesday 17 November 2026** and weeks start 
 - [Date phrases](#date-phrases)
 - [Date notes and templates](#date-notes-and-templates)
 - [Mentions while typing](#mentions-while-typing)
-- [Insert dates and the Insertion settings](#insert-dates-and-the-insertion-settings)
-- [Date actions](#date-actions)
+- [Commands](#commands)
 - [Public API for Templater](#public-api-for-templater)
 - [Settings layout](#settings-layout)
 - [Not yet](#not-yet)
@@ -83,7 +82,7 @@ year, it means 20 Dec next year. `every other wed` counts alternate weeks from t
 current week, as set by **Week starts on**, so a weekday that has already passed this week first
 appears the week after next. While you type a sequence, the `@` list shows rows with the dates each way of going on would give,
 such as `@every` or `@every wed for 5`, and equal results share one row. Once the sequence is complete, as in
-`@every week 3 times`, the list also offers it `starting tomorrow`, `starting next week` and `starting next month`. Insert dates says "Keep
+`@every week 3 times`, the list also offers it `starting tomorrow`, `starting next week` and `starting next month`. The dates box says "Keep
 typing, as in every wed for 5 times." under the box.
 
 A range or sequence longer than 366 dates is refused with a message, and the API returns nothing
@@ -158,98 +157,119 @@ Commands:
 
 ## Mentions while typing
 
-Type the trigger, `@` by default, and a phrase. A suggestion list shows what each reading
+Type a trigger, `@` by default, and a phrase. A suggestion list shows what each reading
 resolves to before you accept it, such as `Wed 11 Nov → [[2026-11-11]]`. The phrase may contain
 spaces: `@last wed`, `@today to fri`. A range shows one row, such as `Tue 17 → Fri 20 Nov · 4 dates`,
 that inserts all four links. Rows come in this order: the best reading, other readings (other
 languages, ambiguous words), then completions of what you are typing.
 
 Links follow your vault's link settings (wikilinks or Markdown, path style), and a link to a note
-that does not exist yet is still inserted; the note is not created. How each link is written is
-set under Insertion, below. Suggestions never open inside
-code blocks, inline code or frontmatter. Escape closes the list and it stays closed for that
-mention.
+that does not exist yet is still inserted; the note is not created. Suggestions never open inside
+code blocks or inline code. Escape closes the list and it stays closed for that mention.
 
-Settings → **Mentions**:
+Settings → **Mentions** is a list with one row per mention, named by its trigger and showing its
+target periods. A row has a pencil that opens the mention, a handle to drag it into a new order and
+a ✕ that deletes it; **+** adds a mention with a trigger that is not in use yet and opens its page.
+There is no switch to turn mentions off: delete every mention instead. A new install has one
+mention, `@`, that targets every period enabled in Date notes.
 
-- **Mentions**: turn suggestions on or off. On by default.
-- **Trigger**: the characters that start a mention.
-- **Periods that can be mentioned**: one toggle per period. A period turned off in Date notes is
-  never offered.
+Each mention has its own:
 
-Keys in the list: Enter inserts the selected row, ⇧↵ opens Insert dates with the typed phrase, and
-⌥↵ inserts with the link text flipped. The last row, **More…**, does what ⇧↵ does, so on a phone
-tap **More…**; in Insert dates, the **With link text** switch is the tap for ⌥↵.
+- **Trigger**: the characters that start the mention.
+- **Target periods**: the periods the mention links to, as a list. Each row has a ✕, and **+** opens a
+  picker of the periods that are not listed yet. A mention needs at least one target. A target that is
+  turned off in Date notes stays in the list, marked as such, and is left out until you turn it on
+  there.
+- **Text around each link**, **Path in each link**, **Between several links**, **What the link text
+  says** and **Date format of the link text**: how its links are written, as described under
+  [Link settings](#link-settings) below.
 
-The page warns when another enabled plugin (Natural Language Dates, its revived fork, Date List or
-Note Compass mentions) uses the same trigger, because both lists would compete.
+Several mentions can share a vault, each with its own look. For example, keep `@` for day notes only
+and add `#` for month notes only: `@fri` then links the day, and `#nov` links the month note
+2026-11. The `#` trigger clashes with Obsidian's tags, so the settings warn about it; see
+[Trigger clashes](#trigger-clashes).
 
-## Insert dates and the Insertion settings
+Keys in the list: Enter inserts the selected row as a plain link, and ⌥↵ inserts it with link
+text. ⇧↵ opens the dates box, described under [Commands](#commands), with the typed phrase and that
+mention's settings. The last row, **More…**, does what ⇧↵ does, so on a phone tap **More…**; in
+the dates box, the **With link text** switch is the tap for ⌥↵.
 
-The command **Insert dates** opens a box with one input. As you type it previews the result, such
-as `4 dates · Mon 23 Nov – Mon 14 Dec` for `every mon for 4 weeks`, or says why the text is not a
-date, or hints how to keep typing. The line of links is cut with an ellipsis when it is long. The
-**With link text** switch writes the links with a link text instead of the note name, and the
-**Done** button or Enter inserts the links at the cursor. On desktop, ⌥↵ instead of Enter flips
-**With link text** for that insert; on a phone use the switch.
+### Mentions in properties
 
-From the `@` list, **More…** or ⇧↵ opens this box with the phrase you typed; Done replaces the
-`@phrase` with the links.
+In source mode, a mention opens on a frontmatter line that belongs to a property, such as
+`dates: @next fri`. Choosing a row adds a plain link to that property, written with the mention's
+**Path in each link**. The link text is written only with ⌥↵, and **Text around each link** is not
+applied, so the property gets the link alone. A link already in the property is not added twice.
+Mentions stay closed on frontmatter lines that are not a property, and they cannot open in the
+fields of the Properties view.
 
-**Into a property.** With the cursor on a property line in source mode, or with a property field
-focused in the Properties view, Insert dates adds the links to that property instead of the body.
-The box then says "Dates will be added to the property {name}." and has no links line or switch.
-Values already in the property keep their order, a plain `2026-11-23` stays with the link added beside
-it, and a link already there is not added twice. Links written into a property are plain wikilinks. A
-cursor on a frontmatter line that is not a property shows "Put the cursor on a property to add
-dates to it."; the text is never written into the YAML.
+### Phrases outside the targets
 
-Settings → **Insertion** shapes every link Date Compass writes, from the `@` list and from Insert
-dates:
+A phrase can mean a period the mention does not target. Date Compass then moves it to a target
+instead of dropping it. When a target is coarser than the phrase, the finest such target that
+contains the date is used. When every target is finer, the coarsest target is used and today moves by
+the same amount as the phrase: a month ahead of the month that holds today is today plus one month,
+and a month that is shorter ends on its last day. The examples assume today is Friday 13 February
+2026 and **Target periods** lists only the periods shown:
 
-- Group **Links**:
-  - **Path in each link**: **Shortest when safe** (default) writes only the note name, such as
-    `[[2020-12-31]]`, when that name can only open this note and clicking it would create a missing
-    note in its date notes folder; otherwise it follows Obsidian's new link format, so a missing
-    note elsewhere gets `[[on/2020-12-31]]`. **Always the note name** and **Always the full path**
-    skip the checks. The choice also applies to links written into properties.
-  - **Text around each link**: what is written for each date; default `{{link}}`. `{{link}}` is the
-    link, with its path and link text, so add words around it, such as `Review {{link}}`.
-    `{{name}}`, `{{path}}`, `{{alias}}` and `{{date:FORMAT}}` write plain text without a link. An
-    empty template is refused.
-  - **Between several links**: **Comma and space** (default), **Space**, **One bullet per line** or
-    **One link per line**. A single date is always a bare link, never a bullet.
-- Group **Link text**:
-  - **Show a link text instead of the note name**: off by default; ⌥↵ and the **With link text**
-    switch flip it for one insert.
-  - **What the link text says**: **The typed phrase** or **A date format** (default). With the typed
-    phrase, several dates get no link text.
-  - **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`. Below
-    it, "Today: Tue 17 Nov" shows today in the format as you type.
+| Target periods | You type | You get |
+| --- | --- | --- |
+| day | `next month` | the day note for 13 Mar |
+| day | `next week` | the day note for 20 Feb |
+| month | `tomorrow` | the month note 2026-02 |
+| day | `next month`, with today 31 Jan | the day note for 28 Feb |
+| day and year | `next month` | the year note 2026 |
 
-## Date actions
+Sequences are moved one date at a time, and dates that end up on the same note are inserted once.
+Open a date note by phrase and the API do not use targets, so they read phrases as written.
 
-An action is a command that asks one question and writes the answer to one property of the current
-note, adding to its value or replacing it. Every action appears in the command palette as "Date Compass: *name*". An action
-with no property is not offered.
+### Trigger clashes
 
-### The two presets
+Two things can open at the same characters, and only one wins. The mention page and its row in the
+list warn when a trigger:
 
-Both are added on first install and can be removed. Each is **Dates** with **Each date as link** on, and
-adds to what the property has.
+- is the same as the trigger of another mention;
+- is the start of another mention's trigger, or the other way round, so the longer one wins where both
+  match;
+- is the same as one of Obsidian's own suggesters or the start of one: `[[` for links, `#` for tags,
+  `[^` for footnotes, `==` for highlight colors, and `/` for slash commands when the Slash commands
+  core plugin is on;
+- is also used by another enabled plugin that Date Compass knows: Natural Language Dates, its revived
+  fork, Date List or Note Compass mentions.
 
+When you save a clashing trigger a notice repeats the warning. The trigger is still saved. Date
+Compass cannot detect other plugins, or Markdown characters such as `$`, `%%`, `>`, `-`, `*`, a
+backtick or brackets that pair up, so check those yourself.
+
+## Commands
+
+A command asks for a date or dates and writes them to the current note. Every command appears in the
+command palette as "Date Compass: *name*". Settings → **Commands** lists them. Each row has a pencil
+that edits it, a handle to drag it into a new order and a ✕ that deletes it, and **+** adds a blank
+command and opens its page. A command that writes to a property is not offered until it has a
+property.
+
+### The three presets
+
+They are added on first install and can be removed. Each asks for **Dates** and writes links.
+
+- **Insert dates** writes at the cursor. It is the standalone Insert dates command, now a preset.
 - **Add dates** adds to the property `dates`.
 - **Set reminders** adds to the property `reminders`.
 
-### Building an action
+### Building a command
 
-Settings → **Actions** lists every action. Each row has a pencil that edits it. Drag a row to reorder it, delete it from the list, and **Add action**
-creates one. An action page has:
+A command page has:
 
 - **Name**: the name of the command in the palette.
-- **Property to set**: the property of the current note that receives the answer.
-- **When the property already has a value**: **Add**, the default, keeps what is there. **Replace**
-  overwrites it.
+- **Where it writes**: **A property** or **At the cursor**.
+  - **A property** always writes to one property of the current note, set by **Property to set**
+    below. **At the cursor** needs an editor open. With the cursor in the note body it inserts there;
+    with the cursor on a property line in source mode, or a property field focused in the Properties
+    view, it adds to that property and skips the template. On a frontmatter line that is not a
+    property it shows "Put the cursor on a property to add dates to it." and writes nothing.
+- **Property to set** and **When the property already has a value**: only for **A property**.
+  **Add**, the default, keeps what is there. **Replace** overwrites it.
   - Add on a list property, or on a property that already holds a list, keeps the items and writes
     the new dates after them, unsorted. A date already in the list is skipped; two entries are the
     same when their text is equal after trimming, so `[[2026-11-18]]` and `2026-11-18` are
@@ -258,29 +278,56 @@ creates one. An action page has:
     ", ", and skips a date the text already has.
   - Add on an empty or missing property writes the same as Replace.
   - A date or date and time property holds one value, so it is always replaced.
-- **What it asks for**: **One date** takes a phrase for one note of any enabled period, and shows
-  its question, "Which date for {name}?", as the box's placeholder, and the sentence "The date will be added to the property {name}." or
-  "The date will replace the value of the property {name}." as text above the results, which stays while you type. **Dates**
-  opens a box like Insert dates, "Which dates for {name}?", for any range, sequence or list, says "Dates will be added to the property {name}." or "Dates will replace the value of
-  the property {name}." and writes every date. The sentence says replace for a date or date and time property.
-- **Each date as link**: on writes each date as a link. Off writes plain text in the format of the
-  property type: `YYYY-MM-DD` for a date property, `YYYY-MM-DDTHH:mm` for date and time, and the
-  note name for any other type.
+- **What it asks for**: **One date** takes a phrase for one note and shows its question, "Which date
+  for {name}?", as the box's placeholder; for a property it also shows "The date will be added to the
+  property {name}." or "The date will replace the value of the property {name}." above the results,
+  which stays while you type. **Dates** opens the dates box, "Which dates for {name}?", for any
+  range, sequence or list, and writes every date. The dates box previews the result as you type, such as
+  `4 dates · Mon 23 Nov – Mon 14 Dec` for `every mon for 4 weeks`, or says why the text is not a date,
+  or hints how to keep typing. Done or Enter writes the dates, and cancelling changes nothing. For a property the box says "Dates will be
+  added to the property {name}." or "Dates will replace the value of the property {name}."; the
+  sentence says replace for a date or date and time property. Shift+Enter in the `@` list opens this
+  same box.
+- **Each date as link**: on writes each date as a link. Off writes plain text. In a property that is
+  the format of the property type: `YYYY-MM-DD` for a date property, `YYYY-MM-DDTHH:mm` for date and
+  time, and the note name for any other type. In the note body it is the note name, or the link text
+  when you ask for it.
+- **Target periods**: the periods the command accepts, edited as in a mention. Phrases outside them
+  move to a target, as described under [Phrases outside the targets](#phrases-outside-the-targets).
+- **Text around each link** and **Between several links**: only for **At the cursor**, and they apply
+  in the note body only; a property gets the link alone. A single date is always a bare link, never
+  a bullet.
+- **Path in each link**, **What the link text says** and **Date format of the link text**: see
+  [Link settings](#link-settings).
 
 With Replace or an empty property, phrases that resolve to one date write one value, not a list, unless the property is a list or
-already holds a list, which stays a list. A link is always a wikilink, because Obsidian properties
-do not treat Markdown links as links. Cancelling either box changes nothing.
+already holds a list, which stays a list. A link is always a wikilink in a property, because Obsidian properties
+do not treat Markdown links as links.
 
-### Coming from v1
+The link text is written when you press ⌥↵ in the picker or the `@` list, or turn on the **With link
+text** switch in the dates box. On a phone use the switch. Plain text, with **Each date as link**
+off, never gets one in a property.
 
-On first load v1 actions are converted. An action keeps its first property write: that property,
-and links when it wrote links. Its question type gives **One date** (date or periodic note) or
-**Dates** (anything else). Everything else is dropped: later writes, body writes, yes or no
-questions and their conditions, first and last, and start and end. A write that replaced becomes **Replace**; one that
-appended or sorted becomes **Add**, without sorting. An action with no property write is removed.
+### Link settings
 
-An action saved before this setting existed loads as **Add**. The preset that was named "Set dates"
-is renamed **Add dates** on that load, unless you had renamed it.
+Mentions and commands share these settings:
+
+- **Path in each link**: **Shortest when safe** (default) writes only the note name, such as
+  `[[2020-12-31]]`, when that name can only open this note and clicking it would create a missing
+  note in its date notes folder; otherwise it follows Obsidian's new link format, so a missing
+  note elsewhere gets `[[on/2020-12-31]]`. **Always the note name** and **Always the full path**
+  skip the checks. The choice also applies to links written into properties.
+- **Text around each link**: what is written for each date in the note body; default `{{link}}`.
+  `{{link}}` is the link, with its path and link text, so add words around it, such as `Review
+  {{link}}`. `{{name}}`, `{{path}}`, `{{alias}}` and `{{date:FORMAT}}` write plain text without a
+  link. An empty template is refused.
+- **Between several links**: **Comma and space** (default), **Space**, **One bullet per line** or
+  **One link per line**, for a range or sequence inserted in the note body.
+- **What the link text says**: **The typed phrase** or **A date format** (default). With the typed
+  phrase, several dates get no link text. It is written only when you ask for it with ⌥↵ or the **With link text**
+  switch; there is no setting that turns it on by default.
+- **Date format of the link text**: shown only with **A date format**; default `ddd D MMM`. Below
+  it, "Today: Tue 17 Nov" shows today in the format as you type.
 
 ## Public API for Templater
 
@@ -359,8 +406,8 @@ single date, or an empty list.
 
 ## Settings layout
 
-On the main page, click a row to open its page: **Localization**, **Date notes**, **Mentions**,
-**Insertion** and **Actions**. Last is **Reset all settings**, which puts every option back to the
+On the main page, click a row to open its page: **Localization**, **Date notes**, **Mentions** and
+**Commands**. Last is **Reset all settings**, which puts every option back to the
 defaults after you confirm.
 
 The **Localization** page has:

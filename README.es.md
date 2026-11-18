@@ -15,8 +15,7 @@ Los nombres de los ajustes son los que muestra Obsidian con la interfaz en espa�
 - [Expresiones de fecha](#expresiones-de-fecha)
 - [Notas de fecha y plantillas](#notas-de-fecha-y-plantillas)
 - [Menciones mientras escribes](#menciones-mientras-escribes)
-- [Insertar fechas y los ajustes de Inserción](#insertar-fechas-y-los-ajustes-de-inserción)
-- [Acciones de fecha](#acciones-de-fecha)
+- [Comandos](#comandos)
 - [API pública para Templater](#api-pública-para-templater)
 - [Organización de los ajustes](#organización-de-los-ajustes)
 - [Todavía no](#todavía-no)
@@ -85,8 +84,8 @@ entiende el 20 dic del año que viene. `every other wed` cuenta las semanas alte
 de la semana actual, según **La semana empieza el**, así que un día que ya pasó esta semana
 aparece por primera vez dentro de dos semanas. Mientras escribes una secuencia, la lista de `@` muestra filas con las fechas que daría cada forma de
 seguir, como con `@every` o `@every wed for 5`, y los resultados iguales comparten fila. Cuando la secuencia está completa, como en
-`@every week 3 times`, la lista la ofrece también con `starting tomorrow`, `starting next week` y `starting next month`. Insertar
-fechas dice «Sigue escribiendo, como en every wed for 5 times.» bajo el cuadro.
+`@every week 3 times`, la lista la ofrece también con `starting tomorrow`, `starting next week` y `starting next month`. El cuadro de fechas
+dice «Sigue escribiendo, como en every wed for 5 times.» bajo el cuadro.
 
 Un rango o una secuencia de más de 366 fechas se rechaza con un mensaje, y la API no devuelve nada
 para él.
@@ -162,7 +161,7 @@ Comandos:
 
 ## Menciones mientras escribes
 
-Escribe el disparador, `@` por defecto, y una frase. Una lista de sugerencias muestra a qué apunta
+Escribe un disparador, `@` por defecto, y una frase. Una lista de sugerencias muestra a qué apunta
 cada lectura antes de aceptarla, como `Wed 11 Nov → [[2026-11-11]]` (las filas de ejemplo de esta
 sección se muestran como en la interfaz en inglés; en español las fechas y el recuento van en
 español). La frase puede tener espacios:
@@ -171,96 +170,117 @@ Nov · 4 dates`, que inserta los cuatro enlaces. Las filas van en este orden: la
 otras lecturas (otros idiomas, palabras ambiguas) y luego las formas de completar lo que escribes.
 
 Los enlaces siguen los ajustes de enlaces de tu bóveda (wikilinks o Markdown, estilo de ruta), y un
-enlace a una nota que aún no existe se inserta igualmente; la nota no se crea. Cómo se escribe cada
-enlace se define en Inserción, más abajo. Las sugerencias nunca
-se abren dentro de bloques de código, código en línea ni frontmatter. Escape cierra la lista y
-queda cerrada para esa mención.
+enlace a una nota que aún no existe se inserta igualmente; la nota no se crea. Las sugerencias
+nunca se abren dentro de bloques de código ni código en línea. Escape cierra la lista y queda
+cerrada para esa mención.
 
-Ajustes → **Menciones**:
+Ajustes → **Menciones** es una lista con una fila por mención, con el disparador como nombre y sus
+periodos de destino debajo. Cada fila tiene un lápiz que abre la mención, un asa para arrastrarla a
+otro lugar y una ✕ que la borra; **+** añade una mención con un disparador que aún no se usa y abre su
+página. No hay interruptor para desactivar las menciones: borra todas. Una instalación nueva tiene
+una mención, `@`, que apunta a todos los periodos activados en Notas de fecha.
 
-- **Menciones**: activa o desactiva las sugerencias. Activadas por defecto.
-- **Disparador**: los caracteres que inician una mención.
-- **Periodos que se pueden mencionar**: un interruptor por periodo. Un periodo desactivado en Notas
-  de fecha nunca se ofrece.
+Cada mención tiene lo suyo:
 
-Teclas de la lista: Intro inserta la fila seleccionada, ⇧↵ abre Insertar fechas con la frase
-escrita y ⌥↵ inserta con el texto del enlace invertido. La última fila, **Más…**, hace lo mismo que
-⇧↵, así que en el móvil toca **Más…**; en Insertar fechas, el interruptor **Con texto en el
-enlace** es el equivalente táctil de ⌥↵.
+- **Disparador**: los caracteres que inician la mención.
+- **Periodos de destino**: los periodos a los que enlaza la mención, como lista. Cada fila tiene una
+  ✕, y **+** abre un selector con los periodos que aún no están en la lista. Una mención necesita al
+  menos un destino. Un destino desactivado en Notas de fecha sigue en la lista, marcado como tal, y
+  se omite hasta que lo actives allí.
+- **Texto alrededor de cada enlace**, **Ruta en cada enlace**, **Entre varios enlaces**, **Qué dice
+  el texto del enlace** y **Formato de fecha del texto del enlace**: cómo se escriben sus enlaces,
+  como se describe en [Ajustes de enlace](#ajustes-de-enlace), más abajo.
 
-La página avisa cuando otro plugin activado (Natural Language Dates, su versión revivida, Date List
-o las menciones de Note Compass) usa el mismo disparador, porque las dos listas competirían.
+Varias menciones pueden convivir en una bóveda, cada una a su manera. Por ejemplo, deja `@` solo
+para notas diarias y añade `#` solo para notas mensuales: `@fri` enlaza el día y `#nov` enlaza la
+nota mensual 2026-11. El disparador `#` choca con las etiquetas de Obsidian, así que los ajustes
+avisan; consulta [Choques de disparadores](#choques-de-disparadores).
 
-## Insertar fechas y los ajustes de Inserción
+Teclas de la lista: Intro inserta la fila seleccionada como enlace sin más, y ⌥↵ la inserta con
+texto en el enlace. ⇧↵ abre el cuadro de fechas, descrito en [Comandos](#comandos), con la frase
+escrita y los ajustes de esa mención. La última fila, **Más…**, hace lo mismo que ⇧↵, así que en el
+móvil toca **Más…**; en el cuadro de fechas, el interruptor **Con texto en el enlace** es el
+equivalente táctil de ⌥↵.
 
-El comando **Insertar fechas** abre un cuadro con un solo campo. Mientras escribes muestra el
-resultado, con el número de fechas y la primera y la última (`4 dates · Mon 23 Nov – Mon 14 Dec`
-con la interfaz en inglés para `every mon for 4 weeks`), o dice por qué el texto no es una fecha, o
-sugiere cómo seguir escribiendo. La línea de enlaces se corta con puntos suspensivos si es larga. El
-interruptor **Con texto en el enlace** escribe los enlaces con un texto en lugar del nombre de la
-nota, y el botón **Hecho** o Intro inserta los enlaces en el cursor. En escritorio, ⌥↵ en lugar de
-Intro invierte **Con texto en el enlace** para esa inserción; en el móvil usa el interruptor.
+### Menciones en propiedades
 
-Desde la lista de `@`, **Más…** o ⇧↵ abre este cuadro con la frase que escribiste; al pulsar Hecho,
-los enlaces sustituyen a `@frase`.
+En modo código, una mención se abre en una línea del frontmatter que pertenece a una propiedad,
+como `dates: @next fri`. Al elegir una fila se añade un enlace sin más a esa propiedad, escrito con
+la **Ruta en cada enlace** de la mención. El texto del enlace solo se escribe con ⌥↵, y **Texto
+alrededor de cada enlace** no se aplica, así que la propiedad recibe solo el enlace. Un enlace que
+ya está en la propiedad no se añade dos veces. Las menciones siguen cerradas en las líneas del
+frontmatter que no son una propiedad, y no se pueden abrir en los campos de la vista de Propiedades.
 
-**En una propiedad.** Con el cursor en una línea de propiedad en modo código, o con un campo de
-propiedad enfocado en la vista de Propiedades, Insertar fechas añade los enlaces a esa propiedad en
-lugar de al cuerpo. El cuadro dice entonces "Las fechas se añadirán a la propiedad «{name}»." y no
-tiene línea de enlaces ni interruptor. Los valores que ya tiene la propiedad conservan su orden, un
-`2026-11-23` suelto se queda con el enlace añadido a su lado y un enlace que ya está no se añade dos
-veces. Los enlaces escritos en una propiedad son wikilinks sin más. Con el cursor en una línea del frontmatter que
-no es una propiedad aparece «Coloca el cursor en una propiedad para añadirle fechas.»; el texto
-nunca se escribe dentro del YAML.
+### Frases fuera de los destinos
 
-Ajustes → **Inserción** define cada enlace que escribe Date Compass, desde la lista de `@` y desde
-Insertar fechas:
+Una frase puede significar un periodo al que la mención no apunta. Date Compass la traslada
+entonces a un destino en lugar de descartarla. Si hay un destino más grueso que la frase, se usa el
+más fino de ellos que contiene la fecha. Si todos los destinos son más finos, se usa el más grueso
+y hoy se desplaza lo mismo que la frase: el mes siguiente al mes que contiene hoy es hoy más un
+mes, y un mes más corto acaba en su último día. Los ejemplos suponen que hoy es viernes 13 de
+febrero de 2026 y que **Periodos de destino** lista solo los periodos indicados:
 
-- Grupo **Enlaces**:
-  - **Ruta en cada enlace**: **La más corta si es seguro** (por defecto) escribe solo el nombre de
-    la nota, como `[[2020-12-31]]`, cuando ese nombre solo puede abrir esta nota y al pulsarlo una
-    nota que falta se crearía en su carpeta de notas de fecha; si no, sigue el formato de enlaces
-    nuevos de Obsidian, así que una nota que falta en otro sitio recibe `[[on/2020-12-31]]`.
-    **Siempre el nombre de la nota** y **Siempre la ruta completa** se saltan las comprobaciones.
-    La elección también vale para los enlaces escritos en propiedades.
-  - **Texto alrededor de cada enlace**: lo que se escribe por cada fecha; por defecto `{{link}}`.
-    `{{link}}` es el enlace, con su ruta y su texto, así que añade palabras a su alrededor, como
-    `Revisar {{link}}`. `{{name}}`, `{{path}}`, `{{alias}}` y `{{date:FORMATO}}` escriben texto sin
-    enlace. Una plantilla vacía se rechaza.
-  - **Entre varios enlaces**: **Coma y espacio** (por defecto), **Espacio**, **Una viñeta por línea**
-    o **Un enlace por línea**. Una sola fecha es siempre un enlace sin más, nunca una viñeta.
-- Grupo **Texto del enlace**:
-  - **Mostrar un texto en lugar del nombre de la nota**: desactivado por defecto; ⌥↵ y el
-    interruptor **Con texto en el enlace** lo invierten en una inserción.
-  - **Qué dice el texto del enlace**: **La frase escrita** o **Un formato de fecha** (por defecto).
-    Con la frase escrita, varias fechas no llevan texto en el enlace.
-  - **Formato de fecha del texto del enlace**: solo aparece con **Un formato de fecha**; por
-    defecto `ddd D MMM`. Debajo, «Hoy: mar. 17 nov.» muestra el día de hoy en el formato mientras
-    escribes.
+| Periodos de destino | Escribes | Obtienes |
+| --- | --- | --- |
+| día | `next month` | la nota diaria del 13 mar |
+| día | `next week` | la nota diaria del 20 feb |
+| mes | `tomorrow` | la nota mensual 2026-02 |
+| día | `next month`, con hoy 31 ene | la nota diaria del 28 feb |
+| día y año | `next month` | la nota anual 2026 |
 
-## Acciones de fecha
+Las secuencias se trasladan fecha a fecha, y las fechas que acaban en la misma nota se insertan una
+sola vez. Abrir una nota de fecha escribiendo una frase y la API no usan destinos, así que leen
+las frases tal como están.
 
-Una acción es un comando que hace una pregunta y escribe la respuesta en una propiedad de la nota
-actual, añadiéndola a su valor o sustituyéndolo. Cada acción aparece en la paleta de comandos como "Date Compass:
-*nombre*". Una acción sin propiedad no se ofrece.
+### Choques de disparadores
 
-### Las dos acciones predefinidas
+Dos cosas pueden abrirse con los mismos caracteres, y solo gana una. La página de la mención y su
+fila en la lista avisan cuando un disparador:
 
-Los dos se añaden en la primera instalación y se pueden quitar. Los dos piden **Fechas** y tienen
-activado **Cada fecha como enlace**, y añaden a lo que la propiedad ya tiene.
+- es igual al de otra mención;
+- es el comienzo del disparador de otra mención, o al revés, así que gana el más largo donde
+  coinciden los dos;
+- es igual a uno de los sugeridores propios de Obsidian o su comienzo: `[[` para enlaces, `#` para
+  etiquetas, `[^` para notas al pie, `==` para colores de resaltado y `/` para comandos de barra
+  cuando el plugin básico Comandos de barra está activado;
+- lo usa también otro plugin activado que Date Compass conoce: Natural Language Dates, su versión
+  revivida, Date List o las menciones de Note Compass.
 
+Al guardar un disparador que choca, un aviso repite la advertencia. El disparador se guarda igualmente.
+Date Compass no puede detectar otros plugins ni caracteres de Markdown como `$`, `%%`, `>`, `-`, `*`,
+el acento grave o los corchetes que se emparejan, así que compruébalos tú.
+
+## Comandos
+
+Un comando pide una fecha o fechas y las escribe en la nota actual. Cada comando aparece en la
+paleta de comandos como "Date Compass: *nombre*". Ajustes → **Comandos** los lista. Cada fila tiene
+un lápiz para editarlo, un asa para arrastrarlo a otro lugar y una ✕ que lo borra, y **+** añade un
+comando en blanco y abre su página. Un comando que escribe en una propiedad no se ofrece hasta que
+tiene una propiedad.
+
+### Los tres comandos predefinidos
+
+Se añaden en la primera instalación y se pueden quitar. Todos piden **Fechas** y escriben enlaces.
+
+- **Insertar fechas** escribe en el cursor. Es el comando independiente Insertar fechas, ahora convertido en uno predefinido.
 - **Añadir fechas** añade a la propiedad `dates`.
 - **Poner recordatorios** añade a la propiedad `reminders`.
 
-### Crear una acción
+### Crear un comando
 
-Ajustes → **Acciones** lista todas las acciones. Cada fila tiene un lápiz para editarla. Arrastra una fila para reordenarla, bórrala desde la lista y
-**Añadir acción** crea una. La página de una acción tiene:
+La página de un comando tiene:
 
 - **Nombre**: el nombre del comando en la paleta de comandos.
-- **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta.
-- **Cuando la propiedad ya tiene un valor**: **Añadir**, la opción por defecto, conserva lo que
-  hay. **Sustituir** lo cambia por las fechas nuevas.
+- **Dónde escribe**: **Una propiedad** o **En el cursor**.
+  - **Una propiedad** escribe siempre en una propiedad de la nota actual, la de **Propiedad que
+    rellena**. **En el cursor** necesita un editor abierto. Con el cursor en el cuerpo de la nota
+    inserta ahí; con el cursor en una línea de propiedad en modo código, o con un campo de propiedad
+    enfocado en la vista de Propiedades, añade a esa propiedad y no aplica la plantilla. En una línea
+    del frontmatter que no es una propiedad muestra «Coloca el cursor en una propiedad para añadirle
+    fechas.» y no escribe nada.
+- **Propiedad que rellena** y **Cuando la propiedad ya tiene un valor**: solo con **Una propiedad**.
+  **Añadir**, la opción por defecto, conserva lo que hay. **Sustituir** lo cambia por las fechas
+  nuevas.
   - Añadir en una propiedad de lista, o en una que ya contiene una lista, conserva los elementos y
     escribe las fechas nuevas a continuación, sin ordenar. Una fecha que ya está en la lista se
     omite; dos entradas son la misma cuando su texto coincide sin los espacios de los extremos, así
@@ -269,32 +289,60 @@ Ajustes → **Acciones** lista todas las acciones. Cada fila tiene un lápiz par
     por ", ", y omite la fecha que el texto ya tiene.
   - Añadir en una propiedad vacía o que no existe escribe lo mismo que Sustituir.
   - Una propiedad de fecha o de fecha y hora solo guarda un valor, así que siempre se sustituye.
-- **Qué pide**: **Una fecha** admite una frase de una nota de cualquier periodo activado y muestra
-  en su cuadro la pregunta «¿Qué fecha para {name}?» como texto de ayuda, y encima de los resultados
-  la frase "La fecha se añadirá a la propiedad «{name}»." o "La fecha sustituirá el valor de la propiedad «{name}».", que no desaparece al escribir. **Fechas** abre un
-  cuadro como el de Insertar fechas, «¿Qué fechas para {name}?», para cualquier rango, secuencia o
-  lista, dice "Las fechas se añadirán a la propiedad «{name}»." o "Las fechas sustituirán el
-  valor de la propiedad «{name}»." y escribe todas las fechas. La frase dice sustituir en una propiedad de fecha o de fecha y hora.
-- **Cada fecha como enlace**: activado escribe cada fecha como un enlace. Desactivado escribe texto
-  con el formato del tipo de propiedad: `YYYY-MM-DD` para fecha,
-  `YYYY-MM-DDTHH:mm` para fecha y hora, y el nombre de la nota en los demás tipos.
+- **Qué pide**: **Una fecha** admite una frase de una nota y muestra en su cuadro la pregunta «¿Qué
+  fecha para {name}?» como texto de ayuda; en una propiedad muestra además, encima de los
+  resultados, "La fecha se añadirá a la propiedad «{name}»." o "La fecha sustituirá el valor de la
+  propiedad «{name}».", que no desaparece al escribir. **Fechas** abre el cuadro de fechas, «¿Qué
+  fechas para {name}?», para cualquier rango, secuencia o lista, y escribe todas las fechas. El cuadro
+  de fechas muestra el resultado mientras escribes, con el número de fechas y la primera y la última
+  (`4 dates · Mon 23 Nov – Mon 14 Dec` con la interfaz en inglés para `every mon for 4 weeks`), o dice
+  por qué el texto no es una fecha, o sugiere cómo seguir escribiendo. Hecho o Intro escribe las
+  fechas, y cancelar no cambia nada. En una propiedad dice "Las fechas se añadirán a la propiedad
+  «{name}»." o "Las fechas sustituirán el valor de la propiedad «{name}»."; la frase dice sustituir
+  en una propiedad de fecha o de fecha y hora. ⇧↵ en la lista de `@` abre este mismo cuadro.
+- **Cada fecha como enlace**: activado escribe cada fecha como un enlace. Desactivado escribe texto.
+  En una propiedad es el formato del tipo de propiedad: `YYYY-MM-DD` para fecha,
+  `YYYY-MM-DDTHH:mm` para fecha y hora, y el nombre de la nota en los demás tipos. En el cuerpo de
+  la nota es el nombre de la nota, o el texto del enlace cuando lo pides.
+- **Periodos de destino**: los periodos que acepta el comando, que se editan como en una mención. Las
+  frases fuera de ellos se trasladan a un destino, como se describe en
+  [Frases fuera de los destinos](#frases-fuera-de-los-destinos).
+- **Texto alrededor de cada enlace** y **Entre varios enlaces**: solo con **En el cursor**, y valen
+  solo en el cuerpo de la nota; una propiedad recibe solo el enlace. Una sola fecha es siempre un
+  enlace sin más, nunca una viñeta.
+- **Ruta en cada enlace**, **Qué dice el texto del enlace** y **Formato de fecha del texto del
+  enlace**: consulta [Ajustes de enlace](#ajustes-de-enlace).
 
 Con Sustituir o con la propiedad vacía, una frase que da una sola fecha escribe un valor, no una lista, salvo que la propiedad sea una lista
-o ya contenga una, que sigue siendo lista. El enlace es siempre un wikilink, porque las propiedades
-de Obsidian no tratan los enlaces Markdown como enlaces. Cancelar cualquiera de los cuadros no
-cambia nada.
+o ya contenga una, que sigue siendo lista. En una propiedad el enlace es siempre un wikilink, porque las propiedades
+de Obsidian no tratan los enlaces Markdown como enlaces.
 
-### Si vienes de la v1
+El texto del enlace se escribe cuando pulsas ⌥↵ en el selector o en la lista de `@`, o activas el
+interruptor **Con texto en el enlace** del cuadro de fechas. En el móvil usa el interruptor. El texto
+sin enlace, con **Cada fecha como enlace** desactivado, nunca lleva texto de enlace en una propiedad.
 
-Al cargar por primera vez, las acciones de la v1 se convierten. Una acción conserva su primera
-escritura en una propiedad: esa propiedad y, si escribía enlaces, enlaces. El tipo de su pregunta da
-**Una fecha** (fecha o nota periódica) o **Fechas** (cualquier otro). Todo lo demás se pierde: las
-escrituras siguientes, las escrituras en el cuerpo, las preguntas de sí o no y sus condiciones, primera y última, e inicio y fin. Una escritura que sustituía pasa a **Sustituir**; una que añadía
-u ordenaba pasa a **Añadir**, sin ordenar. Una acción sin escritura en una propiedad se elimina.
+### Ajustes de enlace
 
-Una acción guardada antes de que existiera este ajuste se carga como **Añadir**. La acción
-predefinida que se llamaba "Poner fechas" o "Set dates" pasa a llamarse **Añadir fechas** en esa
-carga, salvo que le hubieras cambiado el nombre.
+Las menciones y los comandos comparten estos ajustes:
+
+- **Ruta en cada enlace**: **La más corta si es seguro** (por defecto) escribe solo el nombre de la
+  nota, como `[[2020-12-31]]`, cuando ese nombre solo puede abrir esta nota y al pulsarlo una
+  nota que falta se crearía en su carpeta de notas de fecha; si no, sigue el formato de enlaces
+  nuevos de Obsidian, así que una nota que falta en otro sitio recibe `[[on/2020-12-31]]`.
+  **Siempre el nombre de la nota** y **Siempre la ruta completa** se saltan las comprobaciones.
+  La elección también vale para los enlaces escritos en propiedades.
+- **Texto alrededor de cada enlace**: lo que se escribe por cada fecha en el cuerpo de la nota; por
+  defecto `{{link}}`. `{{link}}` es el enlace, con su ruta y su texto, así que añade palabras a su
+  alrededor, como `Revisar {{link}}`. `{{name}}`, `{{path}}`, `{{alias}}` y `{{date:FORMATO}}`
+  escriben texto sin enlace. Una plantilla vacía se rechaza.
+- **Entre varios enlaces**: **Coma y espacio** (por defecto), **Espacio**, **Una viñeta por línea**
+  o **Un enlace por línea**, para un rango o una secuencia insertados en el cuerpo de la nota.
+- **Qué dice el texto del enlace**: **La frase escrita** o **Un formato de fecha** (por defecto).
+  Con la frase escrita, varias fechas no llevan texto en el enlace. Solo se escribe cuando lo pides
+  con ⌥↵ o con el interruptor **Con texto en el enlace**; ningún ajuste lo activa por defecto.
+- **Formato de fecha del texto del enlace**: solo aparece con **Un formato de fecha**; por
+  defecto `ddd D MMM`. Debajo, «Hoy: mar. 17 nov.» muestra el día de hoy en el formato mientras
+  escribes.
 
 ## API pública para Templater
 
@@ -375,7 +423,7 @@ para una fecha suelta, o una lista vacía.
 ## Organización de los ajustes
 
 En la página principal, haz clic en una fila para abrir su página: **Localización**, **Notas de
-fecha**, **Menciones**, **Inserción** y **Acciones**. Al final está **Restablecer todos los
+fecha**, **Menciones** y **Comandos**. Al final está **Restablecer todos los
 ajustes**, que devuelve cada opción a los valores predeterminados tras confirmarlo.
 
 La página **Localización** tiene:
