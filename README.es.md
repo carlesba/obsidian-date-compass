@@ -407,7 +407,7 @@ sigue el del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plu
 ## API pública para Templater
 
 Otros plugins y los scripts de Templater llegan a Date Compass con
-`app.plugins.plugins["date-compass"].api`. Tiene seis funciones, y cada una lee tus ajustes
+`app.plugins.plugins["date-compass"].api`. Tiene ocho funciones, y cada una lee tus ajustes
 actuales: idiomas, inicio de semana, qué significa "próximo" día de la semana, cómo se leen las fechas
 escritas y las carpetas, formatos e interruptores Activadas de Notas de fecha.
 
@@ -429,11 +429,11 @@ varias para un rango o una secuencia.
 `now` es opcional en todas y por defecto es el momento actual; pasa un `Date` o un moment. Un
 argumento `date` admite un `Date`, un moment o un texto `YYYY-MM-DD`. Cualquier otra cosa, un
 periodo desconocido o un periodo desactivado en Notas de fecha hacen que `notePath` lance un error y
-que `openNote` lo rechace. Las expresiones de un periodo desactivado en Notas de fecha no dan
+que `openNote` y `ensureNote` lo rechacen. Las expresiones de un periodo desactivado en Notas de fecha no dan
 resultado, igual que en las menciones. Una semana es la que nombra el formato: semanas ISO con el
 `GGGG-[W]WW` por defecto, así que con semanas que empiezan en domingo pasa el `date` de una nota y no
 su `start`. Los tipos de TypeScript `DateCompassApi`,
-`DateCompassInterpretation` y `DateCompassNote` se exportan desde `src/api/index.ts`.
+`DateCompassInterpretation`, `DateCompassNote` y `DateCompassPeriod` se exportan desde `src/api/index.ts`.
 
 Empieza cada script con:
 
@@ -478,6 +478,21 @@ para una fecha suelta, o una lista vacía.
 
 ```js
 <%* await dc.openNote(tp.date.now("YYYY-MM-DD", 1), "day"); %>
+```
+
+**`ensureNote(date, period)`** crea esa nota con su plantilla si no existe, sin abrirla, y devuelve
+su ruta. Devuelve `undefined` cuando Templater no pudo crearla.
+
+```js
+<%* const path = await dc.ensureNote(tp.date.now("YYYY-MM-DD", 1), "day"); if (path) tR += `[[${path.replace(/\.md$/, "")}]]`; %>
+```
+
+**`periods()`** devuelve el interruptor `enabled`, la `folder` y el `format` de cada periodo, como una
+copia congelada. La ruta de una nota es su carpeta más la fecha escrita en su formato, así que otro
+plugin puede calcular las rutas igual que Date Compass.
+
+```js
+<%* const { week } = dc.periods(); if (week.enabled) tR += `${week.folder ? `${week.folder}/` : ""}${moment().format(week.format)}.md`; %>
 ```
 
 ## Organización de los ajustes

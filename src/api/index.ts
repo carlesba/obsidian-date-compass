@@ -27,6 +27,12 @@ export interface DateCompassInterpretation {
 	notes: DateCompassNote[];
 }
 
+export interface DateCompassPeriod {
+	enabled: boolean;
+	folder: string;
+	format: string;
+}
+
 export interface DateCompassApi {
 	parse(text: string, now?: Date | Moment): DateCompassInterpretation[];
 	resolve(text: string, now?: Date | Moment): DateCompassInterpretation | undefined;
@@ -34,6 +40,8 @@ export interface DateCompassApi {
 	notePath(date: DateInput, period: Period): string;
 	dateOf(path: string): DateCompassNote | undefined;
 	openNote(date: DateInput, period: Period): Promise<void>;
+	periods(): Record<Period, DateCompassPeriod>;
+	ensureNote(date: DateInput, period: Period): Promise<string | undefined>;
 }
 
 export interface DateCompassApiHost {
@@ -41,6 +49,7 @@ export interface DateCompassApiHost {
 	parseOptions(): ParseOptions;
 	moment: MomentFactory;
 	openDateNote(date: Moment, period: Period): Promise<void>;
+	ensureDateNote(date: Moment, period: Period): Promise<string | undefined>;
 }
 
 const ISO_DATE = "YYYY-MM-DD";
@@ -106,5 +115,11 @@ export function createDateCompassApi(host: DateCompassApiHost): DateCompassApi {
 		notePath: (date: DateInput, period: Period) => notePath(momentOf(date), enabledPeriodOf(period), host.settings().dateNotes.periods),
 		dateOf: noteAt,
 		openNote: async (date: DateInput, period: Period) => host.openDateNote(momentOf(date), enabledPeriodOf(period)),
+		periods: () => {
+			const configured = host.settings().dateNotes.periods;
+			const publicPeriod = (period: Period): DateCompassPeriod => Object.freeze({ enabled: configured[period].enabled, folder: configured[period].folder, format: configured[period].format });
+			return Object.freeze({ day: publicPeriod("day"), week: publicPeriod("week"), month: publicPeriod("month"), quarter: publicPeriod("quarter"), year: publicPeriod("year") });
+		},
+		ensureNote: async (date: DateInput, period: Period) => host.ensureDateNote(momentOf(date), enabledPeriodOf(period)),
 	});
 }

@@ -1,6 +1,7 @@
 import type { App } from "obsidian";
 import { openDateNote } from "../dateNotes/commands.ts";
-import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
+import { ensureDateNote } from "../dateNotes/create.ts";
+import { createDateNoteHost, obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import { localeParseOptions } from "../obsidianParseOptions.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { createDateCompassApi } from "./index.ts";
@@ -12,5 +13,6 @@ export function createObsidianDateCompassApi(app: App, settings: () => DateCompa
 		parseOptions: () => localeParseOptions(settings()),
 		moment: obsidianMoment,
 		openDateNote: (date, period) => openDateNote(app, settings().dateNotes, date, period),
+		ensureDateNote: (date, period) => ensureDateNote(createDateNoteHost(app), settings().dateNotes, date, period),
 	});
 }

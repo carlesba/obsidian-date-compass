@@ -385,7 +385,7 @@ A note is found only at the path its folder and name format give it. The look fo
 ## Public API for Templater
 
 Other plugins and Templater scripts reach Date Compass through
-`app.plugins.plugins["date-compass"].api`. It has six functions, and each reads your current
+`app.plugins.plugins["date-compass"].api`. It has eight functions, and each reads your current
 settings: languages, week start, what "next" weekday means, how typed dates are read, and the folders,
 formats and Enabled switches of Date notes.
 
@@ -405,11 +405,11 @@ for a range or sequence.
 
 `now` is optional everywhere and defaults to the current time; pass a `Date` or a moment. A `date`
 argument takes a `Date`, a moment or a `YYYY-MM-DD` string. Anything else, an unknown period, or a
-period turned off in Date notes makes `notePath` throw and `openNote` reject. Phrases for a period
+period turned off in Date notes makes `notePath` throw and `openNote` and `ensureNote` reject. Phrases for a period
 turned off in Date notes give no result, as in mentions. A week is the one the name format names:
 ISO weeks with the default `GGGG-[W]WW`, so with Sunday weeks pass a note's `date` rather than its
 `start`. The
-TypeScript types `DateCompassApi`, `DateCompassInterpretation` and `DateCompassNote` are exported
+TypeScript types `DateCompassApi`, `DateCompassInterpretation`, `DateCompassNote` and `DateCompassPeriod` are exported
 from `src/api/index.ts`.
 
 Start each script with:
@@ -455,6 +455,21 @@ single date, or an empty list.
 
 ```js
 <%* await dc.openNote(tp.date.now("YYYY-MM-DD", 1), "day"); %>
+```
+
+**`ensureNote(date, period)`** creates that note from its template when it does not exist, without
+opening it, and returns its path. It returns `undefined` when Templater could not create it.
+
+```js
+<%* const path = await dc.ensureNote(tp.date.now("YYYY-MM-DD", 1), "day"); if (path) tR += `[[${path.replace(/\.md$/, "")}]]`; %>
+```
+
+**`periods()`** returns the `enabled` switch, `folder` and `format` of each period, as a frozen copy.
+A note's path is its folder plus the date written in its format, so another plugin can compute
+paths exactly as Date Compass does.
+
+```js
+<%* const { week } = dc.periods(); if (week.enabled) tR += `${week.folder ? `${week.folder}/` : ""}${moment().format(week.format)}.md`; %>
 ```
 
 ## Settings layout

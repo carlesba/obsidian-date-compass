@@ -18,6 +18,7 @@ interface Fake {
 	api: DateCompassApi;
 	settings: DateCompassSettings;
 	opened: { date: string; period: Period }[];
+	ensured: { date: string; period: Period }[];
 }
 
 function fakeApi(change: (settings: DateCompassSettings) => void = () => {}, localeFirstDayOfWeek = 1): Fake {
@@ -26,6 +27,7 @@ function fakeApi(change: (settings: DateCompassSettings) => void = () => {}, loc
 	settings.dateNotes = dateNotesEnabling(PERIODS);
 	change(settings);
 	const opened: Fake["opened"] = [];
+	const ensured: Fake["ensured"] = [];
 	const api = createDateCompassApi({
 		settings: () => settings,
 		parseOptions: () => parseOptionsOf(settings, localeFirstDayOfWeek),
@@ -33,15 +35,19 @@ function fakeApi(change: (settings: DateCompassSettings) => void = () => {}, loc
 		openDateNote: async (date: Moment, period: Period) => {
 			opened.push({ date: date.format("YYYY-MM-DD"), period });
 		},
+		ensureDateNote: async (date: Moment, period: Period) => {
+			ensured.push({ date: date.format("YYYY-MM-DD"), period });
+			return period === "year" ? undefined : `${date.format("YYYY-MM-DD")}.md`;
+		},
 	});
-	return { api, settings, opened };
+	return { api, settings, opened, ensured };
 }
 
 const starts = (notes: readonly DateCompassNote[]) => notes.map((note) => note.start);
 
-test("the api exposes exactly parse, resolve, sequence, notePath, dateOf and openNote", () => {
+test("the api exposes exactly parse, resolve, sequence, notePath, dateOf, openNote, periods and ensureNote", () => {
 	const { api } = fakeApi();
-	assert.deepEqual(Object.keys(api).sort(), ["dateOf", "notePath", "openNote", "parse", "resolve", "sequence"]);
+	assert.deepEqual(Object.keys(api).sort(), ["dateOf", "ensureNote", "notePath", "openNote", "parse", "periods", "resolve", "sequence"]);
 	for (const value of Object.values(api)) assert.equal(typeof value, "function");
 	assert.ok(Object.isFrozen(api));
 });
@@ -210,4 +216,34 @@ test("parse ignores the targets of the mentions and reads every period phrase of
 	assert.equal(api.resolve("today", NOW)?.notes[0].path, "2026-11-17.md");
 	assert.equal(api.resolve("2026-Q1", NOW)?.notes[0].path, "2026-Q1.md");
 	assert.equal(api.resolve("next month", NOW)?.notes[0].path, "2026-12.md");
+});
+
+test("periods reports a frozen copy of every period's enabled switch, folder and format, without the template", () => {
+	const { api, settings } = fakeApi((settings) => {
+		settings.dateNotes.periods.quarter.enabled = false;
+		settings.dateNotes.periods.day.folder = "Daily";
+	});
+	const periods = api.periods();
+	assert.deepEqual(periods.day, { enabled: true, folder: "Daily", format: "YYYY-MM-DD" });
+	assert.deepEqual(periods.quarter, { enabled: false, folder: "", format: "YYYY-[Q]Q" });
+	assert.deepEqual(Object.keys(periods), ["day", "week", "month", "quarter", "year"]);
+	assert.ok(Object.isFrozen(periods));
+	assert.ok(Object.values(periods).every((period) => Object.isFrozen(period)));
+	settings.dateNotes.periods.day.folder = "Journal";
+	assert.equal(periods.day.folder, "Daily");
+	assert.equal(api.periods().day.folder, "Journal");
+});
+
+test("ensureNote creates through the date-note path without opening, and refuses bad dates and turned-off periods", async () => {
+	const { api, opened, ensured } = fakeApi((settings) => (settings.dateNotes.periods.quarter.enabled = false));
+	assert.equal(await api.ensureNote("2026-12-01", "day"), "2026-12-01.md");
+	assert.equal(await api.ensureNote(NOW, "year"), undefined);
+	assert.deepEqual(ensured, [
+		{ date: "2026-12-01", period: "day" },
+		{ date: "2026-11-17", period: "year" },
+	]);
+	assert.deepEqual(opened, []);
+	await assert.rejects(api.ensureNote("2026-12-01", "quarter"), /quarter notes are turned off/);
+	await assert.rejects(api.ensureNote("not a date", "day"), /is not a date/);
+	await assert.rejects(api.ensureNote("2026-12-01", "decade" as Period), /is not a period/);
 });
