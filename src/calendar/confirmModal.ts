@@ -2,14 +2,19 @@ import { Modal, Setting } from "obsidian";
 import type { App } from "obsidian";
 import { t } from "../i18n/index.ts";
 
-export class ConfirmCreateNoteModal extends Modal {
-	private readonly file: string;
-	private readonly create: () => void;
+export function confirmCreateNote(app: App, file: string): Promise<boolean> {
+	return new Promise((resolve) => new ConfirmCreateNoteModal(app, file, resolve).open());
+}
 
-	constructor(app: App, file: string, create: () => void) {
+class ConfirmCreateNoteModal extends Modal {
+	private readonly file: string;
+	private readonly answer: (create: boolean) => void;
+	private confirmed = false;
+
+	constructor(app: App, file: string, answer: (create: boolean) => void) {
 		super(app);
 		this.file = file;
-		this.create = create;
+		this.answer = answer;
 	}
 
 	onOpen(): void {
@@ -22,13 +27,14 @@ export class ConfirmCreateNoteModal extends Modal {
 					.setButtonText(t("create"))
 					.setCta()
 					.onClick(() => {
+						this.confirmed = true;
 						this.close();
-						this.create();
 					}),
 			);
 	}
 
 	onClose(): void {
 		this.contentEl.empty();
+		this.answer(this.confirmed);
 	}
 }

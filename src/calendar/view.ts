@@ -1,11 +1,12 @@
 import { ItemView, Keymap, Menu, Platform, debounce } from "obsidian";
 import type { HoverParent, HoverPopover, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import { openDateNote } from "../dateNotes/commands.ts";
+import type { DateNotePane } from "../dateNotes/commands.ts";
 import { fileNameParts } from "../dateNotes/paths.ts";
 import { t } from "../i18n/index.ts";
 import { civilOf } from "../parse/calendar.ts";
 import type { DateCompassSettings } from "../settings.ts";
-import { ConfirmCreateNoteModal } from "./confirmModal.ts";
+import { confirmCreateNote } from "./confirmModal.ts";
 import { monthGrid, monthOf } from "./grid.ts";
 import type { CivilMonth } from "./grid.ts";
 import { headerParts } from "./header.ts";
@@ -16,6 +17,7 @@ import { createNoteDotsReader, localeWeekRule, momentOf, monthShortName, weekday
 import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "./paths.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
+import { singleFlight } from "./singleFlight.ts";
 import { weekRuleOf } from "./weeks.ts";
 
 export const CALENDAR_VIEW_TYPE = "date-compass-calendar";
@@ -34,6 +36,7 @@ export class CalendarView extends ItemView implements HoverParent {
 	private readonly root = this.contentEl.createDiv({ cls: Platform.isMobile ? [ROOT_CLASS, MOBILE_CLASS] : ROOT_CLASS });
 	private readonly dots = createNoteDotsReader(this.app, (path) => this.noteChanged(path));
 	private readonly requestRender = debounce(() => this.renderWhenShown(), RENDER_DEBOUNCE_MS, false);
+	private readonly openOncePerPath = singleFlight();
 	private readonly handlers: CalendarHandlers = {
 		previousMonth: () => this.showMonth(shiftMonth(this.displayed, -1)),
 		nextMonth: () => this.showMonth(shiftMonth(this.displayed, 1)),
@@ -160,10 +163,14 @@ export class CalendarView extends ItemView implements HoverParent {
 
 	private openNote(target: NoteTarget, event: MouseEvent): void {
 		const pane = Keymap.isModEvent(event) ? "split" : "current";
+		void this.openOncePerPath(target.path, () => this.openOrCreateNote(target, pane));
+	}
+
+	private async openOrCreateNote(target: NoteTarget, pane: DateNotePane): Promise<void> {
 		const settings = this.settings();
-		const open = () => void openDateNote(this.app, settings.dateNotes, momentOf(target.date), target.period, pane);
-		if (this.app.vault.getFileByPath(target.path) || !settings.calendar.confirmBeforeCreate) open();
-		else new ConfirmCreateNoteModal(this.app, fileNameParts(target.path).basename, open).open();
+		const needsConfirmation = settings.calendar.confirmBeforeCreate && !this.app.vault.getFileByPath(target.path);
+		if (needsConfirmation && !(await confirmCreateNote(this.app, fileNameParts(target.path).basename))) return;
+		await openDateNote(this.app, settings.dateNotes, momentOf(target.date), target.period, pane);
 	}
 
 	private previewNote(target: NoteTarget, event: MouseEvent, targetEl: HTMLElement): void {
