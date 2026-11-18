@@ -222,16 +222,17 @@ dates:
 
 ## Date actions
 
-An action is a command that asks one question and sets one property of the current note, replacing
-its value. Every action appears in the command palette as "Date Compass: *name*". An action
+An action is a command that asks one question and writes the answer to one property of the current
+note, adding to its value or replacing it. Every action appears in the command palette as "Date Compass: *name*". An action
 with no property is not offered.
 
 ### The two presets
 
-Both are added on first install and can be removed. Each is **Dates** with **Each date as link** on.
+Both are added on first install and can be removed. Each is **Dates** with **Each date as link** on, and
+adds to what the property has.
 
-- **Set dates** sets the property `dates`.
-- **Set reminders** sets the property `reminders`.
+- **Add dates** adds to the property `dates`.
+- **Set reminders** adds to the property `reminders`.
 
 ### Building an action
 
@@ -239,18 +240,27 @@ Settings → **Actions** lists every action. Each row has a pencil that edits it
 creates one. An action page has:
 
 - **Name**: the name of the command in the palette.
-- **Property to set**: the property of the current note that receives the answer. Its value is
-  replaced.
+- **Property to set**: the property of the current note that receives the answer.
+- **When the property already has a value**: **Add**, the default, keeps what is there. **Replace**
+  overwrites it.
+  - Add on a list property, or on a property that already holds a list, keeps the items and writes
+    the new dates after them, unsorted. A date already in the list is skipped; two entries are the
+    same when their text is equal after trimming, so `[[2026-11-18]]` and `2026-11-18` are
+    different.
+  - Add on a text property that holds one value appends the new dates to the text, separated by
+    ", ", and skips a date the text already has.
+  - Add on an empty or missing property writes the same as Replace.
+  - A date or date and time property holds one value, so it is always replaced.
 - **What it asks for**: **One date** takes a phrase for one note of any enabled period, and shows
-  its question, "Which date for {name}?", as the box's placeholder, and the sentence "The date will replace the value of the property {name}."
-  as text above the results, which stays while you type. **Dates**
-  opens a box like Insert dates, "Which dates for {name}?", for any range, sequence or list, says "Dates will replace the value of
-  the property {name}." and writes every date.
+  its question, "Which date for {name}?", as the box's placeholder, and the sentence "The date will be added to the property {name}." or
+  "The date will replace the value of the property {name}." as text above the results, which stays while you type. **Dates**
+  opens a box like Insert dates, "Which dates for {name}?", for any range, sequence or list, says "Dates will be added to the property {name}." or "Dates will replace the value of
+  the property {name}." and writes every date. The sentence says replace for a date or date and time property.
 - **Each date as link**: on writes each date as a link. Off writes plain text in the format of the
   property type: `YYYY-MM-DD` for a date property, `YYYY-MM-DDTHH:mm` for date and time, and the
   note name for any other type.
 
-Phrases that resolve to one date write one value, not a list, unless the property is a list or
+With Replace or an empty property, phrases that resolve to one date write one value, not a list, unless the property is a list or
 already holds a list, which stays a list. A link is always a wikilink, because Obsidian properties
 do not treat Markdown links as links. Cancelling either box changes nothing.
 
@@ -259,9 +269,11 @@ do not treat Markdown links as links. Cancelling either box changes nothing.
 On first load v1 actions are converted. An action keeps its first property write: that property,
 and links when it wrote links. Its question type gives **One date** (date or periodic note) or
 **Dates** (anything else). Everything else is dropped: later writes, body writes, yes or no
-questions and their conditions, modes, first and last, and start and end. Every converted action
-now replaces the value where v1 appended. An action with no property write is removed. The v1
-preset "Add dates" is renamed **Set dates**.
+questions and their conditions, first and last, and start and end. A write that replaced becomes **Replace**; one that
+appended or sorted becomes **Add**, without sorting. An action with no property write is removed.
+
+An action saved before this setting existed loads as **Add**. The preset that was named "Set dates"
+is renamed **Add dates** on that load, unless you had renamed it.
 
 ## Public API for Templater
 

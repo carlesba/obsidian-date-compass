@@ -231,17 +231,17 @@ Insertar fechas:
 
 ## Acciones de fecha
 
-Una acción es un comando que hace una pregunta y rellena una propiedad de la nota actual,
-sustituyendo su valor. Cada acción aparece en la paleta de comandos como "Date Compass:
+Una acción es un comando que hace una pregunta y escribe la respuesta en una propiedad de la nota
+actual, añadiéndola a su valor o sustituyéndolo. Cada acción aparece en la paleta de comandos como "Date Compass:
 *nombre*". Una acción sin propiedad no se ofrece.
 
 ### Las dos acciones predefinidas
 
 Los dos se añaden en la primera instalación y se pueden quitar. Los dos piden **Fechas** y tienen
-activado **Cada fecha como enlace**.
+activado **Cada fecha como enlace**, y añaden a lo que la propiedad ya tiene.
 
-- **Poner fechas** rellena la propiedad `dates`.
-- **Poner recordatorios** rellena la propiedad `reminders`.
+- **Añadir fechas** añade a la propiedad `dates`.
+- **Poner recordatorios** añade a la propiedad `reminders`.
 
 ### Crear una acción
 
@@ -249,19 +249,28 @@ Ajustes → **Acciones** lista todas las acciones. Cada fila tiene un lápiz par
 **Añadir acción** crea una. La página de una acción tiene:
 
 - **Nombre**: el nombre del comando en la paleta de comandos.
-- **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta. Su valor se
-  sustituye.
+- **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta.
+- **Cuando la propiedad ya tiene un valor**: **Añadir**, la opción por defecto, conserva lo que
+  hay. **Sustituir** lo cambia por las fechas nuevas.
+  - Añadir en una propiedad de lista, o en una que ya contiene una lista, conserva los elementos y
+    escribe las fechas nuevas a continuación, sin ordenar. Una fecha que ya está en la lista se
+    omite; dos entradas son la misma cuando su texto coincide sin los espacios de los extremos, así
+    que `[[2026-11-18]]` y `2026-11-18` son distintas.
+  - Añadir en una propiedad de texto con un solo valor agrega las fechas nuevas al texto, separadas
+    por ", ", y omite la fecha que el texto ya tiene.
+  - Añadir en una propiedad vacía o que no existe escribe lo mismo que Sustituir.
+  - Una propiedad de fecha o de fecha y hora solo guarda un valor, así que siempre se sustituye.
 - **Qué pide**: **Una fecha** admite una frase de una nota de cualquier periodo activado y muestra
   en su cuadro la pregunta «¿Qué fecha para {name}?» como texto de ayuda, y encima de los resultados
-  la frase "La fecha sustituirá el valor de la propiedad «{name}».", que no desaparece al escribir. **Fechas** abre un
+  la frase "La fecha se añadirá a la propiedad «{name}»." o "La fecha sustituirá el valor de la propiedad «{name}».", que no desaparece al escribir. **Fechas** abre un
   cuadro como el de Insertar fechas, «¿Qué fechas para {name}?», para cualquier rango, secuencia o
-  lista, dice "Las fechas sustituirán el
-  valor de la propiedad «{name}»." y escribe todas las fechas.
+  lista, dice "Las fechas se añadirán a la propiedad «{name}»." o "Las fechas sustituirán el
+  valor de la propiedad «{name}»." y escribe todas las fechas. La frase dice sustituir en una propiedad de fecha o de fecha y hora.
 - **Cada fecha como enlace**: activado escribe cada fecha como un enlace. Desactivado escribe texto
   con el formato del tipo de propiedad: `YYYY-MM-DD` para fecha,
   `YYYY-MM-DDTHH:mm` para fecha y hora, y el nombre de la nota en los demás tipos.
 
-Una frase que da una sola fecha escribe un valor, no una lista, salvo que la propiedad sea una lista
+Con Sustituir o con la propiedad vacía, una frase que da una sola fecha escribe un valor, no una lista, salvo que la propiedad sea una lista
 o ya contenga una, que sigue siendo lista. El enlace es siempre un wikilink, porque las propiedades
 de Obsidian no tratan los enlaces Markdown como enlaces. Cancelar cualquiera de los cuadros no
 cambia nada.
@@ -271,10 +280,12 @@ cambia nada.
 Al cargar por primera vez, las acciones de la v1 se convierten. Una acción conserva su primera
 escritura en una propiedad: esa propiedad y, si escribía enlaces, enlaces. El tipo de su pregunta da
 **Una fecha** (fecha o nota periódica) o **Fechas** (cualquier otro). Todo lo demás se pierde: las
-escrituras siguientes, las escrituras en el cuerpo, las preguntas de sí o no y sus condiciones, los
-modos, primera y última, e inicio y fin. Toda acción convertida ahora sustituye el valor donde la v1
-añadía. Una acción sin escritura en una propiedad se elimina. El predefinido "Añadir fechas" pasa a
-llamarse **Poner fechas**.
+escrituras siguientes, las escrituras en el cuerpo, las preguntas de sí o no y sus condiciones, primera y última, e inicio y fin. Una escritura que sustituía pasa a **Sustituir**; una que añadía
+u ordenaba pasa a **Añadir**, sin ordenar. Una acción sin escritura en una propiedad se elimina.
+
+Una acción guardada antes de que existiera este ajuste se carga como **Añadir**. La acción
+predefinida que se llamaba "Poner fechas" o "Set dates" pasa a llamarse **Añadir fechas** en esa
+carga, salvo que le hubieras cambiado el nombre.
 
 ## API pública para Templater
 
