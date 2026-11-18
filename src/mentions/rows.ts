@@ -8,7 +8,7 @@ import { isPeriod } from "../dateNotes/periods.ts";
 import type { Period, PeriodSettingsByPeriod } from "../dateNotes/periods.ts";
 import { civilOf } from "../parse/calendar.ts";
 import { effectiveTargets } from "../insertion/linkStyle.ts";
-import { collapseRepeats, retargetSpans } from "./retarget.ts";
+import { DAYS_INTO_WEEK_THAT_NAME_IT, collapseRepeats, retargetSpans } from "./retarget.ts";
 
 export interface DateParser {
 	parse(text: string, now: Date, options: ParseOptions): Interpretation[];
@@ -42,8 +42,6 @@ export interface DateRow {
 }
 
 const ISO_DATE = "YYYY-MM-DD";
-
-const DAYS_INTO_WEEK_THAT_NAME_IT = 3;
 
 export function buildRows(query: string, context: RowContext): DateRow[] {
 	const text = query.trim();

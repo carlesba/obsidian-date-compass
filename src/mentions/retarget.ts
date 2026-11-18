@@ -7,7 +7,7 @@ import type { ParseOptions, Span } from "../parse/types.ts";
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-const DAYS_INTO_WEEK_THAT_NAME_IT = 3;
+export const DAYS_INTO_WEEK_THAT_NAME_IT = 3;
 
 const MONTHS_PER_PERIOD = { month: 1, quarter: 3, year: 12 } as const;
 
