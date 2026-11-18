@@ -92,8 +92,6 @@ function readActionControl({ action, field }: ActionControl): unknown {
 
 function writeActionControl({ action, field }: ActionControl, value: unknown): boolean {
 	switch (field) {
-		case "enabled":
-			return writeBoolean(value, (enabled) => (action.enabled = enabled));
 		case "link":
 			return writeBoolean(value, (link) => (action.link = link));
 		case "asks":

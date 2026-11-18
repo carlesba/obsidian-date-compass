@@ -8,7 +8,6 @@ import type { IdentifiedPage } from "./pages.ts";
 
 export interface ActionsPageContext {
 	actions: () => DateAction[];
-	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
 	change: (mutate: () => unknown) => Promise<void>;
 }
@@ -65,12 +64,6 @@ function actionRow(action: DateAction, context: ActionsPageContext): SettingDefi
 		render: (setting) => {
 			setting.setName(actionName(action));
 			setting.setDesc(actionWarning(action) ?? actionSummary(action));
-			setting.addToggle((toggle) =>
-				toggle
-					.setTooltip(t("offerActionAsCommand"))
-					.setValue(action.enabled)
-					.onChange((enabled) => context.write(actionKey(action.id, "enabled"), enabled)),
-			);
 			setting.addExtraButton((button) =>
 				button
 					.setIcon("pencil")
@@ -88,13 +81,11 @@ function actionPage(action: DateAction): IdentifiedPage {
 		get name() {
 			return actionName(action);
 		},
-		displayValue: () => (action.enabled ? "" : t("off")),
 		status: () => (actionWarning(action) ? "warning" : null),
 		items: [
 			{
 				type: "group",
 				items: [
-					{ name: t("actionEnabled"), desc: t("actionEnabledDesc"), control: { type: "toggle", key: actionKey(action.id, "enabled") } },
 					{ name: t("actionName"), desc: t("actionNameDesc"), control: { type: "text", key: actionKey(action.id, "name"), placeholder: t("untitledAction") } },
 					{ name: t("actionProperty"), desc: t("actionPropertyDesc"), control: { type: "text", key: actionKey(action.id, "property"), placeholder: "dates" } },
 					{ name: t("actionAsks"), desc: t("actionAsksDesc"), control: { type: "dropdown", key: actionKey(action.id, "asks"), options: translatedLabels(ASK_LABELS) } },

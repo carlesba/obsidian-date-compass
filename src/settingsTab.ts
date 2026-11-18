@@ -106,7 +106,6 @@ export class DateCompassSettingTab extends PluginSettingTab {
 					sectionPage("insertionSection", "insertionSectionDesc", insertionGroups(() => this.plugin.settings.insertion)),
 					actionsPage({
 						actions: () => this.plugin.settings.actions,
-						write: (key, value) => void this.setControlValue(key, value),
 						openPage: (pageId) => this.openPage(pageId),
 						change: (mutate) => this.changeActions(mutate),
 					}),

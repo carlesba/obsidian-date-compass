@@ -18,7 +18,7 @@ export function actionCommandId(action: DateAction): string {
 }
 
 export function actionCommands(actions: readonly DateAction[]): ActionCommand[] {
-	return actions.filter((action) => action.enabled && !actionWarning(action)).map((action) => ({ id: actionCommandId(action), name: actionName(action), action }));
+	return actions.filter((action) => !actionWarning(action)).map((action) => ({ id: actionCommandId(action), name: actionName(action), action }));
 }
 
 export class ActionCommands {

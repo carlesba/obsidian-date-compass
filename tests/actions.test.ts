@@ -56,8 +56,8 @@ const v1SetReminders = {
 
 test("presets are Set dates and Set reminders, both asking for dates as links", () => {
 	assert.deepEqual(presetActions(), [
-		{ id: "set-dates", name: "Set dates", enabled: true, property: "dates", asks: "dates", link: true },
-		{ id: "set-reminders", name: "Set reminders", enabled: true, property: "reminders", asks: "dates", link: true },
+		{ id: "set-dates", name: "Set dates", property: "dates", asks: "dates", link: true },
+		{ id: "set-reminders", name: "Set reminders", property: "reminders", asks: "dates", link: true },
 	]);
 	assert.deepEqual(mergeSettings({ weekStart: "monday" }).actions, presetActions());
 });
@@ -65,12 +65,12 @@ test("presets are Set dates and Set reminders, both asking for dates as links", 
 test("the two stored v1 presets migrate to Set dates and Set reminders keeping their ids", () => {
 	const migrated = mergeSettings({ actions: [v1AddDates, v1SetReminders] }).actions;
 	assert.deepEqual(migrated, [
-		{ id: "add-dates", name: "Set dates", enabled: true, property: "dates", asks: "dates", link: true },
-		{ id: "set-reminders", name: "Set reminders", enabled: true, property: "reminders", asks: "dates", link: true },
+		{ id: "add-dates", name: "Set dates", property: "dates", asks: "dates", link: true },
+		{ id: "set-reminders", name: "Set reminders", property: "reminders", asks: "dates", link: true },
 	]);
 });
 
-test("a custom v1 action keeps its name, its disabled state, and takes its first property write", () => {
+test("a custom v1 action keeps its name, comes back enabled, and takes its first property write", () => {
 	const [action] = mergeActions([
 		{
 			id: "trip",
@@ -80,7 +80,7 @@ test("a custom v1 action keeps its name, its disabled state, and takes its first
 			writes: [{ id: "w", target: "property", property: " due ", input: "when", value: "first", format: "dateText", mode: "replace", condition: "" }],
 		},
 	]);
-	assert.deepEqual(action, { id: "trip", name: "Plan trip", enabled: false, property: "due", asks: "date", link: false });
+	assert.deepEqual(action, { id: "trip", name: "Plan trip", property: "due", asks: "date", link: false });
 });
 
 test("a v1 action with several writes uses the first property write, skipping body writes", () => {
@@ -99,7 +99,7 @@ test("a v1 action with several writes uses the first property write, skipping bo
 			],
 		},
 	]);
-	assert.deepEqual(action, { id: "mix", name: "Mix", enabled: true, property: "week", asks: "date", link: true });
+	assert.deepEqual(action, { id: "mix", name: "Mix", property: "week", asks: "date", link: true });
 });
 
 test("a v1 action with no property write is dropped, and one whose question is missing asks for dates", () => {
@@ -109,8 +109,8 @@ test("a v1 action with no property write is dropped, and one whose question is m
 	const missingQuestion = { id: "lost", name: "Lost", inputs: [], writes: [{ id: "w", target: "property", property: "when", input: "gone", format: "link" }] };
 	const yesNoQuestion = { id: "yn", name: "YN", inputs: [{ id: "q", type: "yesNo" }], writes: [{ id: "w", target: "property", property: "flag", input: "q", format: "dateText" }] };
 	assert.deepEqual(mergeActions([noWrites, bodyOnly, noProperty, missingQuestion, yesNoQuestion]), [
-		{ id: "lost", name: "Lost", enabled: true, property: "when", asks: "dates", link: true },
-		{ id: "yn", name: "YN", enabled: true, property: "flag", asks: "dates", link: false },
+		{ id: "lost", name: "Lost", property: "when", asks: "dates", link: true },
+		{ id: "yn", name: "YN", property: "flag", asks: "dates", link: false },
 	]);
 });
 
@@ -118,8 +118,8 @@ test("no stored actions gives the presets, an empty list stays empty, unknown ke
 	assert.deepEqual(mergeActions(undefined), presetActions());
 	assert.deepEqual(mergeActions({ not: "a list" }), presetActions());
 	assert.deepEqual(mergeActions([]), []);
-	const [action] = mergeActions([{ id: "x", name: "X", enabled: true, property: "p", asks: "date", link: false, extra: 1, inputs: "junk" }, "broken", 3]);
-	assert.deepEqual(action, { id: "x", name: "X", enabled: true, property: "p", asks: "date", link: false });
+	const [action] = mergeActions([{ id: "x", name: "X", property: "p", asks: "date", link: false, extra: 1, inputs: "junk" }, "broken", 3]);
+	assert.deepEqual(action, { id: "x", name: "X", property: "p", asks: "date", link: false });
 });
 
 test("migrating twice changes nothing, and ids are kept unique", () => {
@@ -130,7 +130,7 @@ test("migrating twice changes nothing, and ids are kept unique", () => {
 
 test("stored v2 fields fall back field by field", () => {
 	const [action] = mergeActions([{ id: "p", asks: "dates", name: 3, enabled: "yes", property: null, link: "no" }]);
-	assert.deepEqual(action, { id: "p", name: "", enabled: true, property: "", asks: "dates", link: true });
+	assert.deepEqual(action, { id: "p", name: "", property: "", asks: "dates", link: true });
 });
 
 const kinds = ["date", "datetime", "other", "list"] as const;
@@ -204,16 +204,12 @@ function fakeCommandHost(): { commands: Map<string, string>; host: { addCommand(
 	};
 }
 
-test("one command per enabled action, re-registered when actions are enabled, disabled, renamed or removed", () => {
+test("one command per action, re-registered when actions are renamed or removed", () => {
 	const actions = presetActions();
 	const { commands, host } = fakeCommandHost();
 	const registry = new ActionCommands(host, ({ id, name }) => ({ id, name }));
 	registry.sync(actions);
 	assert.deepEqual([...commands], [["action-set-dates", "Set dates"], ["action-set-reminders", "Set reminders"]]);
-	actions[1].enabled = false;
-	registry.sync(actions);
-	assert.deepEqual([...commands], [["action-set-dates", "Set dates"]]);
-	actions[1].enabled = true;
 	actions[0].name = "Plan trip";
 	registry.sync(actions);
 	assert.deepEqual([...commands].sort(), [["action-set-dates", "Plan trip"], ["action-set-reminders", "Set reminders"]]);
@@ -230,13 +226,13 @@ test("the action controls read and write every field of an action and refuse bad
 	assert.equal(readControl(settings, key("property")), "dates");
 	assert.equal(writeControl(settings, key("property"), "when"), true);
 	assert.equal(writeControl(settings, key("name"), "Mine"), true);
-	assert.equal(writeControl(settings, key("enabled"), false), true);
 	assert.equal(writeControl(settings, key("link"), false), true);
 	assert.equal(writeControl(settings, key("asks"), "date"), true);
-	assert.deepEqual(settings.actions[0], { id: "set-dates", name: "Mine", enabled: false, property: "when", asks: "date", link: false });
+	assert.deepEqual(settings.actions[0], { id: "set-dates", name: "Mine", property: "when", asks: "date", link: false });
 	assert.equal(writeControl(settings, key("asks"), "periodicNote"), false);
 	assert.equal(writeControl(settings, key("link"), "no"), false);
 	assert.equal(writeControl(settings, key("name"), 3), false);
+	assert.equal(writeControl(settings, "actions/set-dates/enabled", false), false);
 	assert.equal(writeControl(settings, actionKey("missing", "name"), "x"), false);
 	assert.equal(writeControl(settings, "actions/set-dates/inputs/x/key", "x"), false);
 });
@@ -251,11 +247,11 @@ function controlKeysOf(items: readonly unknown[]): string[] {
 
 test("each action has one page with all its fields and nothing nests below it", () => {
 	const settings = defaultSettings();
-	const context = { actions: () => settings.actions, write: () => undefined, openPage: () => undefined, change: () => Promise.resolve() };
+	const context = { actions: () => settings.actions, openPage: () => undefined, change: () => Promise.resolve() };
 	const page = actionsPage(context);
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { id: string; items: unknown[] }[] }];
 	assert.equal(hidden.items.length, 2);
-	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "enabled", "property", "asks", "link"].sort((a, b) => ["enabled", "name", "property", "asks", "link"].indexOf(a) - ["enabled", "name", "property", "asks", "link"].indexOf(b)).map((field) => `actions/set-dates/${field}`));
+	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "property", "asks", "link"].map((field) => `actions/set-dates/${field}`));
 	assert.equal(pagePath([{ type: "group", items: [page] }], "action-set-reminders")?.join("/"), "actions/action-set-reminders");
 	assert.equal(pagePath([page], "nowhere"), undefined);
 });
@@ -263,7 +259,7 @@ test("each action has one page with all its fields and nothing nests below it", 
 test("the Actions page adds, reorders and removes actions", async () => {
 	const settings = defaultSettings();
 	const opened: string[] = [];
-	const context = { actions: () => settings.actions, write: () => undefined, openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => Promise.resolve(void mutate()) };
+	const context = { actions: () => settings.actions, openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => Promise.resolve(void mutate()) };
 	type ListLike = { onReorder?: (a: number, b: number) => void; onDelete?: (index: number) => void; addItem?: { action: (el: HTMLElement) => void } };
 	const [actionsList] = (actionsPage(context).items ?? []) as unknown as [ListLike];
 	actionsList.onReorder?.(0, 1);
@@ -286,6 +282,12 @@ test("a new action never reuses the id, and so the command, of a removed one", (
 
 test("the action row says what it sets and what it asks", () => {
 	assert.equal(actionSummary(presetActions()[1]), "Sets reminders. Asks for Dates.");
+});
+
+test("an action stored as disabled loads as an action and gets its command", () => {
+	const actions = mergeActions([{ id: "x", name: "X", enabled: false, property: "p", asks: "date", link: false }]);
+	assert.deepEqual(actions, [{ id: "x", name: "X", property: "p", asks: "date", link: false }]);
+	assert.deepEqual(actionCommands(actions).map((command) => command.name), ["X"]);
 });
 
 test("an action with no property is not offered as a command", () => {

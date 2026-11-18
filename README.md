@@ -222,7 +222,7 @@ dates:
 ## Date actions
 
 An action is a command that asks one question and sets one property of the current note, replacing
-its value. Each enabled action appears in the command palette as "Date Compass: *name*". An action
+its value. Every action appears in the command palette as "Date Compass: *name*". An action
 with no property is not offered.
 
 ### The two presets
@@ -234,11 +234,9 @@ Both are added on first install and can be removed. Each is **Dates** with **Eac
 
 ### Building an action
 
-Settings → **Actions** lists every action. Each row has a switch that offers the action as a command,
-and a pencil that edits it. Drag a row to reorder it, delete it from the list, and **Add action**
+Settings → **Actions** lists every action. Each row has a pencil that edits it. Drag a row to reorder it, delete it from the list, and **Add action**
 creates one. An action page has:
 
-- **Enabled**: offer the action as the command "Date Compass: <name>".
 - **Name**: the name of the command in the palette.
 - **Property to set**: the property of the current note that receives the answer. Its value is
   replaced.

@@ -4,13 +4,12 @@ import { isRecord } from "../dateNotes/periods.ts";
 export const ASK_KINDS = ["date", "dates"] as const;
 export type AskKind = (typeof ASK_KINDS)[number];
 
-export const ACTION_FIELDS = ["name", "enabled", "property", "asks", "link"] as const;
+export const ACTION_FIELDS = ["name", "property", "asks", "link"] as const;
 export type ActionField = (typeof ACTION_FIELDS)[number];
 
 export interface DateAction {
 	id: string;
 	name: string;
-	enabled: boolean;
 	property: string;
 	asks: AskKind;
 	link: boolean;
@@ -18,8 +17,8 @@ export interface DateAction {
 
 export function presetActions(): DateAction[] {
 	return [
-		{ id: "set-dates", name: t("presetSetDates"), enabled: true, property: "dates", asks: "dates", link: true },
-		{ id: "set-reminders", name: t("presetSetReminders"), enabled: true, property: "reminders", asks: "dates", link: true },
+		{ id: "set-dates", name: t("presetSetDates"), property: "dates", asks: "dates", link: true },
+		{ id: "set-reminders", name: t("presetSetReminders"), property: "reminders", asks: "dates", link: true },
 	];
 }
 
@@ -44,7 +43,6 @@ function mergeAction(data: Record<string, unknown>, earlier: readonly DateAction
 	return {
 		id: uniqueId(data.id, earlier),
 		name: text(data.name),
-		enabled: typeof data.enabled === "boolean" ? data.enabled : true,
 		property: text(data.property),
 		asks: isAskKind(data.asks) ? data.asks : "dates",
 		link: typeof data.link === "boolean" ? data.link : true,
@@ -60,7 +58,6 @@ function migratedAction(data: Record<string, unknown>, earlier: readonly DateAct
 	return {
 		id: uniqueId(data.id, earlier),
 		name: data.id === "add-dates" && V1_PRESET_NAMES.includes(name) ? t("presetSetDates") : name,
-		enabled: typeof data.enabled === "boolean" ? data.enabled : true,
 		property: text(write.property).trim(),
 		asks: question?.type === "date" || question?.type === "periodicNote" ? "date" : "dates",
 		link: write.format !== "dateText",
@@ -72,7 +69,7 @@ function records(value: unknown): Record<string, unknown>[] {
 }
 
 export function newAction(actions: readonly DateAction[], now: number = Date.now()): DateAction {
-	return { id: freeId(actions, `action-${now.toString(36)}`), name: "", enabled: true, property: "", asks: "dates", link: true };
+	return { id: freeId(actions, `action-${now.toString(36)}`), name: "", property: "", asks: "dates", link: true };
 }
 
 export function actionName(action: DateAction): string {

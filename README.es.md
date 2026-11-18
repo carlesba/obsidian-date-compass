@@ -231,7 +231,7 @@ Insertar fechas:
 ## Acciones de fecha
 
 Una acción es un comando que hace una pregunta y rellena una propiedad de la nota actual,
-sustituyendo su valor. Cada acción activada aparece en la paleta de comandos como "Date Compass:
+sustituyendo su valor. Cada acción aparece en la paleta de comandos como "Date Compass:
 *nombre*". Una acción sin propiedad no se ofrece.
 
 ### Las dos acciones predefinidas
@@ -244,11 +244,9 @@ activado **Cada fecha como enlace**.
 
 ### Crear una acción
 
-Ajustes → **Acciones** lista todas las acciones. Cada fila tiene un interruptor que ofrece la acción
-como comando y un lápiz para editarla. Arrastra una fila para reordenarla, bórrala desde la lista y
+Ajustes → **Acciones** lista todas las acciones. Cada fila tiene un lápiz para editarla. Arrastra una fila para reordenarla, bórrala desde la lista y
 **Añadir acción** crea una. La página de una acción tiene:
 
-- **Activada**: ofrece esta acción como el comando "Date Compass: <nombre>".
 - **Nombre**: el nombre del comando en la paleta de comandos.
 - **Propiedad que rellena**: la propiedad de la nota actual que recibe la respuesta. Su valor se
   sustituye.
