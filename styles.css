@@ -64,12 +64,13 @@
 .date-compass-calendar .nav {
 	display: flex;
 	align-items: center;
-	margin: 0.6em 0 1em;
+	margin: -0.1em 0 1em;
 	padding: 0 8px;
 	width: 100%;
 }
 
 .date-compass-calendar.is-mobile .nav {
+	margin-top: 0.15em;
 	padding: 0;
 }
 
