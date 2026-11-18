@@ -164,6 +164,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		this.renderedActivePath = activePath;
 		const model = calendarModel({
 			grid,
+			today: this.today,
 			notes,
 			parts: headerParts(this.displayed, monthShortName(this.displayed), periods),
 			rule,
@@ -172,7 +173,7 @@ export class CalendarView extends ItemView implements HoverParent {
 			activePath,
 			noteExists: (path) => this.app.vault.getFileByPath(path) !== null,
 			showsDotsAbove: decorators.some((decorator) => decorator.position === "above"),
-			dotsOf: (path, cell, hasNote) => this.dots.dotsOf(path, cell, hasNote, decorators),
+			dotsOf: (path, place, hasNote) => this.dots.dotsOf(path, place, hasNote, decorators),
 		});
 		this.root.empty();
 		renderCalendar(this.root, model, this.handlers);

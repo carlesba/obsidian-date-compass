@@ -373,6 +373,10 @@ weeks, in list order. An entry has a source and a look:
   words, up to a limit of one to five. Word dots always show at least one dot on a day or week with
   a note.
 - **Show on**: days, weeks or both.
+- **Show for**: **Past**, **Current** (today and this week) and **Future**, any of them. A day is
+  past or future compared with today. A week is current when it contains today, past when all its
+  days are before today, and future otherwise. With only **Future**, for example, the dots mark
+  what is coming and disappear once the day arrives.
 - **Shape**, **Color** and **Position**: a filled dot or a hollow ring, in the theme's default
   color, the accent or one of the theme's colors, below or above the number or in a top corner.
   On the highlighted day of the open note every dot takes the highlighted text color.

@@ -16,6 +16,14 @@ export type DotColor = (typeof DOT_COLORS)[number];
 export const DOT_CELLS = ["day", "week"] as const;
 export type DotCell = (typeof DOT_CELLS)[number];
 
+export const DOT_TIMES = ["past", "current", "future"] as const;
+export type DotTime = (typeof DOT_TIMES)[number];
+
+export interface DotPlace {
+	cell: DotCell;
+	time: DotTime;
+}
+
 export const DOT_POSITIONS = ["below", "above", "topLeft", "topRight"] as const;
 export type DotPosition = (typeof DOT_POSITIONS)[number];
 
@@ -27,7 +35,7 @@ export interface LinkFilter {
 	value: string;
 }
 
-export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "filters"] as const;
+export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "filters"] as const;
 export type DecoratorField = (typeof DECORATOR_FIELDS)[number];
 
 export interface DotDecorator {
@@ -42,6 +50,7 @@ export interface DotDecorator {
 	position: DotPosition;
 	showWithoutNote: boolean;
 	cells: DotCell[];
+	times: DotTime[];
 	filters: LinkFilter[];
 }
 
@@ -65,7 +74,7 @@ export const DEFAULT_WORDS_PER_DOT = 250;
 
 const DECORATOR_ID_PREFIX = "dots";
 
-const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "filters">> = {
+const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | "filters">> = {
 	words: { count: "perAmount", amountPerDot: DEFAULT_WORDS_PER_DOT, maxDots: MAX_DOTS, shape: "filled", color: "default", position: "below", showWithoutNote: false },
 	openTasks: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false },
 	links: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "accent", position: "below", showWithoutNote: true },
@@ -84,7 +93,7 @@ export function sourceCanShowWithoutNote(source: DotSource): boolean {
 }
 
 export function decoratorOf(source: DotSource, id: string): DotDecorator {
-	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], filters: [] };
+	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], filters: [] };
 }
 
 export function newDecorator(decorators: readonly DotDecorator[], source: DotSource): DotDecorator {
@@ -124,6 +133,7 @@ function mergeDecorator(data: Record<string, unknown>, earlier: readonly DotDeco
 		position: oneOf(DOT_POSITIONS, data.position, defaults.position),
 		showWithoutNote: typeof data.showWithoutNote === "boolean" ? data.showWithoutNote : defaults.showWithoutNote,
 		cells: validCells(data.cells) ?? [...DOT_CELLS],
+		times: validTimes(data.times) ?? [...DOT_TIMES],
 		filters: validFilters(data.filters) ?? [],
 	};
 }
@@ -142,6 +152,24 @@ export function canRemoveCell(cells: readonly DotCell[]): boolean {
 	return cells.length > 1;
 }
 
+export function validTimes(value: unknown): DotTime[] | undefined {
+	if (!Array.isArray(value) || value.length === 0) return undefined;
+	const times = DOT_TIMES.filter((time) => value.includes(time));
+	return times.length === value.length ? times : undefined;
+}
+
+export function timesToAdd(times: readonly DotTime[]): DotTime[] {
+	return DOT_TIMES.filter((time) => !times.includes(time));
+}
+
+export function canRemoveTime(times: readonly DotTime[]): boolean {
+	return times.length > 1;
+}
+
+export function showsEveryTime(times: readonly DotTime[]): boolean {
+	return timesToAdd(times).length === 0;
+}
+
 export function validFilters(value: unknown): LinkFilter[] | undefined {
 	if (!Array.isArray(value)) return undefined;
 	const filters: LinkFilter[] = [];
@@ -154,8 +182,8 @@ export function validFilters(value: unknown): LinkFilter[] | undefined {
 	return filters;
 }
 
-export function shows(decorator: DotDecorator, cell: DotCell, hasNote: boolean): boolean {
-	if (!decorator.cells.includes(cell)) return false;
+export function shows(decorator: DotDecorator, place: DotPlace, hasNote: boolean): boolean {
+	if (!decorator.cells.includes(place.cell) || !decorator.times.includes(place.time)) return false;
 	return hasNote || (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote);
 }
 
@@ -165,9 +193,9 @@ export function dotCount(decorator: DotDecorator, amount: number): number {
 	return Math.min(decorator.maxDots, Math.max(MIN_DOTS, Math.floor(amount / decorator.amountPerDot)));
 }
 
-export function dotsOfDecorators(decorators: readonly DotDecorator[], cell: DotCell, hasNote: boolean, amountOf: (decorator: DotDecorator) => number): Dot[] {
+export function dotsOfDecorators(decorators: readonly DotDecorator[], place: DotPlace, hasNote: boolean, amountOf: (decorator: DotDecorator) => number): Dot[] {
 	return decorators.flatMap((decorator) => {
-		if (!shows(decorator, cell, hasNote)) return [];
+		if (!shows(decorator, place, hasNote)) return [];
 		const dot: Dot = { decoratorId: decorator.id, source: decorator.source, shape: decorator.shape, color: decorator.color, position: decorator.position };
 		return Array.from({ length: dotCount(decorator, amountOf(decorator)) }, () => dot);
 	});

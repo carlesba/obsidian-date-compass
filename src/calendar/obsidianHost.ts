@@ -3,14 +3,14 @@ import type { App, TFile } from "obsidian";
 import type { Moment } from "moment";
 import type { CivilDate } from "../parse/calendar.ts";
 import { backlinkIndex, dotsOfDecorators, matchesFilters } from "./decorators.ts";
-import type { BacklinkIndex, Dot, DotCell, DotDecorator, LinkingNote } from "./decorators.ts";
+import type { BacklinkIndex, Dot, DotDecorator, DotPlace, LinkingNote } from "./decorators.ts";
 import { countWords, openTaskCount, wordCountCache } from "./dots.ts";
 import { firstDayOf } from "./grid.ts";
 import type { CivilMonth } from "./grid.ts";
 import type { WeekRule } from "./weeks.ts";
 
 export interface NoteDotsReader {
-	dotsOf(path: string, cell: DotCell, hasNote: boolean, decorators: readonly DotDecorator[]): Dot[];
+	dotsOf(path: string, place: DotPlace, hasNote: boolean, decorators: readonly DotDecorator[]): Dot[];
 	linksChanged(): void;
 }
 
@@ -73,10 +73,10 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 		return counted ?? 0;
 	};
 	return {
-		dotsOf: (path, cell, hasNote, decorators) => {
+		dotsOf: (path, place, hasNote, decorators) => {
 			const file = hasNote ? app.vault.getFileByPath(path) : null;
 			let linkingNotes: LinkingNote[] | undefined;
-			return dotsOfDecorators(decorators, cell, file !== null, (decorator) => {
+			return dotsOfDecorators(decorators, place, file !== null, (decorator) => {
 				switch (decorator.source) {
 					case "words":
 						return file ? wordsOf(file) : 0;

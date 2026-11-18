@@ -8,7 +8,7 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
-import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, validCells, validFilters } from "../calendar/decorators.ts";
+import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, validCells, validFilters, validTimes } from "../calendar/decorators.ts";
 import type { DecoratorField, DotDecorator } from "../calendar/decorators.ts";
 import { ASK_KINDS, COMMAND_DESTINATIONS, COMMAND_FIELDS, WRITE_MODES } from "../commands/settings.ts";
 import type { CommandField, DateCommand } from "../commands/settings.ts";
@@ -78,7 +78,7 @@ function writeDecoratorControl({ decorators, index, field }: DecoratorControl, v
 			return writeText(value, (name) => (decorator.name = name));
 		case "source":
 			return writeChoice(DOT_SOURCES, value, (source) => {
-				if (source !== decorator.source) decorators[index] = { ...decoratorOf(source, decorator.id), name: decorator.name, cells: decorator.cells };
+				if (source !== decorator.source) decorators[index] = { ...decoratorOf(source, decorator.id), name: decorator.name, cells: decorator.cells, times: decorator.times };
 			});
 		case "count":
 			return writeChoice(DOT_COUNTS, value, (count) => (decorator.count = count));
@@ -102,6 +102,12 @@ function writeDecoratorControl({ decorators, index, field }: DecoratorControl, v
 			const cells = validCells(value);
 			if (!cells) return false;
 			decorator.cells = cells;
+			return true;
+		}
+		case "times": {
+			const times = validTimes(value);
+			if (!times) return false;
+			decorator.times = times;
 			return true;
 		}
 		case "filters": {

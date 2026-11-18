@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { isoDate } from "../src/parse/calendar.ts";
+import { addDays, isoDate } from "../src/parse/calendar.ts";
 import type { CivilDate } from "../src/parse/calendar.ts";
 import { monthGrid } from "../src/calendar/grid.ts";
 import type { CivilMonth } from "../src/calendar/grid.ts";
 import { headerParts } from "../src/calendar/header.ts";
-import { calendarModel, dayClasses, titlePartClasses, weekClasses } from "../src/calendar/model.ts";
+import { calendarModel, dayClasses, dayTime, titlePartClasses, weekClasses, weekTime } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
-import type { Dot, DotCell } from "../src/calendar/decorators.ts";
+import type { Dot, DotPlace } from "../src/calendar/decorators.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
 import { ISO_WEEK_RULE, SUNDAY_WEEK_RULE } from "../src/calendar/weeks.ts";
 import type { WeekRule } from "../src/calendar/weeks.ts";
@@ -30,15 +30,16 @@ interface Scene {
 	existing?: string[];
 	activePath?: string;
 	change?: (periods: PeriodSettingsByPeriod) => void;
-	dotsOf?: (path: string, cell: DotCell, hasNote: boolean) => Dot[];
+	dotsOf?: (path: string, place: DotPlace, hasNote: boolean) => Dot[];
 }
 
-function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers = true, existing = [], activePath, change, dotsOf = (_path, _cell, hasNote) => (hasNote ? [FILLED] : []) }: Scene = {}): CalendarModel {
+function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers = true, existing = [], activePath, change, dotsOf = (_path, _place, hasNote) => (hasNote ? [FILLED] : []) }: Scene = {}): CalendarModel {
 	const periods = dateNotesWithoutQuarter().periods;
 	change?.(periods);
 	const grid = monthGrid(month, rule, TODAY);
 	return calendarModel({
 		grid,
+		today: TODAY,
 		notes: visibleNotes(grid, periods, toMoment),
 		parts: headerParts(month, "Nov", periods),
 		rule,
@@ -80,7 +81,7 @@ test("cells without a note ask for the dots that show without one, and say wheth
 	const asked: string[] = [];
 	const model = modelOf({
 		existing: ["2026-11-17.md"],
-		dotsOf: (path, cell, hasNote) => {
+		dotsOf: (path, { cell }, hasNote) => {
 			asked.push(`${path} ${cell} ${hasNote}`);
 			return hasNote ? [FILLED] : [WITHOUT_NOTE];
 		},
@@ -92,6 +93,59 @@ test("cells without a note ask for the dots that show without one, and say wheth
 	assert.ok(asked.includes("2026-11-18.md day false"));
 	assert.ok(asked.includes("2026-W47.md week false"));
 	assert.deepEqual(model.title.flatMap((part) => part.dots), []);
+});
+
+test("a day is past, current or future compared with today", () => {
+	assert.equal(dayTime({ year: 2026, month: 11, day: 16 }, TODAY), "past");
+	assert.equal(dayTime(TODAY, TODAY), "current");
+	assert.equal(dayTime({ year: 2026, month: 11, day: 18 }, TODAY), "future");
+	assert.equal(dayTime({ year: 2025, month: 12, day: 31 }, TODAY), "past");
+	assert.equal(dayTime({ year: 2027, month: 1, day: 1 }, TODAY), "future");
+});
+
+test("a week is current when it holds today, past when every day is before today and future otherwise", () => {
+	const weekFrom = (year: number, month: number, day: number) => Array.from({ length: 7 }, (_, offset) => addDays({ year, month, day }, offset));
+	assert.equal(weekTime(weekFrom(2026, 11, 16), TODAY), "current");
+	assert.equal(weekTime(weekFrom(2026, 11, 11), TODAY), "current");
+	assert.equal(weekTime(weekFrom(2026, 11, 17), TODAY), "current");
+	assert.equal(weekTime(weekFrom(2026, 11, 9), TODAY), "past");
+	assert.equal(weekTime(weekFrom(2026, 11, 10), TODAY), "past");
+	assert.equal(weekTime(weekFrom(2026, 11, 18), TODAY), "future");
+	assert.equal(weekTime(weekFrom(2026, 11, 23), TODAY), "future");
+	assert.equal(weekTime(weekFrom(2026, 10, 26), { year: 2026, month: 11, day: 1 }), "current");
+	assert.equal(weekTime(weekFrom(2026, 10, 26), { year: 2026, month: 11, day: 2 }), "past");
+	assert.equal(weekTime(weekFrom(2026, 11, 30), { year: 2026, month: 11, day: 29 }), "future");
+	assert.equal(weekTime(weekFrom(2026, 11, 30), { year: 2026, month: 12, day: 6 }), "current");
+});
+
+test("every day and week cell asks for its dots with its time", () => {
+	const timeOfPath = new Map<string, string>();
+	const model = modelOf({
+		dotsOf: (path, { cell, time }) => {
+			timeOfPath.set(path, `${cell} ${time}`);
+			return [];
+		},
+	});
+	assert.deepEqual(model.rows.map((row) => timeOfPath.get(row.week?.target?.path ?? "")), ["week past", "week past", "week past", "week current", "week future", "week future"]);
+	assert.deepEqual(model.rows[3].days.map((day) => timeOfPath.get(day.target?.path ?? "")), ["day past", "day current", "day future", "day future", "day future", "day future", "day future"]);
+	assert.equal(timeOfPath.get("2026-10-26.md"), "day past");
+	assert.equal(timeOfPath.get("2026-12-06.md"), "day future");
+	const december = modelOf({
+		month: { year: 2026, month: 12 },
+		dotsOf: (path, { cell, time }) => {
+			timeOfPath.set(path, `${cell} ${time}`);
+			return [];
+		},
+	});
+	assert.deepEqual(december.rows.map((row) => timeOfPath.get(row.week?.target?.path ?? "")), ["week future", "week future", "week future", "week future", "week future", "week future"]);
+	const october = modelOf({
+		month: { year: 2026, month: 10 },
+		dotsOf: (path, { cell, time }) => {
+			timeOfPath.set(path, `${cell} ${time}`);
+			return [];
+		},
+	});
+	assert.deepEqual(october.rows.map((row) => timeOfPath.get(row.week?.target?.path ?? "")), ["week past", "week past", "week past", "week past", "week past", "week past"]);
 });
 
 test("days are not clickable when daily notes are off", () => {

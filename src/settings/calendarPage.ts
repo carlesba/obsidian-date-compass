@@ -1,8 +1,8 @@
 import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionRender, SettingGroupItem } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { DOT_SOURCES, LINK_FILTER_KINDS, MAX_DOTS, MIN_DOTS, canRemoveCell, cellsToAdd, newDecorator, sourceCanShowWithoutNote } from "../calendar/decorators.ts";
-import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, LinkFilterKind } from "../calendar/decorators.ts";
+import { DOT_SOURCES, LINK_FILTER_KINDS, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, newDecorator, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
+import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, LinkFilterKind } from "../calendar/decorators.ts";
 import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_THEME_COMPATIBILITY_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -66,6 +66,18 @@ const CELL_LABELS: Record<DotCell, TranslationKey> = {
 	week: "dotCellWeeks",
 };
 
+const TIME_LABELS: Record<DotTime, TranslationKey> = {
+	past: "dotTimePast",
+	current: "dotTimeCurrent",
+	future: "dotTimeFuture",
+};
+
+const TIME_SUMMARIES: Record<DotTime, TranslationKey> = {
+	past: "dotSummaryPast",
+	current: "dotSummaryCurrent",
+	future: "dotSummaryFuture",
+};
+
 const AMOUNT_LABELS: Record<DotSource, TranslationKey> = {
 	words: "dotAmountWords",
 	openTasks: "dotAmountOpenTasks",
@@ -120,9 +132,15 @@ export function decoratorSummary(decorator: DotDecorator): string {
 	const parts = [...(decorator.name.trim() === "" ? [] : [t(SOURCE_LABELS[decorator.source])]), count, look];
 	if (decorator.source === "links" && decorator.filters.length > 0) parts.push(t("dotSummaryFilters"));
 	if (decorator.cells.length === 1) parts.push(t(decorator.cells[0] === "day" ? "dotSummaryDaysOnly" : "dotSummaryWeeksOnly"));
+	if (!showsEveryTime(decorator.times)) parts.push(timesSummary(decorator.times));
 	if (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote) parts.push(t("dotSummaryWithoutNote"));
 	const summary = parts.join(" · ");
 	return summary.charAt(0).toLocaleUpperCase() + summary.slice(1);
+}
+
+function timesSummary(times: readonly DotTime[]): string {
+	const [first, second] = times.map((time) => t(TIME_SUMMARIES[time]));
+	return second === undefined ? t("dotSummaryOneTime", { time: first }) : t("dotSummaryTwoTimes", { first, second });
 }
 
 export function calendarPage(context: CalendarPageContext): IdentifiedPage {
@@ -224,6 +242,7 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 		items: [
 			{ type: "group", items: sourceItems },
 			cellsList(decorator, context),
+			timesList(decorator, context),
 			{
 				type: "group",
 				heading: t("dotsLook"),
@@ -255,6 +274,28 @@ function cellsList(decorator: DotDecorator, context: CalendarPageContext): Setti
 				const remaining = cellsToAdd(cells);
 				if (remaining.length === 0) context.notify(t("everyDotCellListed"));
 				else context.choose(anchor, remaining.map((cell) => ({ value: cell, name: t(CELL_LABELS[cell]) })), (cell) => write([...cells, cell]));
+			},
+		},
+	};
+}
+
+function timesList(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionList {
+	const { times } = decorator;
+	const write = (next: DotTime[]) => context.write(decoratorKey(decorator.id, "times"), next);
+	return {
+		type: "list",
+		heading: t("dotTimes"),
+		items: times.map((time) => ({ name: t(TIME_LABELS[time]) })),
+		onDelete: (position) => {
+			if (!canRemoveTime(times)) context.notify(t("keepOneDotTime"));
+			else write(times.filter((_, index) => index !== position));
+		},
+		addItem: {
+			name: t("addDotTime"),
+			action: (anchor: HTMLElement) => {
+				const remaining = timesToAdd(times);
+				if (remaining.length === 0) context.notify(t("everyDotTimeListed"));
+				else context.choose(anchor, remaining.map((time) => ({ value: time, name: t(TIME_LABELS[time]) })), (time) => write([...times, time]));
 			},
 		},
 	};

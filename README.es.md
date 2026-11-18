@@ -392,6 +392,10 @@ días y semanas, en el orden de la lista. Una entrada tiene una fuente y un aspe
   hasta un límite de uno a cinco. Los puntos de palabras muestran siempre al menos uno en un día o
   semana con nota.
 - **Mostrar en**: días, semanas o ambos.
+- **Mostrar para**: **Pasado**, **Actual** (hoy y esta semana) y **Futuro**, los que quieras. Un
+  día es pasado o futuro respecto a hoy. Una semana es actual cuando contiene hoy, pasada cuando
+  todos sus días son anteriores a hoy, y futura en los demás casos. Con solo **Futuro**, por
+  ejemplo, los puntos marcan lo que viene y desaparecen cuando llega el día.
 - **Forma**, **Color** y **Posición**: un punto relleno o un anillo hueco, en el color del tema,
   el de acento o uno de los colores del tema, debajo o encima del número o en una esquina
   superior. En el día resaltado de la nota abierta todos los puntos toman el color del texto

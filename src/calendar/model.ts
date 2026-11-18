@@ -1,6 +1,7 @@
 import type { Period } from "../dateNotes/periods.ts";
+import { daysBetween } from "../parse/calendar.ts";
 import type { CivilDate } from "../parse/calendar.ts";
-import type { Dot, DotCell } from "./decorators.ts";
+import type { Dot, DotPlace, DotTime } from "./decorators.ts";
 import { firstDayOf, weekdayOrder } from "./grid.ts";
 import type { MonthGrid } from "./grid.ts";
 import type { HeaderPart, HeaderPeriod } from "./header.ts";
@@ -55,6 +56,7 @@ export interface CalendarModel {
 
 export interface CalendarModelInput {
 	grid: MonthGrid;
+	today: CivilDate;
 	notes: VisibleNotes;
 	parts: readonly HeaderPart[];
 	rule: WeekRule;
@@ -63,13 +65,13 @@ export interface CalendarModelInput {
 	activePath: string | undefined;
 	noteExists: (path: string) => boolean;
 	showsDotsAbove: boolean;
-	dotsOf: (path: string, cell: DotCell, hasNote: boolean) => Dot[];
+	dotsOf: (path: string, place: DotPlace, hasNote: boolean) => Dot[];
 }
 
 export const CLICKABLE_CLASS = "is-clickable";
 
 export function calendarModel(input: CalendarModelInput): CalendarModel {
-	const { grid, notes, parts, rule, weekdayNames, showWeekNumbers } = input;
+	const { grid, today, notes, parts, rule, weekdayNames, showWeekNumbers } = input;
 	const displayed = firstDayOf(grid.month);
 	return {
 		title: parts.map((part) => ({
@@ -82,16 +84,28 @@ export function calendarModel(input: CalendarModelInput): CalendarModel {
 		showsDotsAbove: input.showsDotsAbove,
 		rows: grid.rows.map((row, rowIndex) => ({
 			week: showWeekNumbers
-				? { ...noteCell(input, "week", row.weekNoteDate, notes.rows[rowIndex]?.week, "week"), label: String(row.weekNumber) }
+				? { ...noteCell(input, "week", row.weekNoteDate, notes.rows[rowIndex]?.week, { cell: "week", time: weekTime(row.days.map((day) => day.date), today) }), label: String(row.weekNumber) }
 				: undefined,
 			days: row.days.map((day, column) => ({
-				...noteCell(input, "day", day.date, notes.rows[rowIndex]?.days[column], "day"),
+				...noteCell(input, "day", day.date, notes.rows[rowIndex]?.days[column], { cell: "day", time: dayTime(day.date, today) }),
 				label: String(day.date.day),
 				today: day.today,
 				adjacentMonth: day.adjacentMonth,
 			})),
 		})),
 	};
+}
+
+export function dayTime(date: CivilDate, today: CivilDate): DotTime {
+	const daysFromToday = daysBetween(today, date);
+	if (daysFromToday === 0) return "current";
+	return daysFromToday < 0 ? "past" : "future";
+}
+
+export function weekTime(days: readonly CivilDate[], today: CivilDate): DotTime {
+	const times = days.map((day) => dayTime(day, today));
+	if (times.includes("current")) return "current";
+	return times.every((time) => time === "past") ? "past" : "future";
 }
 
 export function dayClasses(cell: DayCell): string[] {
@@ -110,14 +124,14 @@ export function titlePartClasses(part: TitlePart): string[] {
 	return classesOf(part.period, part, {});
 }
 
-function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, dotCell: DotCell | undefined): NoteCell {
+function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, place: DotPlace | undefined): NoteCell {
 	if (path === undefined) return { target: undefined, hasNote: false, active: false, dots: [] };
 	const hasNote = input.noteExists(path);
 	return {
 		target: { period, date, path },
 		hasNote,
 		active: path === input.activePath,
-		dots: dotCell ? input.dotsOf(path, dotCell, hasNote) : [],
+		dots: place ? input.dotsOf(path, place, hasNote) : [],
 	};
 }
 
