@@ -37,3 +37,8 @@ export function visibleNotes(grid: MonthGrid, periods: PeriodSettingsByPeriod, t
 export function touchesVisible(visiblePaths: ReadonlySet<string>, path: string, oldPath?: string): boolean {
 	return visiblePaths.has(path) || (oldPath !== undefined && visiblePaths.has(oldPath));
 }
+
+export function activeNoteTouchesVisible(visiblePaths: ReadonlySet<string>, activePath: string | undefined, previousActivePath: string | undefined): boolean {
+	if (activePath === previousActivePath) return false;
+	return [activePath, previousActivePath].some((path) => path !== undefined && visiblePaths.has(path));
+}

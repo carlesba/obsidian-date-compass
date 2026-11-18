@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert";
 import { isoDate } from "../src/parse/calendar.ts";
 import type { CivilDate } from "../src/parse/calendar.ts";
 import { monthGrid } from "../src/calendar/grid.ts";
-import { touchesVisible, visibleNotes } from "../src/calendar/paths.ts";
+import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "../src/calendar/paths.ts";
 import { ISO_WEEK_RULE, SUNDAY_WEEK_RULE } from "../src/calendar/weeks.ts";
 import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import type { PeriodSettingsByPeriod } from "../src/dateNotes/periods.ts";
@@ -84,4 +84,18 @@ test("a vault event touches the calendar only when its path, or the path it was 
 	assert.equal(touchesVisible(visiblePaths, "archive/2026-11-17.md", "2026-11-17.md"), true);
 	assert.equal(touchesVisible(visiblePaths, "2026-11-17.md", "Untitled.md"), true);
 	assert.equal(touchesVisible(visiblePaths, "Renamed.md", "Untitled.md"), false);
+});
+
+test("a change of active note touches the calendar only when the note left or the note entered is visible", () => {
+	const { visiblePaths } = visibleNotes(monthGrid(NOVEMBER_2026, ISO_WEEK_RULE, "iso"), periods(), toMoment);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "2026-11-17.md", "Meeting notes.md"), true);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "Meeting notes.md", "2026-11-17.md"), true);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "2026-11-18.md", "2026-11-17.md"), true);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "2026-11-17.md", undefined), true);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, undefined, "2026-W47.md"), true);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "2026-11-17.md", "2026-11-17.md"), false);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "Meeting notes.md", "Ideas.md"), false);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, "Meeting notes.md", undefined), false);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, undefined, "2027-03-01.md"), false);
+	assert.equal(activeNoteTouchesVisible(visiblePaths, undefined, undefined), false);
 });

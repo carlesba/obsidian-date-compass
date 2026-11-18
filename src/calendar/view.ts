@@ -13,7 +13,7 @@ import { calendarModel } from "./model.ts";
 import type { NoteTarget } from "./model.ts";
 import { monthAfterDayChange, sameDay, shiftMonth } from "./navigation.ts";
 import { createNoteDotsReader, localeWeekRule, momentOf, monthShortName, weekdayShortNames } from "./obsidianHost.ts";
-import { touchesVisible, visibleNotes } from "./paths.ts";
+import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "./paths.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
 import { weekFormatKind, weekRuleOf } from "./weeks.ts";
@@ -78,7 +78,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		const shownObserver = new ResizeObserver(() => this.renderIfAwaited());
 		shownObserver.observe(this.contentEl);
 		this.register(() => shownObserver.disconnect());
-		this.render();
+		this.renderWhenShown();
 	}
 
 	async onClose(): Promise<void> {
@@ -103,7 +103,7 @@ export class CalendarView extends ItemView implements HoverParent {
 	}
 
 	private activeNoteChanged(): void {
-		if (this.app.workspace.getActiveFile()?.path !== this.renderedActivePath) this.requestRender();
+		if (activeNoteTouchesVisible(this.visiblePaths, this.app.workspace.getActiveFile()?.path, this.renderedActivePath)) this.requestRender();
 	}
 
 	private heartbeat(): void {
