@@ -16,6 +16,9 @@ export interface CalendarHandlers {
 const ARROW_ICON = "chevron-left";
 const DOT_VIEW_BOX = "0 0 6 6";
 const DOT_CIRCLE = { cx: 3, cy: 3, r: 2 };
+const FILLED_DOT_CLASSES = ["dot", "filled"];
+const HOLLOW_DOT_CLASSES = ["dot", "hollow", "task"];
+const WEEK_CELL_CLASS = "week-num-cell";
 
 export function renderCalendar(root: HTMLElement, model: CalendarModel, handlers: CalendarHandlers): void {
 	renderNav(root, model, handlers);
@@ -56,13 +59,13 @@ function renderTable(root: HTMLElement, model: CalendarModel, handlers: Calendar
 	const body = table.createEl("tbody");
 	for (const row of model.rows) {
 		const tableRow = body.createEl("tr");
-		if (row.week) renderCell(tableRow, weekClasses(row.week), row.week.label, row.week, handlers);
-		for (const day of row.days) renderCell(tableRow, dayClasses(day), day.label, day, handlers);
+		if (row.week) renderCell(tableRow.createEl("td", { cls: WEEK_CELL_CLASS }), weekClasses(row.week), row.week.label, row.week, handlers);
+		for (const day of row.days) renderCell(tableRow.createEl("td"), dayClasses(day), day.label, day, handlers);
 	}
 }
 
-function renderCell(tableRow: HTMLElement, classes: string[], label: string, cell: NoteCell, handlers: CalendarHandlers): void {
-	const cellEl = tableRow.createEl("td").createDiv({ cls: classes, text: label });
+function renderCell(tableCell: HTMLElement, classes: string[], label: string, cell: NoteCell, handlers: CalendarHandlers): void {
+	const cellEl = tableCell.createDiv({ cls: classes, text: label });
 	renderDots(cellEl.createDiv({ cls: "dot-container" }), cell.dots);
 	bindNote(cellEl, cell, handlers);
 }
@@ -70,7 +73,7 @@ function renderCell(tableRow: HTMLElement, classes: string[], label: string, cel
 function renderDots(container: HTMLElement, dots: readonly Dot[]): void {
 	for (const dot of dots) {
 		container
-			.createSvg("svg", { cls: ["dot", dot.filled ? "filled" : "hollow"], attr: { viewBox: DOT_VIEW_BOX } })
+			.createSvg("svg", { cls: dot.filled ? FILLED_DOT_CLASSES : HOLLOW_DOT_CLASSES, attr: { viewBox: DOT_VIEW_BOX } })
 			.createSvg("circle", { attr: DOT_CIRCLE });
 	}
 }
