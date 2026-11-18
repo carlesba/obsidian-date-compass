@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { Command } from "obsidian";
 import { moment } from "./moment.ts";
-import { defaultDateNotes } from "../src/dateNotes/periods.ts";
+import { cursorAndPropertyCommands, dateNotesWithoutQuarter, settingsWithPropertyCommands } from "./fixtures.ts";
 import type { ParseOptions } from "../src/parse/index.ts";
 import type { NoteRef } from "../src/mentions/rows.ts";
 import { previewSequence } from "../src/sequence/preview.ts";
@@ -18,13 +18,13 @@ import type { CommandsPageContext } from "../src/settings/commandsPage.ts";
 import type { DateCompassSettings } from "../src/settings.ts";
 import { pagePath } from "../src/settings/pages.ts";
 import { commandKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
-import { defaultSettings, mergeSettings } from "../src/settings.ts";
+import { mergeSettings } from "../src/settings.ts";
 
 const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 
 const options: ParseOptions = { languages: ["en"], weekStart: "monday", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth" };
 
-const rowContext: SequenceContext = { now, moment, options, periods: defaultDateNotes().periods };
+const rowContext: SequenceContext = { now, moment, options, periods: dateNotesWithoutQuarter().periods };
 
 function notesOf(phrase: string): NoteRef[] {
 	const preview = previewSequence(phrase, rowContext);
@@ -36,13 +36,11 @@ const linkTo = (note: NoteRef) => `[[${note.name}]]`;
 
 const STYLE = defaultLinkStyle();
 
-const [INSERT_DATES, ADD_DATES, SET_REMINDERS] = presetCommands();
+const [INSERT_DATES, ADD_DATES, SET_REMINDERS] = cursorAndPropertyCommands();
 
-test("presets are Insert dates at the cursor, then Add dates and Set reminders adding dates as links to a property", () => {
+test("the only preset is Insert dates at the cursor", () => {
 	assert.deepEqual(presetCommands(), [
 		{ ...STYLE, id: "insert-dates", name: "Insert dates", destination: "cursor", property: "", mode: "add", asks: "dates", link: true },
-		{ ...STYLE, id: "set-dates", name: "Add dates", destination: "property", property: "dates", mode: "add", asks: "dates", link: true },
-		{ ...STYLE, id: "set-reminders", name: "Set reminders", destination: "property", property: "reminders", mode: "add", asks: "dates", link: true },
 	]);
 	assert.deepEqual(mergeSettings({ weekStart: "monday" }).commands, presetCommands());
 });
@@ -157,7 +155,7 @@ function fakeCommandHost(): { commands: Map<string, string>; host: { addCommand(
 }
 
 test("one palette command per command, re-registered when commands are renamed or removed", () => {
-	const commands = presetCommands();
+	const commands = cursorAndPropertyCommands();
 	const { commands: registered, host } = fakeCommandHost();
 	const registry = new PaletteCommands(host, ({ id, name }) => ({ id, name }));
 	registry.sync(commands);
@@ -173,7 +171,7 @@ test("one palette command per command, re-registered when commands are renamed o
 });
 
 test("the command controls read and write every field of a command and refuse bad values", () => {
-	const settings = defaultSettings();
+	const settings = settingsWithPropertyCommands();
 	const key = (field: Parameters<typeof commandKey>[1]) => commandKey("set-dates", field);
 	assert.equal(readControl(settings, key("property")), "dates");
 	assert.equal(writeControl(settings, key("property"), "when"), true);
@@ -217,7 +215,7 @@ function controlKeysOf(items: readonly unknown[]): string[] {
 }
 
 test("each command has one page with all its fields and nothing nests below it", () => {
-	const settings = defaultSettings();
+	const settings = settingsWithPropertyCommands();
 	const page = commandsPage(pageContext(settings));
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { id: string; items: unknown[] }[] }];
 	assert.equal(hidden.items.length, 3);
@@ -228,7 +226,7 @@ test("each command has one page with all its fields and nothing nests below it",
 });
 
 test("the Commands page adds, reorders and removes commands", async () => {
-	const settings = defaultSettings();
+	const settings = settingsWithPropertyCommands();
 	const opened: string[] = [];
 	const context = { ...pageContext(settings), openPage: (id: string) => void opened.push(id), change: (mutate: () => unknown) => Promise.resolve(void mutate()) };
 	type ListLike = { onReorder?: (a: number, b: number) => void; onDelete?: (index: number) => void; addItem?: { action: (el: HTMLElement) => void } };
@@ -243,7 +241,7 @@ test("the Commands page adds, reorders and removes commands", async () => {
 });
 
 test("a new command never reuses the id, and so the command, of a removed one", () => {
-	const commands = presetCommands();
+	const commands = cursorAndPropertyCommands();
 	const first = newCommand(commands, 1);
 	commands.push(first);
 	commands.splice(commands.indexOf(first), 1);
@@ -266,7 +264,7 @@ test("a command stored as disabled loads as a command and gets its command", () 
 
 test("a command with no property is not offered as a command", () => {
 	const unfinished = { ...newCommand([]), name: "Draft" };
-	assert.deepEqual(paletteCommands([unfinished, ...presetCommands()]).map((command) => command.name), ["Insert dates", "Add dates", "Set reminders"]);
+	assert.deepEqual(paletteCommands([unfinished, ...cursorAndPropertyCommands()]).map((command) => command.name), ["Insert dates", "Add dates", "Set reminders"]);
 });
 
 test("the One date picker asks the question as placeholder and says add or replace in its own text", async () => {
@@ -394,7 +392,7 @@ test("a stored command with no mode adds, a stored mode is kept, and an unknown 
 });
 
 test("the command page offers Add and Replace right after the property", () => {
-	const settings = defaultSettings();
+	const settings = settingsWithPropertyCommands();
 	const page = commandsPage(pageContext(settings));
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { items: { items: { name: string; control: { type: string; key: string; options?: Record<string, string> } }[] }[] }[] }];
 	const fields = hidden.items[1].items[0].items;

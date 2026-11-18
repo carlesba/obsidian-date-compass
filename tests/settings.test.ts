@@ -29,16 +29,18 @@ test("a fresh install gets the defaults, with English as the only parser languag
 			templateRunner: "automatic",
 			periods: {
 				day: { enabled: true, folder: "", format: "YYYY-MM-DD", template: "" },
-				week: { enabled: true, folder: "", format: "GGGG-[W]WW", template: "" },
-				month: { enabled: true, folder: "", format: "YYYY-MM", template: "" },
+				week: { enabled: false, folder: "", format: "GGGG-[W]WW", template: "" },
+				month: { enabled: false, folder: "", format: "YYYY-MM", template: "" },
 				quarter: { enabled: false, folder: "", format: "YYYY-[Q]Q", template: "" },
-				year: { enabled: true, folder: "", format: "YYYY", template: "" },
+				year: { enabled: false, folder: "", format: "YYYY", template: "" },
 			},
 		},
 		mentions: [
 			{ id: "mention-1", trigger: "@", targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" },
 		],
-		commands: presetCommands(),
+		commands: [
+			{ id: "insert-dates", name: "Insert dates", destination: "cursor", property: "", mode: "add", asks: "dates", link: true, targets: ["day", "week", "month", "quarter", "year"], template: "{{link}}", linkPath: "shortestWhenSafe", separator: "commaSpace", aliasShape: "format", aliasFormat: "ddd D MMM" },
+		],
 	});
 });
 
@@ -75,10 +77,10 @@ test("stored date-note settings merge over the defaults, period by period and fi
 		templateRunner: "templater",
 		periods: {
 			day: { enabled: true, folder: "on", format: "DD-MM-YYYY", template: "templates/day.md" },
-			week: { enabled: true, folder: "", format: "GGGG-[W]WW", template: "" },
-			month: { enabled: true, folder: "", format: "YYYY-MM", template: "" },
+			week: { enabled: false, folder: "", format: "GGGG-[W]WW", template: "" },
+			month: { enabled: false, folder: "", format: "YYYY-MM", template: "" },
 			quarter: { enabled: true, folder: "", format: "YYYY-[Q]Q", template: "" },
-			year: { enabled: true, folder: "", format: "YYYY", template: "" },
+			year: { enabled: false, folder: "", format: "YYYY", template: "" },
 		},
 	});
 	assert.deepEqual(mergeDateNotes({ templateRunner: "nunjucks", periods: [] }), defaultDateNotes());

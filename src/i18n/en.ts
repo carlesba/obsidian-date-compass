@@ -167,7 +167,6 @@ export const en = {
 	commandAsksDates: "Which dates for {name}?",
 	commandLink: "Each date as link",
 	commandLinkDesc: "Write each date as a link to its note. Off writes plain text. In a property that is the format of the property type: YYYY-MM-DD for date, with the time for date and time, and the note name otherwise. In the note body it is the note name, or the link text when you ask for it.",
-	presetAddDates: "Add dates",
 
 	commandsList: "Commands",
 	noCommandsYet: "No commands yet. Add one to write dates from the command palette.",
@@ -176,7 +175,6 @@ export const en = {
 	commandName: "Name",
 	commandNameDesc: "The name of the command in the command palette.",
 	untitledCommand: "Untitled command",
-	presetSetReminders: "Set reminders",
 	commandFailed: "The command could not write: {error}",
 	needsNewerObsidian: "Opening this page needs a newer version of Obsidian.",
 

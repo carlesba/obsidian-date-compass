@@ -122,7 +122,8 @@ Date Compass replaces the Periodic Notes plugin. Settings → Date Compass → *
 group per period: **Daily notes**, **Weekly notes**, **Monthly notes**, **Quarterly notes** and
 **Yearly notes**. Each has:
 
-- **Enabled**: notes of this period can be opened, created and linked. Quarterly notes start off.
+- **Enabled**: notes of this period can be opened, created and linked. Only daily notes start on;
+  turn on the other periods you use.
 - **Folder**: where the notes live; empty means the vault root.
 - **Name format**: a moment.js format such as `YYYY-MM-DD`. Slashes make subfolders. The defaults
   are `YYYY-MM-DD`, `GGGG-[W]WW`, `YYYY-MM`, `YYYY-[Q]Q` and `YYYY`.
@@ -249,13 +250,11 @@ that edits it, a handle to drag it into a new order and a ✕ that deletes it, a
 command and opens its page. A command that writes to a property is not offered until it has a
 property.
 
-### The three presets
+### The preset
 
-They are added on first install and can be removed. Each asks for **Dates** and writes links.
-
-- **Insert dates** writes at the cursor. It is the standalone Insert dates command, now a preset.
-- **Add dates** adds to the property `dates`.
-- **Set reminders** adds to the property `reminders`.
+**Insert dates** is added on first install and can be removed. It asks for **Dates** and writes
+links at the cursor. It is the standalone Insert dates command, now a preset. Commands that write to
+a property, such as one that adds to `dates` or `reminders`, are yours to add.
 
 ### Building a command
 
@@ -315,7 +314,7 @@ Mentions and commands share these settings:
 - **Path in each link**: **Shortest when safe** (default) writes only the note name, such as
   `[[2020-12-31]]`, when that name can only open this note and clicking it would create a missing
   note in its date notes folder; otherwise it follows Obsidian's new link format, so a missing
-  note elsewhere gets `[[on/2020-12-31]]`. **Always the note name** and **Always the full path**
+  note elsewhere gets `[[Daily/2020-12-31]]`. **Always the note name** and **Always the full path**
   skip the checks. The choice also applies to links written into properties.
 - **Text around each link**: what is written for each date in the note body; default `{{link}}`.
   `{{link}}` is the link, with its path and link text, so add words around it, such as `Review

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { moment } from "./moment.ts";
-import { defaultDateNotes } from "../src/dateNotes/periods.ts";
+import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import type { Analysis, Interpretation, ParseOptions, Refusal } from "../src/parse/index.ts";
 import type { DateParser } from "../src/mentions/rows.ts";
 import type { EditorPosition } from "obsidian";
@@ -13,7 +13,7 @@ const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 const options: ParseOptions = { languages: ["en"], weekStart: "monday", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth" };
 
 function context(overrides: Partial<SequenceContext> = {}): SequenceContext {
-	return { now, moment, options, periods: defaultDateNotes().periods, ...overrides };
+	return { now, moment, options, periods: dateNotesWithoutQuarter().periods, ...overrides };
 }
 
 const NO_PARSE: DateParser = { parse: () => [], complete: () => [] };
@@ -53,7 +53,7 @@ test("an empty input shows no preview", () => {
 test("text that does not parse shows why", () => {
 	assert.deepEqual(previewSequence("hello world", context()), { kind: "invalid", text: "This text is not a date, a range or a sequence." });
 	assert.deepEqual(previewSequence("next week", context({ parser: NO_PARSE, analyze: NO_ANALYSIS })), { kind: "invalid", text: "This text is not a date, a range or a sequence." });
-	const periods = defaultDateNotes().periods;
+	const periods = dateNotesWithoutQuarter().periods;
 	periods.week.enabled = false;
 	assert.deepEqual(previewSequence("next week", context({ periods })), {
 		kind: "invalid",
@@ -79,7 +79,7 @@ test("a sequence the parser refuses as too long shows the over-limit message", (
 });
 
 test("the over-limit message wins over a turned-off period", () => {
-	const periods = defaultDateNotes().periods;
+	const periods = dateNotesWithoutQuarter().periods;
 	periods.day.enabled = false;
 	assert.equal(previewText("every day for 400 days", { periods }), "This makes more than 366 dates. Shorten the range or sequence.");
 });

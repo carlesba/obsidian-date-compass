@@ -124,8 +124,8 @@ Date Compass sustituye al plugin Periodic Notes. Ajustes → Date Compass → **
 un grupo por periodo: **Notas diarias**, **Notas semanales**, **Notas mensuales**, **Notas
 trimestrales** y **Notas anuales**. Cada uno tiene:
 
-- **Activadas**: las notas de este periodo se pueden abrir, crear y enlazar. Las trimestrales
-  empiezan desactivadas.
+- **Activadas**: las notas de este periodo se pueden abrir, crear y enlazar. Solo las notas
+  diarias empiezan activadas; activa los demás periodos que uses.
 - **Carpeta**: dónde viven las notas; vacía es la raíz de la bóveda.
 - **Formato del nombre**: un formato de moment.js como `YYYY-MM-DD`. Las barras crean subcarpetas.
   Por defecto son `YYYY-MM-DD`, `GGGG-[W]WW`, `YYYY-MM`, `YYYY-[Q]Q` y `YYYY`.
@@ -258,13 +258,12 @@ un lápiz para editarlo, un asa para arrastrarlo a otro lugar y una ✕ que lo b
 comando en blanco y abre su página. Un comando que escribe en una propiedad no se ofrece hasta que
 tiene una propiedad.
 
-### Los tres comandos predefinidos
+### El comando predefinido
 
-Se añaden en la primera instalación y se pueden quitar. Todos piden **Fechas** y escriben enlaces.
-
-- **Insertar fechas** escribe en el cursor. Es el comando independiente Insertar fechas, ahora convertido en uno predefinido.
-- **Añadir fechas** añade a la propiedad `dates`.
-- **Poner recordatorios** añade a la propiedad `reminders`.
+**Insertar fechas** se añade en la primera instalación y se puede quitar. Pide **Fechas** y escribe
+enlaces en el cursor. Es el comando independiente Insertar fechas, ahora convertido en uno
+predefinido. Los comandos que escriben en una propiedad, como uno que añada a `dates` o a
+`reminders`, los añades tú.
 
 ### Crear un comando
 
@@ -328,7 +327,7 @@ Las menciones y los comandos comparten estos ajustes:
 - **Ruta en cada enlace**: **La más corta si es seguro** (por defecto) escribe solo el nombre de la
   nota, como `[[2020-12-31]]`, cuando ese nombre solo puede abrir esta nota y al pulsarlo una
   nota que falta se crearía en su carpeta de notas de fecha; si no, sigue el formato de enlaces
-  nuevos de Obsidian, así que una nota que falta en otro sitio recibe `[[on/2020-12-31]]`.
+  nuevos de Obsidian, así que una nota que falta en otro sitio recibe `[[Daily/2020-12-31]]`.
   **Siempre el nombre de la nota** y **Siempre la ruta completa** se saltan las comprobaciones.
   La elección también vale para los enlaces escritos en propiedades.
 - **Texto alrededor de cada enlace**: lo que se escribe por cada fecha en el cuerpo de la nota; por

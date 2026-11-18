@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert";
 import { moment } from "./moment.ts";
 import type { NoteRef } from "../src/mentions/rows.ts";
 import type { LinkBuilders } from "../src/insertion/linksToWrite.ts";
-import { mergeCommands, newCommand, presetCommands } from "../src/commands/settings.ts";
+import { mergeCommands, newCommand } from "../src/commands/settings.ts";
 import type { DateCommand } from "../src/commands/settings.ts";
 import { paletteCommands } from "../src/commands/palette.ts";
 import { datesQuestionFor, pickerTextFor } from "../src/commands/pickerText.ts";
@@ -14,6 +14,7 @@ import type { WriteTarget } from "../src/commands/write.ts";
 import { commandsPage } from "../src/settings/commandsPage.ts";
 import { commandKey, commandKeyParts, commandPageRefresh, mentionKeyParts, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { defaultSettings } from "../src/settings.ts";
+import { cursorAndPropertyCommands, settingsWithPropertyCommands } from "./fixtures.ts";
 
 function dayNote(isoDate: string): NoteRef {
 	const start = moment(isoDate, "YYYY-MM-DD");
@@ -27,7 +28,7 @@ const LINKS: LinkBuilders = {
 	property: (note, alias) => (alias === undefined ? `[[${note.name}]]` : `[[${note.name}|${alias}]]`),
 };
 
-const [INSERT_DATES, ADD_DATES] = presetCommands();
+const [INSERT_DATES, ADD_DATES] = cursorAndPropertyCommands();
 
 const TASKS: DateCommand = { ...INSERT_DATES, template: "- {{link}} ({{date:YYYY}})", aliasFormat: "D MMM" };
 
@@ -52,7 +53,7 @@ function written({ command = TASKS, target, withAlias = false, kind = "other", n
 
 test("palette commands carry the id command-<id> and say whether they need an editor", () => {
 	assert.deepEqual(
-		paletteCommands(presetCommands()).map(({ id, name, needsEditor }) => ({ id, name, needsEditor })),
+		paletteCommands(cursorAndPropertyCommands()).map(({ id, name, needsEditor }) => ({ id, name, needsEditor })),
 		[
 			{ id: "command-insert-dates", name: "Insert dates", needsEditor: true },
 			{ id: "command-set-dates", name: "Add dates", needsEditor: false },
@@ -180,7 +181,7 @@ test("command control keys are commands/<id>/<field>, link style fields included
 });
 
 test("the link style of a command is read and written through its control keys", () => {
-	const settings = defaultSettings();
+	const settings = settingsWithPropertyCommands();
 	const key = (field: Parameters<typeof commandKey>[1]) => commandKey("insert-dates", field);
 	assert.equal(readControl(settings, key("template")), "{{link}}");
 	assert.equal(writeControl(settings, key("template"), "- {{link}}"), true);

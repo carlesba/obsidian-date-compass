@@ -169,7 +169,6 @@ export const es: Translation = {
 	commandAsksDates: "¿Qué fechas para {name}?",
 	commandLink: "Cada fecha como enlace",
 	commandLinkDesc: "Escribe cada fecha como un enlace a su nota. Si está desactivado, escribe texto. En una propiedad es el formato del tipo de propiedad: AAAA-MM-DD para fecha, con la hora para fecha y hora, y el nombre de la nota en los demás casos. En el cuerpo de la nota es el nombre de la nota, o el texto del enlace cuando lo pides.",
-	presetAddDates: "Añadir fechas",
 
 	commandsList: "Comandos",
 	noCommandsYet: "Aún no hay comandos. Añade uno para escribir fechas desde la paleta de comandos.",
@@ -178,7 +177,6 @@ export const es: Translation = {
 	commandName: "Nombre",
 	commandNameDesc: "El nombre del comando en la paleta de comandos.",
 	untitledCommand: "Comando sin nombre",
-	presetSetReminders: "Poner recordatorios",
 	commandFailed: "El comando no pudo escribir: {error}",
 	needsNewerObsidian: "Abrir esta página necesita una versión más reciente de Obsidian.",
 

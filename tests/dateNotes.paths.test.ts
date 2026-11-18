@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { dateOf, nearestDateNote, notePath } from "../src/dateNotes/paths.ts";
-import { defaultDateNotes } from "../src/dateNotes/periods.ts";
+import { PERIODS, defaultDateNotes } from "../src/dateNotes/periods.ts";
 import type { Period, PeriodSettingsByPeriod } from "../src/dateNotes/periods.ts";
+import { dateNotesEnabling } from "./fixtures.ts";
 import { moment } from "./moment.ts";
 
 function periods(change: (periods: PeriodSettingsByPeriod) => void = () => {}): PeriodSettingsByPeriod {
-	const settings = defaultDateNotes().periods;
-	settings.quarter.enabled = true;
+	const settings = dateNotesEnabling(PERIODS).periods;
 	change(settings);
 	return settings;
 }

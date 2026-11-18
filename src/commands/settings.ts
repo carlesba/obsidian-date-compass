@@ -31,8 +31,6 @@ export interface DateCommand extends LinkStyle {
 export function presetCommands(): DateCommand[] {
 	return [
 		{ ...defaultLinkStyle(), id: "insert-dates", name: t("insertDates"), destination: "cursor", property: "", mode: "add", asks: "dates", link: true },
-		{ ...defaultLinkStyle(), id: "set-dates", name: t("presetAddDates"), destination: "property", property: "dates", mode: "add", asks: "dates", link: true },
-		{ ...defaultLinkStyle(), id: "set-reminders", name: t("presetSetReminders"), destination: "property", property: "reminders", mode: "add", asks: "dates", link: true },
 	];
 }
 

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { ensureDateNote } from "../src/dateNotes/create.ts";
-import { defaultDateNotes } from "../src/dateNotes/periods.ts";
+import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import type { DateNotesSettings } from "../src/dateNotes/periods.ts";
 import { chooseRunner, coreTemplateFormats, renderTemplate } from "../src/dateNotes/templates.ts";
 import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
@@ -20,7 +20,7 @@ const TEMPLATES = {
 };
 
 function settingsWith(change: (settings: DateNotesSettings) => void): DateNotesSettings {
-	const settings = defaultDateNotes();
+	const settings = dateNotesWithoutQuarter();
 	settings.periods.day.folder = "on";
 	change(settings);
 	return settings;

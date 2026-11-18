@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { moment } from "./moment.ts";
-import { defaultDateNotes } from "../src/dateNotes/periods.ts";
+import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import type { Period } from "../src/dateNotes/periods.ts";
 import type { Completion, Interpretation, ParseOptions, Unit } from "../src/parse/index.ts";
 import { buildRows, mayStillMatch, rowLabel, singleNoteRows } from "../src/mentions/rows.ts";
@@ -19,7 +19,7 @@ const now = moment("2026-11-17 12:00", "YYYY-MM-DD HH:mm");
 const options: ParseOptions = { languages: ["en"], weekStart: "monday", nextWeekday: "nextWeek", dayMonthOrder: "dayMonth" };
 
 function context(overrides: Partial<RowContext> = {}): RowContext {
-	return { now, moment, options, periods: defaultDateNotes().periods, ...overrides };
+	return { now, moment, options, periods: dateNotesWithoutQuarter().periods, ...overrides };
 }
 
 function interpretation(unit: Unit, start: string, end = start, language = "en"): Interpretation {
@@ -154,7 +154,7 @@ test("without targets rows keep every period Date notes enable and drop the othe
 	});
 	const rows = buildRows("q", context({ parser }));
 	assert.deepEqual(rows.map((row) => row.notes[0].period), ["day", "week", "year"]);
-	const dateNotes = defaultDateNotes();
+	const dateNotes = dateNotesWithoutQuarter();
 	dateNotes.periods.quarter.enabled = true;
 	const withQuarter = buildRows("q", context({ parser, periods: dateNotes.periods }));
 	assert.deepEqual(withQuarter.map((row) => row.notes[0].period), ["day", "week", "quarter", "year"]);
@@ -180,7 +180,7 @@ test("a phrase outside the targets moves to the closest target instead of being 
 	assert.deepEqual(firstNotes("this month", ["day"]), ["2026-02-13"]);
 	assert.deepEqual(firstNotes("next month", ["day", "year"]), ["2026"]);
 	assert.deepEqual(firstNotes("next month", ["day", "week"]), ["2026-W11"]);
-	const dateNotes = defaultDateNotes();
+	const dateNotes = dateNotesWithoutQuarter();
 	dateNotes.periods.quarter.enabled = true;
 	assert.deepEqual(firstNotes("next quarter", ["week", "month"], { periods: dateNotes.periods }), ["2026-05"]);
 });
@@ -191,7 +191,7 @@ test("a day-only mention on the 31st reads next month as the last day of a short
 });
 
 test("the targets that count are the ones Date notes enable", () => {
-	const dateNotes = defaultDateNotes();
+	const dateNotes = dateNotesWithoutQuarter();
 	dateNotes.periods.month.enabled = false;
 	assert.deepEqual(firstNotes("next month", ["day", "month"], { periods: dateNotes.periods }), ["2026-03-13"]);
 	assert.deepEqual(firstNotes("next month", ["month"], { periods: dateNotes.periods }), []);
@@ -334,7 +334,7 @@ test("labels name the year when it is not the current one", () => {
 			sequence("day", ["2026-12-31", "2027-01-01"]),
 		],
 	});
-	const dateNotes = defaultDateNotes();
+	const dateNotes = dateNotesWithoutQuarter();
 	dateNotes.periods.quarter.enabled = true;
 	assert.deepEqual(buildRows("q", context({ parser, periods: dateNotes.periods })).map((row) => rowLabel(row, now)), [
 		"Tue 5 Jan 2027 → [[2027-01-05]]",

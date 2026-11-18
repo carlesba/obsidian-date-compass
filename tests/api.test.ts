@@ -10,6 +10,7 @@ import { parse } from "../src/parse/index.ts";
 import { parseOptionsOf } from "../src/parseOptions.ts";
 import { defaultSettings } from "../src/settings.ts";
 import type { DateCompassSettings } from "../src/settings.ts";
+import { dateNotesEnabling } from "./fixtures.ts";
 
 const NOW = new Date(2026, 10, 17, 12);
 
@@ -22,7 +23,7 @@ interface Fake {
 function fakeApi(change: (settings: DateCompassSettings) => void = () => {}, localeFirstDayOfWeek = 1): Fake {
 	const settings = defaultSettings();
 	settings.weekStart = "monday";
-	settings.dateNotes.periods.quarter.enabled = true;
+	settings.dateNotes = dateNotesEnabling(PERIODS);
 	change(settings);
 	const opened: Fake["opened"] = [];
 	const api = createDateCompassApi({

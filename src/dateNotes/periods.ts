@@ -32,10 +32,10 @@ export const DEFAULT_FORMATS: Record<Period, string> = {
 
 const ENABLED_BY_DEFAULT: Record<Period, boolean> = {
 	day: true,
-	week: true,
-	month: true,
+	week: false,
+	month: false,
 	quarter: false,
-	year: true,
+	year: false,
 };
 
 export function isPeriod(value: unknown): value is Period {
