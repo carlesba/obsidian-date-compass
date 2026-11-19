@@ -25,6 +25,7 @@ export const CALENDAR_ICON = "calendar-days";
 
 const ROOT_CLASS = "date-compass-calendar";
 const MOBILE_CLASS = "is-mobile";
+const DIMS_WITHOUT_NOTE_CLASS = "dims-without-note";
 const CONTEXT_MENU_SOURCE = "calendar-context-menu";
 const DELETE_ICON = "trash";
 const RENDER_DEBOUNCE_MS = 50;
@@ -167,6 +168,7 @@ export class CalendarView extends ItemView implements HoverParent {
 			dotsOf: (path, place, hasNote) => this.dots.dotsOf(path, place, hasNote, decorators),
 		});
 		this.root.empty();
+		this.root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, settings.calendar.dimWithoutNote);
 		renderCalendar(this.root, model, this.handlers);
 	}
 

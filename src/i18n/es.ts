@@ -197,6 +197,8 @@ export const es: Translation = {
 	calendarShowWeekNumbers: "Mostrar números de semana",
 	calendarShowWeekNumbersDesc: "Añade una columna con el número de cada semana. Abre la nota semanal cuando las notas semanales están activadas.",
 	calendarConfirmBeforeCreate: "Confirmar antes de crear una nota",
+	calendarDimWithoutNote: "Atenuar fechas sin nota",
+	calendarDimWithoutNoteDesc: "Muestra en un color apagado los días, semanas, meses, trimestres y años que aún no tienen nota, para que destaquen los que sí la tienen.",
 	calendarConfirmBeforeCreateDesc: "Pregunta antes de crear la nota de un día, una semana u otro periodo que aún no existe.",
 	dotsList: "Puntos",
 	noDotsYet: "Aún no hay puntos. Añade uno con +.",

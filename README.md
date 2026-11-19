@@ -447,6 +447,9 @@ an earlier version becomes the amount of the word dots, and 0 leaves only the ta
 Settings → **Calendar**:
 
 - **Show week numbers**: add the week column. On by default.
+- **Dim dates without a note**: show days, weeks, months, quarters and years that have no note
+  yet in a muted color. Days of the previous and next month are see-through either way, so both
+  differences show at once. Off by default.
 - **Confirm before creating a note**: ask before creating a note that does not exist yet. On by
   default.
 - **Dots**: the list of dots described above, with + to add an entry by its source. Each row has a

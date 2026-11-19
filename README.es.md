@@ -479,6 +479,9 @@ puntos de palabras, y 0 deja solo los puntos de tareas.
 Ajustes → **Calendario**:
 
 - **Mostrar números de semana**: añade la columna de semanas. Activado por defecto.
+- **Atenuar fechas sin nota**: muestra en un color apagado los días, semanas, meses, trimestres y
+  años que aún no tienen nota. Los días del mes anterior y del siguiente se ven translúcidos en
+  cualquier caso, así que se distinguen las dos cosas a la vez. Desactivado por defecto.
 - **Confirmar antes de crear una nota**: pregunta antes de crear una nota que aún no existe.
   Activado por defecto.
 - **Puntos**: la lista de puntos descrita arriba, con + para añadir una entrada según su fuente.

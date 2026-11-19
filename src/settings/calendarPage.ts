@@ -7,7 +7,7 @@ import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, 
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
 import type { LegacyFilterKind } from "../filters/legacy.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, decoratorKey } from "./controlKeys.ts";
+import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -168,6 +168,7 @@ export function calendarItems(decorators: DotDecorator[], context: CalendarPageC
 			type: "group",
 			items: [
 				{ name: t("calendarShowWeekNumbers"), desc: t("calendarShowWeekNumbersDesc"), control: { type: "toggle", key: CALENDAR_SHOW_WEEK_NUMBERS_KEY } },
+				{ name: t("calendarDimWithoutNote"), desc: t("calendarDimWithoutNoteDesc"), control: { type: "toggle", key: CALENDAR_DIM_WITHOUT_NOTE_KEY } },
 				{ name: t("calendarConfirmBeforeCreate"), desc: t("calendarConfirmBeforeCreateDesc"), control: { type: "toggle", key: CALENDAR_CONFIRM_BEFORE_CREATE_KEY } },
 			],
 		},

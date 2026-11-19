@@ -185,7 +185,11 @@
 }
 
 .date-compass-calendar .day.adjacent-month {
-	color: var(--text-faint);
+	opacity: 0.4;
+}
+
+.date-compass-calendar.dims-without-note .is-clickable:not(.has-note):not(.today) {
+	color: var(--text-muted);
 }
 
 .date-compass-calendar .day.is-clickable,

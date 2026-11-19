@@ -25,6 +25,8 @@ export const CALENDAR_SHOW_WEEK_NUMBERS_KEY = "calendar/showWeekNumbers";
 
 export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate";
 
+export const CALENDAR_DIM_WITHOUT_NOTE_KEY = "calendar/dimWithoutNote";
+
 
 const CALENDAR_KEY_PREFIX = "calendar/";
 
@@ -300,6 +302,7 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (periodField) return settings.dateNotes.periods[periodField.period][periodField.field];
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return settings.calendar.showWeekNumbers;
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
+	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return settings.calendar.dimWithoutNote;
 	const decoratorControl = decoratorControlOfKey(settings, key);
 	if (decoratorControl) return decoratorControl.decorators[decoratorControl.index][decoratorControl.field];
 	const mentionControl = mentionControlOfKey(settings, key);
@@ -326,6 +329,7 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 	const { calendar } = settings;
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return writeBoolean(value, (shown) => (calendar.showWeekNumbers = shown));
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return writeBoolean(value, (confirm) => (calendar.confirmBeforeCreate = confirm));
+	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return writeBoolean(value, (dims) => (calendar.dimWithoutNote = dims));
 	return false;
 }
 

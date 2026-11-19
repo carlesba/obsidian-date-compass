@@ -195,6 +195,8 @@ export const en = {
 	calendarShowWeekNumbers: "Show week numbers",
 	calendarShowWeekNumbersDesc: "Add a column with the number of each week. It opens the weekly note when weekly notes are on.",
 	calendarConfirmBeforeCreate: "Confirm before creating a note",
+	calendarDimWithoutNote: "Dim dates without a note",
+	calendarDimWithoutNoteDesc: "Show days, weeks, months, quarters and years that have no note yet in a muted color, so the ones with a note stand out.",
 	calendarConfirmBeforeCreateDesc: "Ask before creating the note of a day, week or other period that does not exist yet.",
 	dotsList: "Dots",
 	noDotsYet: "No dots yet. Add one with +.",
