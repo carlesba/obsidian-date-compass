@@ -3,16 +3,16 @@ import { strict as assert } from "node:assert";
 import { defaultCalendar, mergeCalendar } from "../src/calendar/settings.ts";
 import { defaultSettings, mergeSettings } from "../src/settings.ts";
 import { defaultDecorators } from "../src/calendar/decorators.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { calendarItems } from "../src/settings/calendarPage.ts";
 import type { SettingDefinitionGroup } from "obsidian";
 import type { CalendarPageContext } from "../src/settings/calendarPage.ts";
 import { weekStartMismatchGroup } from "../src/settings/dateNotesPage.ts";
 
-const DEFAULTS = { showWeekNumbers: true, confirmBeforeCreate: true, dimWithoutNote: false, decorators: defaultDecorators() };
+const DEFAULTS = { showWeekNumbers: true, confirmBeforeCreate: true, dimWithoutNote: false, view: "month", monthsShown: 1, weeksBefore: 0, weeksAfter: 0, weeksShown: 6, todayRow: "first", decorators: defaultDecorators() };
 
 function contextOf(): CalendarPageContext {
-	return { decorators: () => [], openPage: () => undefined, change: async () => undefined, write: () => undefined, notify: () => undefined, choose: () => undefined, search: () => undefined, propertyNames: () => [], propertyTypes: () => ({}), renderFilter: () => () => undefined };
+	return { calendar: defaultCalendar, decorators: () => [], openPage: () => undefined, change: async () => undefined, write: () => undefined, notify: () => undefined, choose: () => undefined, search: () => undefined, propertyNames: () => [], propertyTypes: () => ({}), renderFilter: () => () => undefined };
 }
 
 function groupsOf(): SettingDefinitionGroup[] {
@@ -45,15 +45,22 @@ test("a stored words per dot becomes the amount of the word dots, and 0 leaves o
 test("every Calendar control reads and writes its setting and refuses bad values", () => {
 	const settings = defaultSettings();
 	const keys = groupsOf().flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
-	assert.deepEqual(keys, [CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY]);
+	assert.deepEqual(keys, [CALENDAR_VIEW_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY]);
 	assert.equal(writeControl(settings, CALENDAR_SHOW_WEEK_NUMBERS_KEY, false), true);
 	assert.equal(writeControl(settings, CALENDAR_SHOW_WEEK_NUMBERS_KEY, "no"), false);
 	assert.equal(writeControl(settings, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, false), true);
 	assert.equal(writeControl(settings, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, 0), false);
 	assert.equal(writeControl(settings, CALENDAR_DIM_WITHOUT_NOTE_KEY, true), true);
 	assert.equal(writeControl(settings, CALENDAR_DIM_WITHOUT_NOTE_KEY, "yes"), false);
+	assert.equal(writeControl(settings, CALENDAR_MONTHS_SHOWN_KEY, 3), true);
+	assert.equal(writeControl(settings, CALENDAR_MONTHS_SHOWN_KEY, 4), false);
+	assert.equal(writeControl(settings, CALENDAR_WEEKS_AFTER_KEY, 2), true);
+	assert.equal(writeControl(settings, CALENDAR_WEEKS_AFTER_KEY, 1.5), false);
+	assert.equal(writeControl(settings, CALENDAR_WEEKS_SHOWN_KEY, 1), false);
+	assert.equal(writeControl(settings, CALENDAR_VIEW_KEY, "year"), false);
+	assert.equal(writeControl(settings, CALENDAR_TODAY_ROW_KEY, "top"), false);
 	assert.equal(writeControl(settings, "calendar/unknown", true), false);
-	assert.deepEqual(settings.calendar, { showWeekNumbers: false, confirmBeforeCreate: false, dimWithoutNote: true, decorators: defaultDecorators() });
+	assert.deepEqual(settings.calendar, { ...DEFAULTS, showWeekNumbers: false, confirmBeforeCreate: false, dimWithoutNote: true, monthsShown: 3, weeksAfter: 2 });
 	assert.equal(readControl(settings, CALENDAR_SHOW_WEEK_NUMBERS_KEY), false);
 	assert.equal(readControl(settings, CALENDAR_CONFIRM_BEFORE_CREATE_KEY), false);
 	assert.equal(readControl(settings, CALENDAR_DIM_WITHOUT_NOTE_KEY), true);
@@ -69,4 +76,19 @@ test("the Date notes page warns about week numbers only while the week start dis
 	assert.match((group.items?.[0] as { desc: string }).desc, /Week starts on.*Neither setting is changed automatically/);
 	disagrees = false;
 	assert.equal(visible(), false);
+});
+
+test("the weeks view shows its own options instead of the month options", () => {
+	const weeks = { ...defaultCalendar(), view: "weeks" as const };
+	const keys = calendarItems([], { ...contextOf(), calendar: () => weeks })
+		.filter((item): item is SettingDefinitionGroup => "type" in item && item.type === "group")
+		.flatMap((group) => (group.items ?? []).flatMap((item) => ("control" in item && item.control ? [item.control.key] : [])));
+	assert.deepEqual(keys.slice(0, 3), [CALENDAR_VIEW_KEY, CALENDAR_WEEKS_SHOWN_KEY, CALENDAR_TODAY_ROW_KEY]);
+	const settings = defaultSettings();
+	assert.equal(writeControl(settings, CALENDAR_VIEW_KEY, "weeks"), true);
+	assert.equal(writeControl(settings, CALENDAR_WEEKS_SHOWN_KEY, 8), true);
+	assert.equal(writeControl(settings, CALENDAR_TODAY_ROW_KEY, "middle"), true);
+	assert.deepEqual([readControl(settings, CALENDAR_VIEW_KEY), readControl(settings, CALENDAR_WEEKS_SHOWN_KEY), readControl(settings, CALENDAR_TODAY_ROW_KEY)], ["weeks", 8, "middle"]);
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).calendar, settings.calendar);
+	assert.deepEqual(mergeCalendar({ view: "year", monthsShown: 9, weeksShown: 0, todayRow: "top" }), DEFAULTS);
 });

@@ -5,20 +5,24 @@ import type { DateNotePane } from "../dateNotes/commands.ts";
 import { fileNameParts } from "../dateNotes/paths.ts";
 import { t } from "../i18n/index.ts";
 import { civilOf } from "../parse/calendar.ts";
+import type { CivilDate } from "../parse/calendar.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { confirmCreateNote } from "./confirmModal.ts";
-import { monthGrid, monthOf } from "./grid.ts";
-import type { CivilMonth } from "./grid.ts";
+import { monthGrid, monthOf, weeksAroundGrid } from "./grid.ts";
+import type { MonthGrid } from "./grid.ts";
 import { headerParts } from "./header.ts";
 import { calendarModel } from "./model.ts";
-import type { NoteTarget } from "./model.ts";
-import { monthAfterDayChange, sameDay, shiftMonth } from "./navigation.ts";
+import type { CalendarModel, NoteTarget } from "./model.ts";
+import { anchorAfterDayChange, monthAfterDayChange, sameDay, shiftMonth, shiftWeek, startOfMonthBefore, startOfNextMonth } from "./navigation.ts";
 import { createNoteDotsReader, localeWeekRule, momentOf, monthShortName, weekdayShortNames } from "./obsidianHost.ts";
 import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "./paths.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
+import { todayRowIndex } from "./settings.ts";
+import type { CalendarSettings } from "./settings.ts";
 import { singleFlight } from "./singleFlight.ts";
 import { weekRuleOf } from "./weeks.ts";
+import type { WeekRule } from "./weeks.ts";
 
 export const CALENDAR_VIEW_TYPE = "date-compass-calendar";
 export const CALENDAR_ICON = "calendar-days";
@@ -39,15 +43,18 @@ export class CalendarView extends ItemView implements HoverParent {
 	private readonly requestRender = debounce(() => this.renderWhenShown(), RENDER_DEBOUNCE_MS, false);
 	private readonly openOncePerPath = singleFlight();
 	private readonly handlers: CalendarHandlers = {
-		previousMonth: () => this.showMonth(shiftMonth(this.displayed, -1)),
-		nextMonth: () => this.showMonth(shiftMonth(this.displayed, 1)),
-		currentMonth: () => this.showMonth(monthOf(this.today)),
+		back: () => this.move(-1),
+		forward: () => this.move(1),
+		jumpBack: () => this.showAnchor(startOfMonthBefore(this.anchor)),
+		jumpForward: () => this.showAnchor(startOfNextMonth(this.anchor)),
+		today: () => this.showDate(this.today),
 		open: (target, event) => this.openNote(target, event),
 		hover: (target, event, targetEl) => this.previewNote(target, event, targetEl),
 		contextMenu: (target, event) => this.showNoteMenu(target, event),
 	};
 	private today = civilOf(new Date());
 	private displayed = monthOf(this.today);
+	private anchor = this.today;
 	private visiblePaths: ReadonlySet<string> = new Set<string>();
 	private renderedActivePath: string | undefined;
 	private awaitsBeingShown = false;
@@ -98,8 +105,20 @@ export class CalendarView extends ItemView implements HoverParent {
 		this.requestRender();
 	}
 
-	showMonth(month: CivilMonth): void {
-		this.displayed = { year: month.year, month: month.month };
+	showDate(date: CivilDate): void {
+		this.displayed = monthOf(date);
+		this.anchor = date;
+		this.render();
+	}
+
+	private move(steps: number): void {
+		if (this.settings().calendar.view === "weeks") this.showAnchor(shiftWeek(this.anchor, steps));
+		else this.showDate({ ...shiftMonth(this.displayed, steps), day: 1 });
+	}
+
+	private showAnchor(anchor: CivilDate): void {
+		this.anchor = anchor;
+		this.displayed = monthOf(anchor);
 		this.render();
 	}
 
@@ -125,6 +144,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		const now = civilOf(new Date());
 		if (sameDay(now, this.today)) return false;
 		this.displayed = monthAfterDayChange(this.displayed, this.today, now);
+		this.anchor = anchorAfterDayChange(this.anchor, this.today, now);
 		this.today = now;
 		return true;
 	}
@@ -147,29 +167,42 @@ export class CalendarView extends ItemView implements HoverParent {
 		this.followToday();
 		const settings = this.settings();
 		const { periods } = settings.dateNotes;
-		const { decorators } = settings.calendar;
+		const { calendar } = settings;
+		const { decorators } = calendar;
 		const rule = weekRuleOf(settings.weekStart, localeWeekRule());
-		const grid = monthGrid(this.displayed, rule, this.today);
-		const notes = visibleNotes(grid, periods, momentOf);
 		const activePath = this.app.workspace.getActiveFile()?.path;
-		this.visiblePaths = notes.visiblePaths;
+		const visiblePaths = new Set<string>();
+		const modelOf = (grid: MonthGrid): CalendarModel => {
+			const notes = visibleNotes(grid, periods, momentOf);
+			for (const path of notes.visiblePaths) visiblePaths.add(path);
+			return calendarModel({
+				grid,
+				today: this.today,
+				notes,
+				parts: headerParts(grid.month, monthShortName(grid.month), periods),
+				rule,
+				weekdayNames: weekdayShortNames(),
+				showWeekNumbers: calendar.showWeekNumbers,
+				activePath,
+				noteExists: (path) => this.app.vault.getFileByPath(path) !== null,
+				showsDotsAbove: decorators.some((decorator) => decorator.position === "above"),
+				dotsOf: (path, place, hasNote) => this.dots.dotsOf(path, place, hasNote, decorators),
+			});
+		};
+		const months = this.grids(calendar, rule).map(modelOf);
+		this.visiblePaths = visiblePaths;
 		this.renderedActivePath = activePath;
-		const model = calendarModel({
-			grid,
-			today: this.today,
-			notes,
-			parts: headerParts(this.displayed, monthShortName(this.displayed), periods),
-			rule,
-			weekdayNames: weekdayShortNames(),
-			showWeekNumbers: settings.calendar.showWeekNumbers,
-			activePath,
-			noteExists: (path) => this.app.vault.getFileByPath(path) !== null,
-			showsDotsAbove: decorators.some((decorator) => decorator.position === "above"),
-			dotsOf: (path, place, hasNote) => this.dots.dotsOf(path, place, hasNote, decorators),
-		});
 		this.root.empty();
-		this.root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, settings.calendar.dimWithoutNote);
-		renderCalendar(this.root, model, this.handlers);
+		this.root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, calendar.dimWithoutNote);
+		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months }, this.handlers);
+	}
+
+	private grids(calendar: CalendarSettings, rule: WeekRule): MonthGrid[] {
+		if (calendar.view === "weeks") return [weeksAroundGrid(this.anchor, calendar.weeksShown, todayRowIndex(calendar.todayRow, calendar.weeksShown), rule, this.today)];
+		const last = calendar.monthsShown - 1;
+		return Array.from({ length: calendar.monthsShown }, (_, index) =>
+			monthGrid(shiftMonth(this.displayed, index), rule, this.today, { before: index === 0 ? calendar.weeksBefore : 0, after: index === last ? calendar.weeksAfter : 0 }),
+		);
 	}
 
 	private openNote(target: NoteTarget, event: MouseEvent): void {

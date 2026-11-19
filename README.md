@@ -373,6 +373,19 @@ enabled; a part whose period is off is plain text. The arrows move one month, an
 returns to the current month; on a phone or tablet **Today** is a dot between the arrows. At
 midnight a calendar showing the current month moves on by itself.
 
+**Views.** Settings → **Calendar** → **View** picks how much of the calendar you see:
+
+- **Month** shows whole months. **Months shown** stacks one to three months, each later month
+  under its own title. **Extra weeks before** and **Extra weeks after** add up to four weeks above
+  the first month and below the last one.
+- **Weeks** shows a set number of weeks around today (**Weeks shown**, 2 to 12), so the distance
+  you see ahead stays the same all month. **Today's row** puts the week of today on the first,
+  middle or last row. The title names the month of that row, and days of other months fade as in
+  the month view. The header has two arrows on each side: the single arrows (‹ ›) move one week,
+  and the double arrows (« ») jump to the start of a month. « goes to the 1st of the month shown,
+  and pressed again to the 1st of the month before; » goes to the 1st of the next month. **Today**
+  brings today's week back to its row.
+
 **Week column.** With **Show week numbers** on, the first column shows each week's number. The
 number opens the weekly note when weekly notes are enabled, and is plain text when they are off.
 The first weekday and the week numbers follow
@@ -446,6 +459,7 @@ an earlier version becomes the amount of the word dots, and 0 leaves only the ta
 
 Settings → **Calendar**:
 
+- **View**: **Month** or **Weeks**, with their options described above. Month by default.
 - **Show week numbers**: add the week column. On by default.
 - **Dim dates without a note**: show days, weeks, months, quarters and years that have no note
   yet in a muted color. Days of the previous and next month are see-through either way, so both

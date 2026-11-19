@@ -393,6 +393,19 @@ su periodo está activado; una parte cuyo periodo está desactivado es texto nor
 mueven un mes, y **Hoy** vuelve al mes actual; en un teléfono o tableta **Hoy** es un punto entre
 las flechas. A medianoche, un calendario que muestra el mes actual avanza solo.
 
+**Vistas.** Ajustes → **Calendario** → **Vista** elige cuánto calendario ves:
+
+- **Mes** muestra meses enteros. **Meses visibles** apila de uno a tres meses, cada mes siguiente
+  bajo su propio título. **Semanas extra antes** y **Semanas extra después** añaden hasta cuatro
+  semanas encima del primer mes y debajo del último.
+- **Semanas** muestra un número fijo de semanas alrededor de hoy (**Semanas visibles**, de 2 a
+  12), así lo que ves por delante es igual todo el mes. **Fila de hoy** pone la semana de hoy en la
+  primera fila, la del medio o la última. El título nombra el mes de esa fila y los días de otros
+  meses se ven translúcidos como en la vista de mes. La cabecera tiene dos flechas a cada lado: las
+  simples (‹ ›) mueven una semana y las dobles (« ») saltan al inicio de un mes. « va al día 1 del
+  mes que se muestra y, pulsada otra vez, al día 1 del mes anterior; » va al día 1 del mes
+  siguiente. **Hoy** devuelve la semana de hoy a su fila.
+
 **Columna de semanas.** Con **Mostrar números de semana** activado, la primera columna muestra el
 número de cada semana. El número abre la nota semanal cuando las notas semanales están activadas,
 y es texto normal cuando están desactivadas. El primer
@@ -478,6 +491,7 @@ puntos de palabras, y 0 deja solo los puntos de tareas.
 
 Ajustes → **Calendario**:
 
+- **Vista**: **Mes** o **Semanas**, con sus opciones descritas arriba. Mes por defecto.
 - **Mostrar números de semana**: añade la columna de semanas. Activado por defecto.
 - **Atenuar fechas sin nota**: muestra en un color apagado los días, semanas, meses, trimestres y
   años que aún no tienen nota. Los días del mes anterior y del siguiente se ven translúcidos en

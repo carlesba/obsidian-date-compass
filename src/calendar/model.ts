@@ -55,6 +55,13 @@ export interface CalendarModel {
 	rows: CalendarRow[];
 }
 
+export type NavigationStep = "month" | "week";
+
+export interface CalendarScreen {
+	step: NavigationStep;
+	months: CalendarModel[];
+}
+
 export interface CalendarModelInput {
 	grid: MonthGrid;
 	today: CivilDate;

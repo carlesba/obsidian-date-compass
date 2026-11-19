@@ -44,11 +44,30 @@ export function firstDayOf(month: CivilMonth): CivilDate {
 	return { year: month.year, month: month.month, day: 1 };
 }
 
-export function monthGrid(month: CivilMonth, rule: WeekRule, today?: CivilDate): MonthGrid {
-	const first = firstDayOf(month);
-	const gridStart = addDays(first, -daysAfterWeekStart(weekdayOf(first), rule));
-	const rows = Array.from({ length: GRID_ROWS }, (_, rowIndex) => {
-		const rowStart = addDays(gridStart, rowIndex * DAYS_IN_WEEK);
+export interface ExtraWeeks {
+	before: number;
+	after: number;
+}
+
+const NO_EXTRA_WEEKS: ExtraWeeks = { before: 0, after: 0 };
+
+export function monthGrid(month: CivilMonth, rule: WeekRule, today?: CivilDate, extra: ExtraWeeks = NO_EXTRA_WEEKS): MonthGrid {
+	const first = weekStartOf(firstDayOf(month), rule);
+	return weeksGrid(addDays(first, -extra.before * DAYS_IN_WEEK), extra.before + GRID_ROWS + extra.after, month, rule, today);
+}
+
+export function weeksAroundGrid(anchor: CivilDate, weeks: number, anchorRow: number, rule: WeekRule, today?: CivilDate): MonthGrid {
+	const first = addDays(weekStartOf(anchor, rule), -anchorRow * DAYS_IN_WEEK);
+	return weeksGrid(first, weeks, monthOf(anchor), rule, today);
+}
+
+export function weekStartOf(date: CivilDate, rule: WeekRule): CivilDate {
+	return addDays(date, -daysAfterWeekStart(weekdayOf(date), rule));
+}
+
+function weeksGrid(first: CivilDate, weeks: number, month: CivilMonth, rule: WeekRule, today: CivilDate | undefined): MonthGrid {
+	const rows = Array.from({ length: weeks }, (_, rowIndex) => {
+		const rowStart = addDays(first, rowIndex * DAYS_IN_WEEK);
 		return {
 			weekNumber: weekNumber(rowStart, rule),
 			weekNoteDate: addDays(rowStart, MIDDLE_OF_WEEK),

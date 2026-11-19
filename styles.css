@@ -429,3 +429,16 @@
 	padding: 0;
 	vertical-align: middle;
 }
+
+.date-compass-calendar .title {
+	white-space: nowrap;
+}
+
+.date-compass-calendar .month-heading td {
+	padding: var(--size-4-3) var(--size-4-1) var(--size-4-1);
+}
+
+.date-compass-calendar .month-heading .title {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}

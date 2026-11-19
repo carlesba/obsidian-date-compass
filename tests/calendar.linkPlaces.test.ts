@@ -3,6 +3,7 @@ import { strict as assert } from "node:assert";
 import type { SettingDefinitionList } from "obsidian";
 import { decoratorOf, duplicateDecorator, linkPlacesToAdd, linkReachesTarget, linkedFromPlaces, mergeDecorators, propertyOfFrontmatterKey } from "../src/calendar/decorators.ts";
 import type { DotDecorator, LinkLocation, LinkPlace } from "../src/calendar/decorators.ts";
+import { defaultCalendar } from "../src/calendar/settings.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { decoratorKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { calendarItems, decoratorDescription } from "../src/settings/calendarPage.ts";
@@ -97,6 +98,7 @@ test("the place list says anywhere while empty, and + searches the places and ac
 	let typed: (query: string) => Choice<string> | undefined = () => undefined;
 	let pick: (value: string) => void = () => undefined;
 	const context: CalendarPageContext = {
+		calendar: defaultCalendar,
 		decorators: () => [],
 		openPage: () => undefined,
 		change: async () => undefined,

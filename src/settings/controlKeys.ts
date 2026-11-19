@@ -1,4 +1,6 @@
 import { t } from "../i18n/index.ts";
+import { CALENDAR_VIEWS, EXTRA_WEEKS, MONTHS_SHOWN, TODAY_ROWS, WEEKS_SHOWN, isInRange } from "../calendar/settings.ts";
+import type { IntegerRange } from "../calendar/settings.ts";
 import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, WEEK_STARTS } from "../settings.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { PERIOD_FIELDS, TEMPLATE_RUNNER_CHOICES, isPeriod, normalizeFolder } from "../dateNotes/periods.ts";
@@ -26,6 +28,27 @@ export const CALENDAR_SHOW_WEEK_NUMBERS_KEY = "calendar/showWeekNumbers";
 export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate";
 
 export const CALENDAR_DIM_WITHOUT_NOTE_KEY = "calendar/dimWithoutNote";
+
+export const CALENDAR_VIEW_KEY = "calendar/view";
+
+export const CALENDAR_MONTHS_SHOWN_KEY = "calendar/monthsShown";
+
+export const CALENDAR_WEEKS_BEFORE_KEY = "calendar/weeksBefore";
+
+export const CALENDAR_WEEKS_AFTER_KEY = "calendar/weeksAfter";
+
+export const CALENDAR_WEEKS_SHOWN_KEY = "calendar/weeksShown";
+
+export const CALENDAR_TODAY_ROW_KEY = "calendar/todayRow";
+
+type CalendarIntegerField = "monthsShown" | "weeksBefore" | "weeksAfter" | "weeksShown";
+
+const CALENDAR_INTEGER_FIELDS: Record<string, { field: CalendarIntegerField; range: IntegerRange }> = {
+	[CALENDAR_MONTHS_SHOWN_KEY]: { field: "monthsShown", range: MONTHS_SHOWN },
+	[CALENDAR_WEEKS_BEFORE_KEY]: { field: "weeksBefore", range: EXTRA_WEEKS },
+	[CALENDAR_WEEKS_AFTER_KEY]: { field: "weeksAfter", range: EXTRA_WEEKS },
+	[CALENDAR_WEEKS_SHOWN_KEY]: { field: "weeksShown", range: WEEKS_SHOWN },
+};
 
 
 const CALENDAR_KEY_PREFIX = "calendar/";
@@ -303,6 +326,10 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return settings.calendar.showWeekNumbers;
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
 	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return settings.calendar.dimWithoutNote;
+	if (key === CALENDAR_VIEW_KEY) return settings.calendar.view;
+	if (key === CALENDAR_TODAY_ROW_KEY) return settings.calendar.todayRow;
+	const integerField = CALENDAR_INTEGER_FIELDS[key];
+	if (integerField) return settings.calendar[integerField.field];
 	const decoratorControl = decoratorControlOfKey(settings, key);
 	if (decoratorControl) return decoratorControl.decorators[decoratorControl.index][decoratorControl.field];
 	const mentionControl = mentionControlOfKey(settings, key);
@@ -330,6 +357,12 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return writeBoolean(value, (shown) => (calendar.showWeekNumbers = shown));
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return writeBoolean(value, (confirm) => (calendar.confirmBeforeCreate = confirm));
 	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return writeBoolean(value, (dims) => (calendar.dimWithoutNote = dims));
+	if (key === CALENDAR_VIEW_KEY) return writeChoice(CALENDAR_VIEWS, value, (view) => (calendar.view = view));
+	if (key === CALENDAR_TODAY_ROW_KEY) return writeChoice(TODAY_ROWS, value, (row) => (calendar.todayRow = row));
+	const integerField = CALENDAR_INTEGER_FIELDS[key];
+	if (!integerField || !isInRange(value, integerField.range)) return false;
+	calendar[integerField.field] = value;
+	return true;
 	return false;
 }
 

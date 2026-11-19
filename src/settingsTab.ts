@@ -4,7 +4,7 @@ import { t } from "./i18n/index.ts";
 import type { TranslationKey } from "./i18n/index.ts";
 import type DateCompassPlugin from "./main.ts";
 import type { ParserLanguage } from "./settings.ts";
-import { commandPageRefresh, decoratorPageRefresh, mentionKeyParts, periodKey, readControl, writeControl } from "./settings/controlKeys.ts";
+import { CALENDAR_VIEW_KEY, commandPageRefresh, decoratorPageRefresh, mentionKeyParts, periodKey, readControl, writeControl } from "./settings/controlKeys.ts";
 import type { MentionControlField, PageRefresh } from "./settings/controlKeys.ts";
 import { ResetSettingsModal } from "./settings/resetModal.ts";
 import { mismatchGroups, periodGroups, templateRunnerGroup, weekStartMismatchGroup } from "./settings/dateNotesPage.ts";
@@ -81,6 +81,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 					}),
 					sectionPage("dateNotesSection", "dateNotesSectionDesc", this.dateNotesItems()),
 					calendarPage({
+						calendar: () => this.plugin.settings.calendar,
 						decorators: () => this.plugin.settings.calendar.decorators,
 						openPage: (pageId) => this.openPage(pageId),
 						change: (mutate) => this.changeEntries(mutate),
@@ -261,7 +262,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		const mentionKey = mentionKeyParts(key);
 		if (mentionKey?.field === "trigger") this.showTriggerAfterTyping(mentionKey.mentionId);
 		else if (mentionKey && MENTION_FIELDS_THAT_CHANGE_THE_PAGE.includes(mentionKey.field)) this.update();
-		else if (PERIOD_ENABLED_KEYS.includes(key)) this.update();
+		else if (PERIOD_ENABLED_KEYS.includes(key) || key === CALENDAR_VIEW_KEY) this.update();
 		else if (key === WEEK_FORMAT_KEY) this.updateAfterTyping();
 		else this.refreshCommandPage(commandPageRefresh(key) ?? decoratorPageRefresh(key));
 	}

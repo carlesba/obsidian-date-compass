@@ -7,7 +7,9 @@ import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, 
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
 import type { LegacyFilterKind } from "../filters/legacy.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, decoratorKey } from "./controlKeys.ts";
+import { EXTRA_WEEKS, MONTHS_SHOWN, WEEKS_SHOWN } from "../calendar/settings.ts";
+import type { CalendarSettings, CalendarViewKind, TodayRow } from "../calendar/settings.ts";
+import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -19,6 +21,7 @@ export interface Choice<Value extends string> {
 }
 
 export interface CalendarPageContext {
+	calendar: () => CalendarSettings;
 	decorators: () => DotDecorator[];
 	openPage: (pageId: string) => void;
 	change: (mutate: () => unknown) => Promise<void>;
@@ -40,6 +43,17 @@ export const SOURCE_LABELS: Record<DotSource, TranslationKey> = {
 	words: "dotSourceWords",
 	openTasks: "dotSourceOpenTasks",
 	links: "dotSourceLinks",
+};
+
+const VIEW_LABELS: Record<CalendarViewKind, TranslationKey> = {
+	month: "calendarViewMonth",
+	weeks: "calendarViewWeeks",
+};
+
+const TODAY_ROW_LABELS: Record<TodayRow, TranslationKey> = {
+	first: "calendarTodayRowFirst",
+	middle: "calendarTodayRowMiddle",
+	last: "calendarTodayRowLast",
 };
 
 const COUNT_LABELS: Record<DotCount, TranslationKey> = {
@@ -164,6 +178,7 @@ export function calendarPage(context: CalendarPageContext): IdentifiedPage {
 
 export function calendarItems(decorators: DotDecorator[], context: CalendarPageContext): SettingDefinitionItem[] {
 	return [
+		{ type: "group", items: viewItems(context.calendar().view) },
 		{
 			type: "group",
 			items: [
@@ -174,6 +189,23 @@ export function calendarItems(decorators: DotDecorator[], context: CalendarPageC
 		},
 		decoratorsList(decorators, context),
 		{ type: "group", visible: false, items: decorators.map((decorator) => decoratorPage(decorator, context)) },
+	];
+}
+
+function viewItems(view: CalendarViewKind): SettingGroupItem[] {
+	const viewChoice: SettingGroupItem = { name: t("calendarView"), desc: t("calendarViewDesc"), control: { type: "dropdown", key: CALENDAR_VIEW_KEY, options: translatedLabels(VIEW_LABELS) } };
+	if (view === "weeks") {
+		return [
+			viewChoice,
+			{ name: t("calendarWeeksShown"), desc: t("calendarWeeksShownDesc"), control: { type: "number", key: CALENDAR_WEEKS_SHOWN_KEY, min: WEEKS_SHOWN.min, max: WEEKS_SHOWN.max, step: 1 } },
+			{ name: t("calendarTodayRow"), desc: t("calendarTodayRowDesc"), control: { type: "dropdown", key: CALENDAR_TODAY_ROW_KEY, options: translatedLabels(TODAY_ROW_LABELS) } },
+		];
+	}
+	return [
+		viewChoice,
+		{ name: t("calendarMonthsShown"), desc: t("calendarMonthsShownDesc"), control: { type: "number", key: CALENDAR_MONTHS_SHOWN_KEY, min: MONTHS_SHOWN.min, max: MONTHS_SHOWN.max, step: 1 } },
+		{ name: t("calendarWeeksBefore"), desc: t("calendarWeeksBeforeDesc"), control: { type: "number", key: CALENDAR_WEEKS_BEFORE_KEY, min: EXTRA_WEEKS.min, max: EXTRA_WEEKS.max, step: 1 } },
+		{ name: t("calendarWeeksAfter"), desc: t("calendarWeeksAfterDesc"), control: { type: "number", key: CALENDAR_WEEKS_AFTER_KEY, min: EXTRA_WEEKS.min, max: EXTRA_WEEKS.max, step: 1 } },
 	];
 }
 

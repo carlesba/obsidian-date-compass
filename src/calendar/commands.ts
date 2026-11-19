@@ -43,5 +43,5 @@ async function revealActiveNote(app: App, settings: DateCompassSettings): Promis
 		return;
 	}
 	const calendar = await revealCalendar(app);
-	calendar?.showMonth({ year: note.date.year(), month: note.date.month() + 1 });
+	calendar?.showDate({ year: note.date.year(), month: note.date.month() + 1, day: note.date.date() });
 }
