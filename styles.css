@@ -127,7 +127,7 @@
 }
 
 .date-compass-calendar.is-mobile .reset-button {
-	width: 24px;
+	width: 40px;
 	height: 32px;
 	padding: 0;
 	font-size: 0;
@@ -135,8 +135,8 @@
 
 .date-compass-calendar.is-mobile .reset-button::after {
 	content: "";
-	width: 6px;
-	height: 6px;
+	width: 10px;
+	height: 10px;
 	border-radius: 50%;
 	background-color: currentColor;
 }
