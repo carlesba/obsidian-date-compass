@@ -1,6 +1,6 @@
 import { isRecord } from "../dateNotes/periods.ts";
 import { freeId, uniqueId } from "../settings/entryList.ts";
-import { emptyFilter, filterRules, noteMatcher, readFilter } from "../filters/filters.ts";
+import { emptyFilter, noteMatcher, readFilter } from "../filters/filters.ts";
 import type { FilterContext, FilterGroup } from "../filters/filters.ts";
 import { matchesLegacyFilters, migrateLegacyFilters, readLegacyFilters } from "../filters/legacy.ts";
 import type { LegacyFilter } from "../filters/legacy.ts";
@@ -18,7 +18,7 @@ export type DotShape = (typeof DOT_SHAPES)[number];
 export const DOT_COLORS = ["default", "accent", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink"] as const;
 export type DotColor = (typeof DOT_COLORS)[number];
 
-export const DOT_CELLS = ["day", "week"] as const;
+export const DOT_CELLS = ["day", "week", "month", "quarter", "year"] as const;
 export type DotCell = (typeof DOT_CELLS)[number];
 
 export const DOT_TIMES = ["past", "current", "future"] as const;
@@ -172,10 +172,6 @@ export function filterProblem(decorator: DotDecorator): FilterProblem | undefine
 	return decorator.legacyFilters.length > 0 ? "legacy" : undefined;
 }
 
-export function filtersLinkingNotes(decorator: DotDecorator): boolean {
-	return decorator.source === "links" && (decorator.unreadableFilter !== undefined || decorator.legacyFilters.length > 0 || filterRules(decorator.filter).length > 0);
-}
-
 export function linkingNoteMatcher(filters: LinkingNoteFilters, context: FilterContext): (note: VaultNote) => boolean {
 	if (filters.unreadableFilter !== undefined) return () => false;
 	const matches = noteMatcher(filters.filter, context);
@@ -295,10 +291,6 @@ export function canRemoveTime(times: readonly DotTime[]): boolean {
 	return times.length > 1;
 }
 
-export function showsEveryTime(times: readonly DotTime[]): boolean {
-	return timesToAdd(times).length === 0;
-}
-
 export function shows(decorator: DotDecorator, place: DotPlace, hasNote: boolean): boolean {
 	if (!decorator.cells.includes(place.cell) || !decorator.times.includes(place.time)) return false;
 	return hasNote || (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote);
@@ -310,10 +302,19 @@ export function dotCount(decorator: DotDecorator, amount: number): number {
 	return Math.min(decorator.maxDots, Math.max(MIN_DOTS, Math.floor(amount / decorator.amountPerDot)));
 }
 
+export function previewDots(decorator: DotDecorator): Dot[] {
+	const count = decorator.count === "presence" ? 1 : decorator.maxDots;
+	return Array.from({ length: count }, () => dotOf(decorator));
+}
+
+function dotOf(decorator: DotDecorator): Dot {
+	return { decoratorId: decorator.id, source: decorator.source, shape: decorator.shape, color: decorator.color, position: decorator.position };
+}
+
 export function dotsOfDecorators(decorators: readonly DotDecorator[], place: DotPlace, hasNote: boolean, amountOf: (decorator: DotDecorator) => number): Dot[] {
 	return decorators.flatMap((decorator) => {
 		if (!shows(decorator, place, hasNote)) return [];
-		const dot: Dot = { decoratorId: decorator.id, source: decorator.source, shape: decorator.shape, color: decorator.color, position: decorator.position };
+		const dot = dotOf(decorator);
 		return Array.from({ length: dotCount(decorator, amountOf(decorator)) }, () => dot);
 	});
 }

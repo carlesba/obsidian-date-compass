@@ -5,7 +5,7 @@ import { decoratorOf, duplicateDecorator, linkPlacesToAdd, linkReachesTarget, li
 import type { DotDecorator, LinkLocation, LinkPlace } from "../src/calendar/decorators.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { decoratorKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
-import { calendarItems, decoratorSummary } from "../src/settings/calendarPage.ts";
+import { calendarItems, decoratorDescription } from "../src/settings/calendarPage.ts";
 import type { CalendarPageContext, Choice } from "../src/settings/calendarPage.ts";
 
 const links = decoratorOf("links", "dots-1");
@@ -71,9 +71,9 @@ test("the add picker offers the body, any property and each vault property once,
 	assert.deepEqual(linkPlacesToAdd([body, { kind: "property", name: "DUE" }], ["due", "dates"]), [anyProperty, { kind: "property", name: "dates" }]);
 });
 
-test("the summary says where the link has to be", () => {
-	assert.equal(decoratorSummary({ ...links, linkPlaces: [body, due] }), "One dot · filled, accent, below the number · linked from the body, due · also without a note");
-	assert.equal(decoratorSummary({ ...links, linkPlaces: [anyProperty] }), "One dot · filled, accent, below the number · linked from any property · also without a note");
+test("the description says where the link has to be", () => {
+	assert.equal(decoratorDescription({ ...links, linkPlaces: [body, due] }), "body, due");
+	assert.equal(decoratorDescription({ ...links, linkPlaces: [anyProperty] }), "property");
 });
 
 test("a duplicate copies every option under a free id and its own name, without sharing lists with the original", () => {

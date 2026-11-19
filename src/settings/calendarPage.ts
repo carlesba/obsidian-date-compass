@@ -1,7 +1,8 @@
 import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionRender, SettingGroupItem } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, duplicateDecorator, filterProblem, filtersLinkingNotes, linkPlaceValue, linkPlacesToAdd, newDecorator, propertyPlace, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
+import { renderLabelWithDots } from "../calendar/cellDots.ts";
+import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, duplicateDecorator, filterProblem, linkPlaceValue, linkPlacesToAdd, newDecorator, previewDots, propertyPlace, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
 import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, FilterProblem, LinkPlace } from "../calendar/decorators.ts";
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
@@ -31,6 +32,9 @@ export interface CalendarPageContext {
 }
 
 export const CALENDAR_PAGE_ID = "calendar";
+
+const DOTS_PREVIEW_CLASSES = ["date-compass-calendar", "date-compass-dots-preview"];
+const DOTS_PREVIEW_DAY = "31";
 
 export const SOURCE_LABELS: Record<DotSource, TranslationKey> = {
 	words: "dotSourceWords",
@@ -71,6 +75,9 @@ const POSITION_LABELS: Record<DotPosition, TranslationKey> = {
 const CELL_LABELS: Record<DotCell, TranslationKey> = {
 	day: "dotCellDays",
 	week: "dotCellWeeks",
+	month: "dotCellMonths",
+	quarter: "dotCellQuarters",
+	year: "dotCellYears",
 };
 
 const TIME_LABELS: Record<DotTime, TranslationKey> = {
@@ -79,22 +86,10 @@ const TIME_LABELS: Record<DotTime, TranslationKey> = {
 	future: "dotTimeFuture",
 };
 
-const TIME_SUMMARIES: Record<DotTime, TranslationKey> = {
-	past: "dotSummaryPast",
-	current: "dotSummaryCurrent",
-	future: "dotSummaryFuture",
-};
-
 const AMOUNT_LABELS: Record<DotSource, TranslationKey> = {
 	words: "dotAmountWords",
 	openTasks: "dotAmountOpenTasks",
 	links: "dotAmountLinks",
-};
-
-const UNIT_LABELS: Record<DotSource, TranslationKey> = {
-	words: "dotUnitWords",
-	openTasks: "dotUnitOpenTasks",
-	links: "dotUnitLinks",
 };
 
 const LEGACY_FILTER_LABELS: Record<LegacyFilterKind, TranslationKey> = {
@@ -117,24 +112,15 @@ export function decoratorName(decorator: DotDecorator): string {
 	return decorator.name.trim() === "" ? t(SOURCE_LABELS[decorator.source]) : decorator.name.trim();
 }
 
-export function decoratorSummary(decorator: DotDecorator): string {
-	const count =
-		decorator.count === "presence"
-			? t("dotSummaryPresence")
-			: t("dotSummaryPerAmount", { amount: decorator.amountPerDot, what: t(UNIT_LABELS[decorator.source]), max: decorator.maxDots });
-	const look = t("dotSummaryLook", {
-		shape: t(SHAPE_LABELS[decorator.shape]).toLowerCase(),
-		color: t(COLOR_LABELS[decorator.color]).toLowerCase(),
-		position: t(POSITION_LABELS[decorator.position]).toLowerCase(),
-	});
-	const parts = [...(decorator.name.trim() === "" ? [] : [t(SOURCE_LABELS[decorator.source])]), count, look];
-	if (decorator.source === "links" && decorator.linkPlaces.length > 0) parts.push(t("dotSummaryLinkPlaces", { places: decorator.linkPlaces.map(linkPlaceSummary).join(", ") }));
-	if (filtersLinkingNotes(decorator)) parts.push(t("dotSummaryFilters"));
-	if (decorator.cells.length === 1) parts.push(t(decorator.cells[0] === "day" ? "dotSummaryDaysOnly" : "dotSummaryWeeksOnly"));
-	if (!showsEveryTime(decorator.times)) parts.push(timesSummary(decorator.times));
-	if (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote) parts.push(t("dotSummaryWithoutNote"));
-	const summary = parts.join(" · ");
-	return summary.charAt(0).toLocaleUpperCase() + summary.slice(1);
+export function decoratorDescription(decorator: DotDecorator): string {
+	switch (decorator.source) {
+		case "words":
+			return t("dotDescriptionContent");
+		case "openTasks":
+			return t("dotDescriptionTasks");
+		case "links":
+			return decorator.linkPlaces.length === 0 ? t("dotDescriptionAnywhere") : decorator.linkPlaces.map(linkPlaceDescription).join(", ");
+	}
 }
 
 export function linkPlaceLabel(place: LinkPlace): string {
@@ -148,12 +134,12 @@ export function linkPlaceLabel(place: LinkPlace): string {
 	}
 }
 
-function linkPlaceSummary(place: LinkPlace): string {
+function linkPlaceDescription(place: LinkPlace): string {
 	switch (place.kind) {
 		case "body":
-			return t("dotSummaryLinkPlaceBody");
+			return t("dotDescriptionBody");
 		case "anyProperty":
-			return t("dotSummaryLinkPlaceAnyProperty");
+			return t("dotDescriptionProperty");
 		case "property":
 			return place.name;
 	}
@@ -163,11 +149,6 @@ export function decoratorWarning(decorator: DotDecorator, propertyTypes: Record<
 	const problem = filterProblem(decorator);
 	if (problem) return t(FILTER_PROBLEM_WARNINGS[problem]);
 	return decorator.source === "links" && inapplicableFilter(decorator.filter, propertyTypes) ? t("inapplicableLinkFilterWarning") : undefined;
-}
-
-function timesSummary(times: readonly DotTime[]): string {
-	const [first, second] = times.map((time) => t(TIME_SUMMARIES[time]));
-	return second === undefined ? t("dotSummaryOneTime", { time: first }) : t("dotSummaryTwoTimes", { first, second });
 }
 
 export function calendarPage(context: CalendarPageContext): IdentifiedPage {
@@ -220,12 +201,13 @@ function decoratorsList(decorators: DotDecorator[], context: CalendarPageContext
 
 function decoratorRow(decorators: DotDecorator[], index: number, context: CalendarPageContext): SettingDefinitionRender {
 	const decorator = decorators[index];
-	const description = () => decoratorWarning(decorator, context.propertyTypes()) ?? decoratorSummary(decorator);
+	const description = () => decoratorWarning(decorator, context.propertyTypes()) ?? decoratorDescription(decorator);
 	return {
 		name: decoratorName(decorator),
 		desc: description(),
 		render: (setting) => {
 			setting.setName(decoratorName(decorator));
+			renderLabelWithDots(setting.nameEl.createSpan({ cls: DOTS_PREVIEW_CLASSES }).createDiv({ cls: "day" }), DOTS_PREVIEW_DAY, previewDots(decorator), decorator.position === "above");
 			setting.setDesc(description());
 			setting.addExtraButton((button) =>
 				button

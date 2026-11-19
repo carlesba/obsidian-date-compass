@@ -381,17 +381,19 @@ weeks differently, for example weeks starting on Sunday with the ISO format `GGG
 can show one number in the calendar and another in its note; the Date notes page warns about it
 and changes neither setting.
 
-**Dots.** Each entry of the **Dots** list in Settings → **Calendar** adds dots to the days and
-weeks, in list order. An entry has a source and a look:
+**Dots.** Each entry of the **Dots** list in Settings → **Calendar** adds dots to the calendar,
+in list order. Each row shows its name, a preview of its dots on a sample day, and what it
+counts: content, tasks, or where the link sits (body, property). An entry has a source and a look:
 
 - **Source**: **Words** counts the words of the note, **Open tasks** its unfinished tasks, and
   **Linking notes** the notes that link to it, from the body or from a property.
 - **Dots**: one dot as soon as there is something, or one dot per amount, such as one per 250
-  words, up to a limit of one to five. Word dots always show at least one dot on a day or week with
-  a note.
-- **Show on**: days, weeks or both.
-- **Show for**: **Past**, **Current** (today and this week) and **Future**, any of them. A day is
-  past or future compared with today. A week is current when it contains today, past when all its
+  words, up to a limit of one to five. Word dots always show at least one dot on a date with a note,
+  so a word dot also tells you the note exists.
+- **Show on**: days, weeks, months, quarters and years, any of them. Month, quarter and year dots
+  show on those parts of the calendar title.
+- **Show for**: **Past**, **Current** (today, this week, this month…) and **Future**, any of them.
+  A day, month, quarter or year is past or future compared with today's. A week is current when it contains today, past when all its
   days are before today, and future otherwise. With only **Future**, for example, the dots mark
   what is coming and disappear once the day arrives.
 - **Shape**, **Color** and **Position**: a filled dot or a hollow ring, in the theme's default

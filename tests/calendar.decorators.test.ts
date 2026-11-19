@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { backlinkIndex, decoratorOf, defaultDecorators, dotCount, canRemoveTime, dotsOfDecorators, mergeDecorators, shows, showsEveryTime, timesToAdd, validCells, validTimes } from "../src/calendar/decorators.ts";
+import { backlinkIndex, decoratorOf, defaultDecorators, dotCount, canRemoveTime, dotsOfDecorators, mergeDecorators, previewDots, shows, timesToAdd, validCells, validTimes } from "../src/calendar/decorators.ts";
 import type { DotDecorator, DotPlace } from "../src/calendar/decorators.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { decoratorKey, decoratorPageRefresh, readControl, writeControl } from "../src/settings/controlKeys.ts";
-import { decoratorName, decoratorSummary } from "../src/settings/calendarPage.ts";
+import { decoratorDescription, decoratorName } from "../src/settings/calendarPage.ts";
 
 const words = (amountPerDot = 250): DotDecorator => ({ ...decoratorOf("words", "dots-1"), amountPerDot });
 const tasks = decoratorOf("openTasks", "dots-2");
@@ -54,7 +54,8 @@ test("dots show only on the cells they are set for", () => {
 	assert.deepEqual(dotsOfDecorators([daysOnly, weeksOnly], TODAY, true, () => 1).map((dot) => dot.decoratorId), ["dots-2"]);
 	assert.deepEqual(dotsOfDecorators([daysOnly, weeksOnly], THIS_WEEK, true, () => 1).map((dot) => dot.decoratorId), ["dots-3"]);
 	assert.deepEqual(validCells(["week", "day"]), ["day", "week"]);
-	for (const invalid of [[], ["day", "day"], ["month"], "day", undefined]) assert.equal(validCells(invalid), undefined);
+	assert.deepEqual(validCells(["year", "month", "quarter"]), ["month", "quarter", "year"]);
+	for (const invalid of [[], ["day", "day"], ["decade"], "day", undefined]) assert.equal(validCells(invalid), undefined);
 });
 
 test("dots show only for the times they are set for", () => {
@@ -78,8 +79,6 @@ test("the times list keeps the fixed order, offers what is missing and keeps at 
 	assert.deepEqual(timesToAdd(["past", "current", "future"]), []);
 	assert.equal(canRemoveTime(["past", "future"]), true);
 	assert.equal(canRemoveTime(["future"]), false);
-	assert.equal(showsEveryTime(["past", "current", "future"]), true);
-	assert.equal(showsEveryTime(["past", "future"]), false);
 });
 
 test("stored dots merge field by field and drop what the plugin does not know", () => {
@@ -90,7 +89,7 @@ test("stored dots merge field by field and drop what the plugin does not know", 
 	assert.deepEqual(merged.times, ["current", "future"]);
 	assert.deepEqual([merged.filter, merged.legacyFilters], [{ kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "has tag", value: "#meeting" } }] }, []]);
 	const [fallback] = mergeDecorators([{ source: "colors", shape: "square", filters: [{ kind: "regex", value: "x" }] }], undefined);
-	assert.deepEqual([fallback.source, fallback.shape, fallback.filter.items, fallback.legacyFilters, fallback.cells], ["words", "filled", [], [], ["day", "week"]]);
+	assert.deepEqual([fallback.source, fallback.shape, fallback.filter.items, fallback.legacyFilters, fallback.cells], ["words", "filled", [], [], ["day", "week", "month", "quarter", "year"]]);
 	assert.deepEqual(fallback.times, ["past", "current", "future"]);
 	const savedBeforeTimes = { id: "old", source: "openTasks", count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false, cells: ["day"], filters: [] };
 	assert.deepEqual(mergeDecorators([savedBeforeTimes], undefined)[0].times, ["past", "current", "future"]);
@@ -137,14 +136,16 @@ test("every dots field reads and writes through its control key and refuses bad 
 	assert.equal(decoratorPageRefresh("commands/x/name"), undefined);
 });
 
-test("a dots row is named after its source until it has a name, and its summary says how it looks", () => {
+test("a dots row is named after its source until it has a name, and its description says what the dots count", () => {
 	assert.equal(decoratorName(words()), "Words");
 	assert.equal(decoratorName({ ...links, name: " Meetings " }), "Meetings");
-	assert.equal(decoratorSummary(words()), "One dot per 250 words, up to 5 · filled, theme default, below the number");
-	assert.equal(
-		decoratorSummary({ ...links, name: "Meetings", color: "red", position: "topRight", cells: ["day"], filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "has tag", value: "meeting" } }] } }),
-		"Linking notes · one dot · filled, red, top-right corner · matching notes only · days only · also without a note",
-	);
-	assert.equal(decoratorSummary({ ...tasks, times: ["future"] }), "One dot · hollow, theme default, below the number · future only");
-	assert.equal(decoratorSummary({ ...tasks, times: ["past", "current"] }), "One dot · hollow, theme default, below the number · past and current only");
+	assert.equal(decoratorDescription(words()), "content");
+	assert.equal(decoratorDescription(tasks), "tasks");
+	assert.equal(decoratorDescription(links), "body or property");
+});
+
+test("a dots row previews one dot, or the most dots when it counts per amount, in its own look", () => {
+	const preview = previewDots({ ...words(), maxDots: 3, color: "red", position: "topRight" });
+	assert.deepEqual(preview.map((dot) => [dot.color, dot.position, dot.shape]), [["red", "topRight", "filled"], ["red", "topRight", "filled"], ["red", "topRight", "filled"]]);
+	assert.equal(previewDots(tasks).length, 1);
 });

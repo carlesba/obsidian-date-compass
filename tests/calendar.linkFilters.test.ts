@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { decoratorOf, filterProblem, filtersLinkingNotes, linkingNoteMatcher, mergeDecorators } from "../src/calendar/decorators.ts";
+import { decoratorOf, filterProblem, linkingNoteMatcher, mergeDecorators } from "../src/calendar/decorators.ts";
 import type { DotDecorator } from "../src/calendar/decorators.ts";
 import type { FilterGroup, FilterNode } from "../src/filters/filters.ts";
 import { matchesLegacyFilters, migrateLegacyFilters, readLegacyFilters } from "../src/filters/legacy.ts";
 import type { LegacyFilter, LegacyNote } from "../src/filters/legacy.ts";
-import { decoratorSummary, decoratorWarning } from "../src/settings/calendarPage.ts";
+import { decoratorWarning } from "../src/settings/calendarPage.ts";
 import { NOW, fakeFilterVault, noteOf } from "./fakeFilterVault.ts";
 import type { FakeNote } from "./fakeFilterVault.ts";
 import { moment } from "./moment.ts";
@@ -96,7 +96,7 @@ test("an earlier filter without a value matched every note, so it is left out", 
 	];
 	assert.deepEqual(migrateLegacyFilters(empty), { rules: [], kept: [] });
 	const merged = linksOf({ filters: empty });
-	assert.deepEqual([merged.filter, merged.legacyFilters, filterProblem(merged), filtersLinkingNotes(merged)], [all(), [], undefined, false]);
+	assert.deepEqual([merged.filter, merged.legacyFilters, filterProblem(merged)], [all(), [], undefined]);
 	assert.deepEqual(counted(merged), countedBefore(empty));
 });
 
@@ -115,7 +115,6 @@ test("dots saved by the earlier version count the same notes: what converts move
 	assert.deepEqual(counted(merged), countedBefore(saved));
 	assert.equal(filterProblem(merged), "legacy");
 	assert.match(decoratorWarning(merged, {}) ?? "", /earlier version still apply.*Remove them and build them again/);
-	assert.match(decoratorSummary(merged), /matching notes only/);
 	const reloaded = mergeDecorators(JSON.parse(JSON.stringify([merged])), undefined)[0];
 	assert.deepEqual(reloaded, merged);
 	for (const filters of saved.map((filter) => [filter])) assert.deepEqual(counted(linksOf({ filters })), countedBefore(filters), filters[0].kind);
@@ -135,11 +134,9 @@ test("a stored filter of this version merges as saved, and an absent one counts 
 	const merged = linksOf({ filter });
 	assert.deepEqual([merged.filter, merged.legacyFilters, merged.unreadableFilter, filterProblem(merged)], [filter, [], undefined, undefined]);
 	assert.deepEqual(counted(merged), ["1-1 Ana"]);
-	assert.equal(filtersLinkingNotes(merged), true);
 	const unfiltered = linksOf({});
 	assert.deepEqual(unfiltered.filter, all());
 	assert.equal(counted(unfiltered).length, notes.length);
-	assert.equal(filtersLinkingNotes(unfiltered), false);
 	assert.deepEqual(decoratorOf("links", "dots-9").filter, all());
 });
 
@@ -160,7 +157,6 @@ test("a stored filter that cannot be read stays saved, counts no note and warns 
 		assert.equal(filterProblem(merged), "unreadable");
 		assert.deepEqual(counted(merged), []);
 		assert.match(decoratorWarning(merged, {}) ?? "", /can't be read.*Remove it and build it again/);
-		assert.equal(filtersLinkingNotes(merged), true);
 		assert.deepEqual(mergeDecorators(JSON.parse(JSON.stringify([merged])), undefined)[0], merged);
 	}
 	const removed = linksOf({ filter: "work" });

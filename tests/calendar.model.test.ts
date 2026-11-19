@@ -5,7 +5,7 @@ import type { CivilDate } from "../src/parse/calendar.ts";
 import { monthGrid } from "../src/calendar/grid.ts";
 import type { CivilMonth } from "../src/calendar/grid.ts";
 import { headerParts } from "../src/calendar/header.ts";
-import { calendarModel, dayClasses, dayTime, titlePartClasses, weekClasses, weekTime } from "../src/calendar/model.ts";
+import { calendarModel, dayClasses, dayTime, headerTime, titlePartClasses, weekClasses, weekTime } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
 import type { Dot, DotPlace } from "../src/calendar/decorators.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
@@ -77,7 +77,7 @@ test("a day carries its number, its note target and the classes of its state", (
 	assert.deepEqual(plain.dots, []);
 });
 
-test("cells without a note ask for the dots that show without one, and say whether they are a day or a week", () => {
+test("cells without a note ask for the dots that show without one, and say which period they are", () => {
 	const asked: string[] = [];
 	const model = modelOf({
 		existing: ["2026-11-17.md"],
@@ -92,7 +92,8 @@ test("cells without a note ask for the dots that show without one, and say wheth
 	assert.ok(asked.includes("2026-11-17.md day true"));
 	assert.ok(asked.includes("2026-11-18.md day false"));
 	assert.ok(asked.includes("2026-W47.md week false"));
-	assert.deepEqual(model.title.flatMap((part) => part.dots), []);
+	assert.ok(asked.includes("2026-11.md month false"));
+	assert.deepEqual(model.title.map((part) => part.dots), [[WITHOUT_NOTE], [WITHOUT_NOTE]]);
 });
 
 test("a day is past, current or future compared with today", () => {
@@ -101,6 +102,12 @@ test("a day is past, current or future compared with today", () => {
 	assert.equal(dayTime({ year: 2026, month: 11, day: 18 }, TODAY), "future");
 	assert.equal(dayTime({ year: 2025, month: 12, day: 31 }, TODAY), "past");
 	assert.equal(dayTime({ year: 2027, month: 1, day: 1 }, TODAY), "future");
+});
+
+test("a month, quarter or year in the title is past, current or future compared with today", () => {
+	assert.deepEqual((["month", "quarter", "year"] as const).map((period) => headerTime(period, { year: 2026, month: 10 }, TODAY)), ["past", "current", "current"]);
+	assert.deepEqual((["month", "quarter", "year"] as const).map((period) => headerTime(period, { year: 2027, month: 1 }, TODAY)), ["future", "future", "future"]);
+	assert.deepEqual((["month", "quarter", "year"] as const).map((period) => headerTime(period, NOVEMBER_2026, TODAY)), ["current", "current", "current"]);
 });
 
 test("a week is current when it holds today, past when every day is before today and future otherwise", () => {
@@ -198,12 +205,12 @@ test("the title shows month and year, and the quarter only when quarterly notes 
 	assert.deepEqual(withQuarter.title[2].target?.date, { year: 2026, month: 11, day: 1 });
 });
 
-test("a title part is clickable only when its period is on, and never carries dots", () => {
+test("a title part is clickable only when its period is on, and carries dots only then", () => {
 	const model = modelOf({ existing: ["2026-11.md", "2026.md"], activePath: "2026-11.md", change: (periods) => (periods.year.enabled = false) });
 	const [month, year] = model.title;
 	assert.deepEqual(titlePartClasses(month), ["month", "active", "has-note", "is-clickable"]);
-	assert.deepEqual(month.dots, []);
 	assert.equal(year.target, undefined);
+	assert.deepEqual(year.dots, []);
 	assert.deepEqual(titlePartClasses(year), ["year"]);
 });
 

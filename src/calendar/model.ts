@@ -3,7 +3,8 @@ import { daysBetween } from "../parse/calendar.ts";
 import type { CivilDate } from "../parse/calendar.ts";
 import type { Dot, DotPlace, DotTime } from "./decorators.ts";
 import { firstDayOf, weekdayOrder } from "./grid.ts";
-import type { MonthGrid } from "./grid.ts";
+import type { CivilMonth, MonthGrid } from "./grid.ts";
+import { quarterOf } from "./header.ts";
 import type { HeaderPart, HeaderPeriod } from "./header.ts";
 import type { VisibleNotes } from "./paths.ts";
 import type { WeekRule } from "./weeks.ts";
@@ -76,7 +77,7 @@ export function calendarModel(input: CalendarModelInput): CalendarModel {
 	const displayed = firstDayOf(grid.month);
 	return {
 		title: parts.map((part) => ({
-			...noteCell(input, part.period, displayed, part.clickable ? notes.header[part.period] : undefined, undefined),
+			...noteCell(input, part.period, displayed, part.clickable ? notes.header[part.period] : undefined, { cell: part.period, time: headerTime(part.period, grid.month, today) }),
 			period: part.period,
 			label: part.label,
 		})),
@@ -109,6 +110,23 @@ export function weekTime(days: readonly CivilDate[], today: CivilDate): DotTime 
 	return times.every((time) => time === "past") ? "past" : "future";
 }
 
+export function headerTime(period: HeaderPeriod, month: CivilMonth, today: CivilDate): DotTime {
+	const index = headerIndex(period, month) - headerIndex(period, today);
+	if (index === 0) return "current";
+	return index < 0 ? "past" : "future";
+}
+
+function headerIndex(period: HeaderPeriod, month: CivilMonth): number {
+	switch (period) {
+		case "month":
+			return month.year * 12 + month.month;
+		case "quarter":
+			return month.year * 4 + quarterOf(month);
+		case "year":
+			return month.year;
+	}
+}
+
 export function dayClasses(cell: DayCell): string[] {
 	return classesOf("day", cell, { today: cell.today, "adjacent-month": cell.adjacentMonth });
 }
@@ -126,14 +144,14 @@ export function titlePartClasses(part: TitlePart): string[] {
 	return part.period === "quarter" ? [...classes, MONTH_LOOK_CLASS] : classes;
 }
 
-function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, place: DotPlace | undefined): NoteCell {
+function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, place: DotPlace): NoteCell {
 	if (path === undefined) return { target: undefined, hasNote: false, active: false, dots: [] };
 	const hasNote = input.noteExists(path);
 	return {
 		target: { period, date, path },
 		hasNote,
 		active: path === input.activePath,
-		dots: place ? input.dotsOf(path, place, hasNote) : [],
+		dots: input.dotsOf(path, place, hasNote),
 	};
 }
 

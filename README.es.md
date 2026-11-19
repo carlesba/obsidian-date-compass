@@ -402,18 +402,21 @@ por ejemplo semanas que empiezan en domingo con el formato ISO `GGGG-[W]WW`, una
 mostrar un número en el calendario y otro en su nota; la página Notas de fecha lo avisa
 y no cambia ninguno de los dos ajustes.
 
-**Puntos.** Cada entrada de la lista **Puntos** en Ajustes → **Calendario** añade puntos a los
-días y semanas, en el orden de la lista. Una entrada tiene una fuente y un aspecto:
+**Puntos.** Cada entrada de la lista **Puntos** en Ajustes → **Calendario** añade puntos al
+calendario, en el orden de la lista. Cada fila muestra su nombre, una vista previa de sus puntos
+en un día de ejemplo y qué cuenta: contenido, tareas o dónde está el enlace (cuerpo, propiedad).
+Una entrada tiene una fuente y un aspecto:
 
 - **Fuente**: **Palabras** cuenta las palabras de la nota, **Tareas pendientes** sus tareas sin
   terminar y **Notas que enlazan** las notas que enlazan a ella, desde el texto o desde una
   propiedad.
 - **Puntos**: un punto en cuanto hay algo, o un punto por cantidad, como uno cada 250 palabras,
-  hasta un límite de uno a cinco. Los puntos de palabras muestran siempre al menos uno en un día o
-  semana con nota.
-- **Mostrar en**: días, semanas o ambos.
-- **Mostrar para**: **Pasado**, **Actual** (hoy y esta semana) y **Futuro**, los que quieras. Un
-  día es pasado o futuro respecto a hoy. Una semana es actual cuando contiene hoy, pasada cuando
+  hasta un límite de uno a cinco. Los puntos de palabras muestran siempre al menos uno en una fecha
+  con nota, así que un punto de palabras también indica que la nota existe.
+- **Mostrar en**: días, semanas, meses, trimestres y años, los que quieras. Los puntos de mes,
+  trimestre y año se muestran en esas partes del título del calendario.
+- **Mostrar para**: **Pasado**, **Actual** (hoy, esta semana, este mes…) y **Futuro**, los que
+  quieras. Un día, mes, trimestre o año es pasado o futuro respecto al de hoy. Una semana es actual cuando contiene hoy, pasada cuando
   todos sus días son anteriores a hoy, y futura en los demás casos. Con solo **Futuro**, por
   ejemplo, los puntos marcan lo que viene y desaparecen cuando llega el día.
 - **Forma**, **Color** y **Posición**: un punto relleno o un anillo hueco, en el color del tema,
