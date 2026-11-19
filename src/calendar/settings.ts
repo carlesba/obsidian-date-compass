@@ -6,7 +6,6 @@ export interface CalendarSettings {
 	showWeekNumbers: boolean;
 	confirmBeforeCreate: boolean;
 	decorators: DotDecorator[];
-	themeCompatibility: boolean;
 }
 
 export function defaultCalendar(): CalendarSettings {
@@ -19,6 +18,5 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		showWeekNumbers: typeof data.showWeekNumbers === "boolean" ? data.showWeekNumbers : true,
 		confirmBeforeCreate: typeof data.confirmBeforeCreate === "boolean" ? data.confirmBeforeCreate : true,
 		decorators: mergeDecorators(data.decorators, data.wordsPerDot),
-		themeCompatibility: typeof data.themeCompatibility === "boolean" ? data.themeCompatibility : false,
 	};
 }

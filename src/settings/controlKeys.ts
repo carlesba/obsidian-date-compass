@@ -25,7 +25,6 @@ export const CALENDAR_SHOW_WEEK_NUMBERS_KEY = "calendar/showWeekNumbers";
 
 export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate";
 
-export const CALENDAR_THEME_COMPATIBILITY_KEY = "calendar/themeCompatibility";
 
 const CALENDAR_KEY_PREFIX = "calendar/";
 
@@ -303,7 +302,6 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
 	const decoratorControl = decoratorControlOfKey(settings, key);
 	if (decoratorControl) return decoratorControl.decorators[decoratorControl.index][decoratorControl.field];
-	if (key === CALENDAR_THEME_COMPATIBILITY_KEY) return settings.calendar.themeCompatibility;
 	const mentionControl = mentionControlOfKey(settings, key);
 	return mentionControl ? mentionControl.mention[mentionControl.field] : undefined;
 }
@@ -328,7 +326,6 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 	const { calendar } = settings;
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return writeBoolean(value, (shown) => (calendar.showWeekNumbers = shown));
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return writeBoolean(value, (confirm) => (calendar.confirmBeforeCreate = confirm));
-	if (key === CALENDAR_THEME_COMPATIBILITY_KEY) return writeBoolean(value, (compatible) => (calendar.themeCompatibility = compatible));
 	return false;
 }
 

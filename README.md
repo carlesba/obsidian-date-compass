@@ -447,17 +447,14 @@ Settings → **Calendar**:
 - **Show week numbers**: add the week column. On by default.
 - **Confirm before creating a note**: ask before creating a note that does not exist yet. On by
   default.
-- **Compatibility with theme styles for Calendar**: give the calendar the id `calendar-container`
-  that Liam Cain's Calendar plugin uses, so themes and CSS snippets written for that plugin, such
-  as the Minimal theme, style this calendar too. Off by default. Keep it off while the Calendar
-  plugin is open as well: two elements would share that id and the theme would style both. The
-  page warns when the setting is on and the Calendar plugin is enabled.
 - **Dots**: the list of dots described above, with + to add an entry by its source. Each row has a
   pencil that opens the entry and a copy button that duplicates it, named "*name* copy", right
   below the original.
 
-A note is found only at the path its folder and name format give it. The look follows Liam Cain's
-[Calendar](https://github.com/liamcain/obsidian-calendar-plugin) plugin (MIT).
+A note is found only at the path its folder and name format give it. The layout comes from Liam
+Cain's [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) plugin (MIT), and the
+compact look follows the Minimal theme's styling of it. The calendar uses only Obsidian's own theme
+variables, so its colours, fonts and accent follow whichever theme you use.
 
 ## Public API for Templater
 

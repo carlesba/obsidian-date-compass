@@ -42,82 +42,55 @@
 }
 
 .date-compass-calendar {
-	--color-background-heading: transparent;
-	--color-background-day: transparent;
-	--color-background-weeknum: transparent;
-	--color-background-weekend: transparent;
-	--color-dot: var(--text-muted);
-	--color-arrow: var(--text-muted);
-	--color-button: var(--text-muted);
-	--color-text-title: var(--text-normal);
-	--color-text-heading: var(--text-muted);
-	--color-text-day: var(--text-normal);
-	--color-text-today: var(--interactive-accent);
-	--color-text-weeknum: var(--text-muted);
-	padding: 0 8px;
-}
-
-.date-compass-calendar.is-mobile {
-	padding: 0;
+	--color-dot: var(--text-faint);
+	padding: 0 var(--size-4-4) var(--size-4-1);
 }
 
 .date-compass-calendar .nav {
 	display: flex;
 	align-items: center;
-	margin: -0.1em 0 1em;
-	padding: 0 8px;
-	width: 100%;
-}
-
-.date-compass-calendar.is-mobile .nav {
-	margin-top: 0.15em;
-	padding: 0;
+	margin: var(--size-4-2) var(--size-4-1);
 }
 
 .date-compass-calendar .title {
 	margin: 0;
-	font-size: 1.5em;
-	color: var(--color-text-title);
-}
-
-.date-compass-calendar.is-mobile .title {
-	font-size: 1.1em;
+	font-size: var(--font-ui-medium);
+	font-weight: 400;
+	line-height: var(--line-height-tight);
+	color: var(--text-normal);
 }
 
 .date-compass-calendar .month {
-	font-weight: 500;
 	text-transform: capitalize;
 }
 
-.date-compass-calendar .year {
-	color: var(--interactive-accent);
+.date-compass-calendar .title .is-clickable {
+	cursor: var(--cursor);
 }
 
-.date-compass-calendar .title .is-clickable {
-	cursor: pointer;
+.date-compass-calendar .title .is-clickable:hover {
+	color: var(--text-accent);
 }
 
 .date-compass-calendar .right-nav {
 	display: flex;
-	justify-content: center;
+	align-items: center;
 	margin-left: auto;
 }
 
-.date-compass-calendar .arrow {
+.date-compass-calendar .arrow,
+.date-compass-calendar .reset-button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
-	cursor: pointer;
+	height: 24px;
+	border-radius: var(--radius-s);
+	color: var(--text-faint);
+	cursor: var(--cursor);
 }
 
-:is(.date-compass-calendar.is-mobile, #calendar-container.date-compass-calendar.is-mobile) .arrow {
-	box-sizing: border-box;
-	width: 44px;
-	height: 44px;
-	margin-block: -11px;
-	padding: 0;
-	background-color: transparent;
+.date-compass-calendar .arrow {
+	width: 24px;
 }
 
 .date-compass-calendar .arrow.right {
@@ -125,128 +98,117 @@
 }
 
 .date-compass-calendar .arrow svg {
-	width: 16px;
-	height: 16px;
-	color: var(--color-arrow);
-}
-
-:is(.date-compass-calendar.is-mobile, #calendar-container.date-compass-calendar.is-mobile) .arrow svg {
-	width: 20px;
-	height: 20px;
+	width: 12px;
+	height: 12px;
+	color: currentColor;
 }
 
 .date-compass-calendar .reset-button {
-	margin: 0 4px;
-	padding: 0 4px;
-	border-radius: 4px;
-	font-size: 0.7em;
-	font-weight: 600;
-	letter-spacing: 1px;
-	text-transform: uppercase;
+	padding: 0 var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
 	color: var(--text-muted);
-	cursor: pointer;
 }
 
-:is(.date-compass-calendar.is-mobile, #calendar-container.date-compass-calendar.is-mobile) .reset-button {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	align-self: stretch;
-	width: 32px;
-	margin: 0;
+.date-compass-calendar .arrow:hover,
+.date-compass-calendar .reset-button:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.date-compass-calendar.is-mobile .arrow {
+	width: 36px;
+	height: 32px;
+}
+
+.date-compass-calendar.is-mobile .arrow svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+.date-compass-calendar.is-mobile .reset-button {
+	width: 24px;
+	height: 32px;
 	padding: 0;
 	font-size: 0;
 }
 
 .date-compass-calendar.is-mobile .reset-button::after {
 	content: "";
-	width: 8px;
-	height: 8px;
+	width: 6px;
+	height: 6px;
 	border-radius: 50%;
-	background-color: var(--color-arrow);
+	background-color: currentColor;
 }
 
 .date-compass-calendar .calendar {
-	border-collapse: collapse;
 	width: 100%;
-}
-
-.date-compass-calendar .calendar col.weekend {
-	background-color: var(--color-background-weekend);
+	border-collapse: separate;
+	border-spacing: 0;
+	table-layout: fixed;
 }
 
 .date-compass-calendar .calendar th {
-	padding: 4px;
-	font-size: 0.6em;
-	letter-spacing: 1px;
+	padding: 2px 0 4px;
+	font-size: calc(var(--font-ui-smaller) - 1px);
+	font-weight: 500;
+	letter-spacing: 0.1em;
 	text-align: center;
 	text-transform: uppercase;
-	color: var(--color-text-heading);
-	background-color: var(--color-background-heading);
+	color: var(--text-muted);
 }
 
-.date-compass-calendar .calendar .week-num-cell {
-	border-right: 1px solid var(--background-modifier-border);
+.date-compass-calendar .calendar td {
+	padding: 2px 0 0;
 }
 
 .date-compass-calendar .day,
 .date-compass-calendar .week-num {
 	position: relative;
-	height: 100%;
-	padding: 4px;
-	border-radius: 4px;
+	padding: 2px 4px 4px;
+	border-radius: var(--radius-m);
+	font-size: var(--font-ui-small);
 	text-align: center;
-	transition:
-		background-color 0.1s ease-in,
-		color 0.1s ease-in;
 }
 
 .date-compass-calendar .day {
-	font-size: 0.8em;
-	color: var(--color-text-day);
-	background-color: var(--color-background-day);
+	color: var(--text-normal);
 }
 
 .date-compass-calendar .week-num {
-	font-size: 0.65em;
-	color: var(--color-text-weeknum);
-	background-color: var(--color-background-weeknum);
+	color: var(--text-muted);
 }
 
 .date-compass-calendar.is-mobile .day,
 .date-compass-calendar.is-mobile .week-num {
-	font-size: 1em;
+	font-size: var(--font-ui-medium);
+}
+
+.date-compass-calendar .day.adjacent-month {
+	color: var(--text-faint);
 }
 
 .date-compass-calendar .day.is-clickable,
 .date-compass-calendar .week-num.is-clickable {
-	cursor: pointer;
+	cursor: var(--cursor);
 }
 
 .date-compass-calendar .day.is-clickable:hover,
 .date-compass-calendar .week-num.is-clickable:hover {
-	background-color: var(--interactive-hover);
-}
-
-.date-compass-calendar .day.today {
-	color: var(--color-text-today);
+	background-color: var(--background-modifier-hover);
 }
 
 .date-compass-calendar .day.active,
-.date-compass-calendar .day.is-clickable:active,
 .date-compass-calendar .week-num.active,
+.date-compass-calendar .day.is-clickable:active,
 .date-compass-calendar .week-num.is-clickable:active {
-	color: var(--text-on-accent);
-	background-color: var(--interactive-accent);
+	background-color: var(--background-modifier-active-hover);
 }
 
-.date-compass-calendar .day.active:hover,
-.date-compass-calendar .week-num.active:hover {
-	background-color: var(--interactive-accent-hover);
-}
-
-.date-compass-calendar .day.adjacent-month {
-	opacity: 0.25;
+.date-compass-calendar .day.today {
+	--color-dot: var(--text-accent);
+	font-weight: 600;
+	color: var(--text-accent);
 }
 
 .date-compass-calendar .dot-container {
@@ -261,7 +223,6 @@
 	display: inline-block;
 	width: 6px;
 	height: 6px;
-	margin: 0 1px;
 }
 
 .date-compass-calendar .dot.filled {
@@ -321,16 +282,6 @@
 
 .date-compass-calendar .dot.dot-color-pink {
 	--color-dot: var(--color-pink);
-}
-
-.date-compass-calendar .active .dot.filled,
-.date-compass-calendar .is-clickable:active .dot.filled {
-	fill: var(--text-on-accent);
-}
-
-.date-compass-calendar .active .dot.hollow,
-.date-compass-calendar .is-clickable:active .dot.hollow {
-	stroke: var(--text-on-accent);
 }
 
 .setting-item.date-compass-filter-setting {

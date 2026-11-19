@@ -6,7 +6,7 @@ import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, 
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
 import type { LegacyFilterKind } from "../filters/legacy.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_THEME_COMPATIBILITY_KEY, decoratorKey } from "./controlKeys.ts";
+import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -19,7 +19,6 @@ export interface Choice<Value extends string> {
 
 export interface CalendarPageContext {
 	decorators: () => DotDecorator[];
-	sharesRootIdWithOriginalCalendar: () => boolean;
 	openPage: (pageId: string) => void;
 	change: (mutate: () => unknown) => Promise<void>;
 	write: (key: string, value: unknown) => void;
@@ -189,13 +188,7 @@ export function calendarItems(decorators: DotDecorator[], context: CalendarPageC
 			items: [
 				{ name: t("calendarShowWeekNumbers"), desc: t("calendarShowWeekNumbersDesc"), control: { type: "toggle", key: CALENDAR_SHOW_WEEK_NUMBERS_KEY } },
 				{ name: t("calendarConfirmBeforeCreate"), desc: t("calendarConfirmBeforeCreateDesc"), control: { type: "toggle", key: CALENDAR_CONFIRM_BEFORE_CREATE_KEY } },
-				{ name: t("calendarThemeCompatibility"), desc: t("calendarThemeCompatibilityDesc"), control: { type: "toggle", key: CALENDAR_THEME_COMPATIBILITY_KEY } },
 			],
-		},
-		{
-			type: "group",
-			visible: context.sharesRootIdWithOriginalCalendar,
-			items: [{ name: t("calendarThemeCompatibilityClash"), desc: t("calendarThemeCompatibilityClashDesc") }],
 		},
 		decoratorsList(decorators, context),
 		{ type: "group", visible: false, items: decorators.map((decorator) => decoratorPage(decorator, context)) },

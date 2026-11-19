@@ -478,19 +478,15 @@ Ajustes → **Calendario**:
 - **Mostrar números de semana**: añade la columna de semanas. Activado por defecto.
 - **Confirmar antes de crear una nota**: pregunta antes de crear una nota que aún no existe.
   Activado por defecto.
-- **Compatibilidad con estilos de tema para Calendar**: da al calendario el id
-  `calendar-container` que usa el plugin Calendar de Liam Cain, para que los temas y fragmentos
-  CSS escritos para ese plugin, como el tema Minimal, también den estilo a este calendario.
-  Desactivado por defecto. Déjalo desactivado mientras el plugin Calendar también esté abierto:
-  dos elementos compartirían ese id y el tema daría estilo a ambos. La página avisa cuando el
-  ajuste está activado y el plugin Calendar está habilitado.
 - **Puntos**: la lista de puntos descrita arriba, con + para añadir una entrada según su fuente.
   Cada fila tiene un lápiz que abre la entrada y un botón de copia que la duplica, con el nombre
   "*nombre* copia", justo debajo de la original.
 
-Una nota solo se encuentra en la ruta que le dan su carpeta y su formato de nombre. El aspecto
-sigue el del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) de Liam Cain
-(MIT).
+Una nota solo se encuentra en la ruta que le dan su carpeta y su formato de nombre. La disposición
+viene del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) de Liam Cain
+(MIT), y el aspecto compacto sigue el estilo que le da el tema Minimal. El calendario usa solo las
+variables de tema de Obsidian, así que sus colores, fuentes y color de acento siguen el tema que
+uses.
 
 ## API pública para Templater
 

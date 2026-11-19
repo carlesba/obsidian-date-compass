@@ -98,7 +98,6 @@ test("the place list says anywhere while empty, and + searches the places and ac
 	let pick: (value: string) => void = () => undefined;
 	const context: CalendarPageContext = {
 		decorators: () => [],
-		sharesRootIdWithOriginalCalendar: () => false,
 		openPage: () => undefined,
 		change: async () => undefined,
 		write: (_key, value) => void writes.push(value),
