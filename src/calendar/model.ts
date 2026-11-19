@@ -69,6 +69,7 @@ export interface CalendarModelInput {
 }
 
 export const CLICKABLE_CLASS = "is-clickable";
+const MONTH_LOOK_CLASS = "month";
 
 export function calendarModel(input: CalendarModelInput): CalendarModel {
 	const { grid, today, notes, parts, rule, weekdayNames, showWeekNumbers } = input;
@@ -121,7 +122,8 @@ export function weekClasses(cell: WeekCell): string[] {
 }
 
 export function titlePartClasses(part: TitlePart): string[] {
-	return classesOf(part.period, part, {});
+	const classes = classesOf(part.period, part, {});
+	return part.period === "quarter" ? [...classes, MONTH_LOOK_CLASS] : classes;
 }
 
 function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, place: DotPlace | undefined): NoteCell {

@@ -387,8 +387,8 @@ trimestral o anual muestra el mes en el que cae su primer día.
   **Calendario** que quita la necesidad de la tecla.
 - Haz clic derecho en un día que tiene nota para ver **Eliminar** y el menú habitual de archivo.
 
-**Cabecera.** El título muestra el mes, el trimestre (`Q4`, solo cuando las notas trimestrales
-están activadas) y el año. Cada parte abre su propia nota con los mismos clics que un día, cuando
+**Cabecera.** El título muestra el mes, el año y el trimestre (`Nov 2026 Q4`; el trimestre solo
+cuando las notas trimestrales están activadas). Cada parte abre su propia nota con los mismos clics que un día, cuando
 su periodo está activado; una parte cuyo periodo está desactivado es texto normal. Las flechas
 mueven un mes, y **Hoy** vuelve al mes actual; en un teléfono o tableta **Hoy** es un punto entre
 las flechas. A medianoche, un calendario que muestra el mes actual avanza solo.

@@ -193,9 +193,9 @@ test("week numbers are shown but not clickable when weekly notes are off", () =>
 test("the title shows month and year, and the quarter only when quarterly notes are on", () => {
 	assert.deepEqual(modelOf().title.map((part) => part.label), ["Nov", "2026"]);
 	const withQuarter = modelOf({ change: (periods) => (periods.quarter.enabled = true) });
-	assert.deepEqual(withQuarter.title.map((part) => part.label), ["Nov", "Q4", "2026"]);
-	assert.deepEqual(withQuarter.title.map((part) => part.target?.path), ["2026-11.md", "2026-Q4.md", "2026.md"]);
-	assert.deepEqual(withQuarter.title[1].target?.date, { year: 2026, month: 11, day: 1 });
+	assert.deepEqual(withQuarter.title.map((part) => part.label), ["Nov", "2026", "Q4"]);
+	assert.deepEqual(withQuarter.title.map((part) => part.target?.path), ["2026-11.md", "2026.md", "2026-Q4.md"]);
+	assert.deepEqual(withQuarter.title[2].target?.date, { year: 2026, month: 11, day: 1 });
 });
 
 test("a title part is clickable only when its period is on, and never carries dots", () => {
@@ -205,4 +205,9 @@ test("a title part is clickable only when its period is on, and never carries do
 	assert.deepEqual(month.dots, []);
 	assert.equal(year.target, undefined);
 	assert.deepEqual(titlePartClasses(year), ["year"]);
+});
+
+test("the quarter carries the month class, so the plugin and themes style it like the month", () => {
+	const model = modelOf({ existing: ["2026-Q4.md"], change: (periods) => (periods.quarter.enabled = true) });
+	assert.deepEqual(titlePartClasses(model.title[2]), ["quarter", "has-note", "is-clickable", "month"]);
 });

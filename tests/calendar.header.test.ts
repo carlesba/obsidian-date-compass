@@ -17,14 +17,14 @@ test("the header shows the month and the year, and leaves the quarter out while 
 	]);
 });
 
-test("the quarter sits between the month and the year when quarterly notes are on", () => {
+test("the quarter follows the month and the year when quarterly notes are on", () => {
 	const withQuarter = periods((settings) => (settings.quarter.enabled = true));
 	assert.deepEqual(headerParts({ year: 2026, month: 8 }, "Aug", withQuarter), [
 		{ period: "month", label: "Aug", clickable: true },
-		{ period: "quarter", label: "Q3", clickable: true },
 		{ period: "year", label: "2026", clickable: true },
+		{ period: "quarter", label: "Q3", clickable: true },
 	]);
-	const quarterLabels = [1, 3, 4, 6, 7, 9, 10, 12].map((month) => headerParts({ year: 2026, month }, "", withQuarter)[1].label);
+	const quarterLabels = [1, 3, 4, 6, 7, 9, 10, 12].map((month) => headerParts({ year: 2026, month }, "", withQuarter)[2].label);
 	assert.deepEqual(quarterLabels, ["Q1", "Q1", "Q2", "Q2", "Q3", "Q3", "Q4", "Q4"]);
 });
 

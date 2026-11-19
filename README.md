@@ -367,8 +367,8 @@ first day falls in.
   Page preview plugin have a **Calendar** toggle that drops the need for the key.
 - Right-click a day that has a note for **Delete** and the usual file menu.
 
-**Header.** The title shows the month, the quarter (`Q4`, only when quarterly notes are enabled)
-and the year. Each part opens its own note with the same clicks as a day, when its period is
+**Header.** The title shows the month, the year and the quarter (`Nov 2026 Q4`; the quarter only
+when quarterly notes are enabled). Each part opens its own note with the same clicks as a day, when its period is
 enabled; a part whose period is off is plain text. The arrows move one month, and **Today**
 returns to the current month; on a phone or tablet **Today** is a dot between the arrows. At
 midnight a calendar showing the current month moves on by itself.

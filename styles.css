@@ -89,7 +89,6 @@
 	text-transform: capitalize;
 }
 
-.date-compass-calendar .quarter,
 .date-compass-calendar .year {
 	color: var(--interactive-accent);
 }
