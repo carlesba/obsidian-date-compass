@@ -202,6 +202,8 @@ export const es: Translation = {
 	noDotsYet: "Aún no hay puntos. Añade uno con +.",
 	addDots: "Añadir puntos",
 	editDots: "Editar puntos",
+	duplicateDots: "Duplicar puntos",
+	dotsCopyName: "{name} copia",
 	dotSourceWords: "Palabras",
 	dotSourceOpenTasks: "Tareas pendientes",
 	dotSourceLinks: "Notas que enlazan",

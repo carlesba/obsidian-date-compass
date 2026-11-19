@@ -1,7 +1,7 @@
 import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionRender, SettingGroupItem } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, filterProblem, filtersLinkingNotes, linkPlaceValue, linkPlacesToAdd, newDecorator, propertyPlace, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
+import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, duplicateDecorator, filterProblem, filtersLinkingNotes, linkPlaceValue, linkPlacesToAdd, newDecorator, propertyPlace, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
 import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, FilterProblem, LinkPlace } from "../calendar/decorators.ts";
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
@@ -207,7 +207,7 @@ function decoratorsList(decorators: DotDecorator[], context: CalendarPageContext
 		type: "list",
 		heading: t("dotsList"),
 		emptyState: t("noDotsYet"),
-		items: decorators.map((decorator) => decoratorRow(decorator, context)),
+		items: decorators.map((decorator, index) => decoratorRow(decorators, index, context)),
 		onReorder: (from, to) => void context.change(() => moveEntry(decorators, from, to)),
 		onDelete: (index) => void context.change(() => decorators.splice(index, 1)),
 		addItem: {
@@ -225,7 +225,8 @@ function decoratorsList(decorators: DotDecorator[], context: CalendarPageContext
 	};
 }
 
-function decoratorRow(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionRender {
+function decoratorRow(decorators: DotDecorator[], index: number, context: CalendarPageContext): SettingDefinitionRender {
+	const decorator = decorators[index];
 	const description = () => decoratorWarning(decorator, context.propertyTypes()) ?? decoratorSummary(decorator);
 	return {
 		name: decoratorName(decorator),
@@ -239,6 +240,15 @@ function decoratorRow(decorator: DotDecorator, context: CalendarPageContext): Se
 					.setTooltip(t("editDots"))
 					.onClick(() => context.openPage(decoratorPageId(decorator)))
 					.extraSettingsEl.addClass(LIST_ROW_EDIT_CLASS),
+			);
+			setting.addExtraButton((button) =>
+				button
+					.setIcon("copy")
+					.setTooltip(t("duplicateDots"))
+					.onClick(() => {
+						const copy = duplicateDecorator(decorators, decorator, t("dotsCopyName", { name: decoratorName(decorator) }));
+						void context.change(() => decorators.splice(index + 1, 0, copy)).then(() => context.openPage(decoratorPageId(copy)));
+					}),
 			);
 			return leadWithListControls(setting);
 		},

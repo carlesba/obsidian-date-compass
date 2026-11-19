@@ -101,6 +101,10 @@ export function decoratorOf(source: DotSource, id: string): DotDecorator {
 	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], linkPlaces: [], filter: emptyFilter(), legacyFilters: [] };
 }
 
+export function duplicateDecorator(decorators: readonly DotDecorator[], original: DotDecorator, name: string): DotDecorator {
+	const copy: DotDecorator = structuredClone(original);
+	return { ...copy, id: freeId(decorators, DECORATOR_ID_PREFIX), name };
+}
 
 export function newDecorator(decorators: readonly DotDecorator[], source: DotSource): DotDecorator {
 	return decoratorOf(source, freeId(decorators, DECORATOR_ID_PREFIX));

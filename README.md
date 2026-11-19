@@ -452,7 +452,9 @@ Settings → **Calendar**:
   as the Minimal theme, style this calendar too. Off by default. Keep it off while the Calendar
   plugin is open as well: two elements would share that id and the theme would style both. The
   page warns when the setting is on and the Calendar plugin is enabled.
-- **Dots**: the list of dots described above, with + to add an entry by its source.
+- **Dots**: the list of dots described above, with + to add an entry by its source. Each row has a
+  pencil that opens the entry and a copy button that duplicates it, named "*name* copy", right
+  below the original.
 
 A note is found only at the path its folder and name format give it. The look follows Liam Cain's
 [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) plugin (MIT).

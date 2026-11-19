@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { SettingDefinitionList } from "obsidian";
-import { decoratorOf, linkPlacesToAdd, linkReachesTarget, linkedFromPlaces, mergeDecorators, propertyOfFrontmatterKey } from "../src/calendar/decorators.ts";
+import { decoratorOf, duplicateDecorator, linkPlacesToAdd, linkReachesTarget, linkedFromPlaces, mergeDecorators, propertyOfFrontmatterKey } from "../src/calendar/decorators.ts";
 import type { DotDecorator, LinkLocation, LinkPlace } from "../src/calendar/decorators.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { decoratorKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
@@ -74,6 +74,14 @@ test("the add picker offers the body, any property and each vault property once,
 test("the summary says where the link has to be", () => {
 	assert.equal(decoratorSummary({ ...links, linkPlaces: [body, due] }), "One dot · filled, accent, below the number · linked from the body, due · also without a note");
 	assert.equal(decoratorSummary({ ...links, linkPlaces: [anyProperty] }), "One dot · filled, accent, below the number · linked from any property · also without a note");
+});
+
+test("a duplicate copies every option under a free id and its own name, without sharing lists with the original", () => {
+	const original: DotDecorator = { ...links, id: "dots-1", color: "red", linkPlaces: [due] };
+	const copy = duplicateDecorator([original, { ...links, id: "dots-2" }], original, "Linking notes copy");
+	assert.deepEqual(copy, { ...original, id: "dots-3", name: "Linking notes copy" });
+	copy.linkPlaces.push(body);
+	assert.deepEqual(original.linkPlaces, [due]);
 });
 
 function placesListOf(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionList {

@@ -485,6 +485,8 @@ Ajustes → **Calendario**:
   dos elementos compartirían ese id y el tema daría estilo a ambos. La página avisa cuando el
   ajuste está activado y el plugin Calendar está habilitado.
 - **Puntos**: la lista de puntos descrita arriba, con + para añadir una entrada según su fuente.
+  Cada fila tiene un lápiz que abre la entrada y un botón de copia que la duplica, con el nombre
+  "*nombre* copia", justo debajo de la original.
 
 Una nota solo se encuentra en la ruta que le dan su carpeta y su formato de nombre. El aspecto
 sigue el del plugin [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) de Liam Cain

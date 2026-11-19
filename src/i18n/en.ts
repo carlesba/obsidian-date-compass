@@ -200,6 +200,8 @@ export const en = {
 	noDotsYet: "No dots yet. Add one with +.",
 	addDots: "Add dots",
 	editDots: "Edit dots",
+	duplicateDots: "Duplicate dots",
+	dotsCopyName: "{name} copy",
 	dotSourceWords: "Words",
 	dotSourceOpenTasks: "Open tasks",
 	dotSourceLinks: "Linking notes",
