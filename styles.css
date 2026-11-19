@@ -112,8 +112,13 @@
 	cursor: pointer;
 }
 
-.date-compass-calendar.is-mobile .arrow {
-	width: 32px;
+:is(.date-compass-calendar.is-mobile, #calendar-container.date-compass-calendar.is-mobile) .arrow {
+	box-sizing: border-box;
+	width: 44px;
+	height: 44px;
+	margin-block: -11px;
+	padding: 0;
+	background-color: transparent;
 }
 
 .date-compass-calendar .arrow.right {
@@ -124,6 +129,11 @@
 	width: 16px;
 	height: 16px;
 	color: var(--color-arrow);
+}
+
+:is(.date-compass-calendar.is-mobile, #calendar-container.date-compass-calendar.is-mobile) .arrow svg {
+	width: 20px;
+	height: 20px;
 }
 
 .date-compass-calendar .reset-button {
@@ -138,7 +148,7 @@
 	cursor: pointer;
 }
 
-.date-compass-calendar.is-mobile .reset-button {
+:is(.date-compass-calendar.is-mobile, #calendar-container.date-compass-calendar.is-mobile) .reset-button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
