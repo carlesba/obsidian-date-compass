@@ -422,6 +422,12 @@ días y semanas, en el orden de la lista. Una entrada tiene una fuente y un aspe
   resaltado.
 - **Mostrar en días sin nota**, solo para notas que enlazan: una nota de reunión que enlaza al
   martes que viene marca el martes antes de que exista su nota.
+- **Enlace en**, solo para notas que enlazan: dónde tiene que estar el enlace al día o a la semana.
+  **Cuerpo de la nota** cuenta los enlaces e incrustaciones del texto, **Cualquier propiedad** los
+  enlaces de cualquier propiedad y **Propiedad: *nombre*** los enlaces de esa propiedad, incluido
+  cada elemento de una propiedad de lista. Añade tantos sitios como quieras con **+**, que lista
+  las propiedades de la bóveda y también acepta un nombre escrito; una nota cuenta cuando enlaza
+  desde cualquiera de ellos. Si está vacía, muestra **Cualquier sitio**.
 - **Solo notas que cumplen**, solo para notas que enlazan: un filtro que decide qué notas que
   enlazan cuentan. Si está vacío, cuenta toda nota que enlaza al día o a la semana.
 

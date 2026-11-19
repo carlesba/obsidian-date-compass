@@ -30,6 +30,7 @@ import { pagePath } from "./settings/pages.ts";
 import { renderFilter } from "./settings/filterEditor.ts";
 import { createFilterVault, propertySuggestions, propertyTypesOf } from "./filters/obsidianVault.ts";
 import type { PropertySuggestion } from "./filters/obsidianVault.ts";
+import { ComboboxPopover } from "./settings/combobox.ts";
 
 const MENTION_FIELDS_THAT_CHANGE_THE_PAGE: readonly MentionControlField[] = ["targets", "aliasShape"];
 
@@ -61,6 +62,7 @@ export class DateCompassSettingTab extends PluginSettingTab {
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		const propertyTypes = propertyTypesOf(this.app);
 		let suggestedProperties: PropertySuggestion[] | undefined;
+		const suggestProperties = () => (suggestedProperties ??= propertySuggestions(createFilterVault(this.app), propertyTypes));
 		return [
 			{
 				type: "group",
@@ -87,12 +89,14 @@ export class DateCompassSettingTab extends PluginSettingTab {
 						write: (key, value) => void this.setControlValue(key, value),
 						notify: (message) => new Notice(message),
 						choose: (anchor, choices, pick) => this.choose(anchor, choices, pick),
+						search: (anchor, choices, typedChoice, pick) => this.search(anchor, choices, typedChoice, pick),
+						propertyNames: () => suggestProperties().map((suggestion) => suggestion.name),
 						propertyTypes: () => propertyTypes,
 						renderFilter: (settingEl, filter) =>
 							renderFilter(settingEl, filter, {
 								app: this.app,
 								propertyTypes,
-								propertySuggestions: () => (suggestedProperties ??= propertySuggestions(createFilterVault(this.app), propertyTypes)),
+								propertySuggestions: suggestProperties,
 								chooseField: (anchor, choices, pick) => this.choose(anchor, choices, pick),
 								change: (mutate) => void this.changeEntries(mutate),
 							}),
@@ -184,6 +188,29 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		for (const choice of choices) menu.addItem((item) => item.setTitle(choice.name).onClick(() => pick(choice.value)));
 		const box = anchor.getBoundingClientRect();
 		menu.showAtPosition({ x: box.left, y: box.bottom });
+	}
+
+	private search(anchor: HTMLElement, choices: Choice<string>[], typedChoice: (query: string) => Choice<string> | undefined, pick: (value: string) => void): void {
+		const popover: ComboboxPopover = new ComboboxPopover(
+			anchor,
+			{
+				items: () => choices.map((choice) => ({ value: choice.value, label: choice.name })),
+				searchPlaceholder: t("filterSearch"),
+				extraItem: (query) => {
+					const choice = typedChoice(query);
+					return choice && { value: choice.value, label: choice.name };
+				},
+			},
+			undefined,
+			"",
+			{
+				choose: (item) => {
+					popover.destroy();
+					pick(item.value);
+				},
+				dismiss: () => popover.destroy(),
+			},
+		);
 	}
 
 	private clashesOf(mention: Mention): TriggerClash[] {

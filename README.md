@@ -399,6 +399,11 @@ weeks, in list order. An entry has a source and a look:
   On the highlighted day of the open note every dot takes the highlighted text color.
 - **Show on days without a note**, for linking notes only: a meeting note that links to next
   Tuesday marks Tuesday before its note exists.
+- **Link found in**, for linking notes only: where the link to the day or week has to be.
+  **Note body** counts links and embeds in the text, **Any property** counts links in any property,
+  and **Property: *name*** counts links in that property, including each item of a list property.
+  Add as many places as you need with **+**, which lists the vault's properties and also takes a
+  typed name; a note counts when it links from any of them. Left empty, it shows **Anywhere**.
 - **Only notes that match**, for linking notes only: a filter that decides which linking notes
   count. Left empty, every note that links to the day or week counts.
 

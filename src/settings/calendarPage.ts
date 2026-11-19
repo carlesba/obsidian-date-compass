@@ -1,8 +1,8 @@
 import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionRender, SettingGroupItem } from "obsidian";
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, filterProblem, filtersLinkingNotes, newDecorator, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
-import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, FilterProblem } from "../calendar/decorators.ts";
+import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, filterProblem, filtersLinkingNotes, linkPlaceValue, linkPlacesToAdd, newDecorator, propertyPlace, showsEveryTime, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
+import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, FilterProblem, LinkPlace } from "../calendar/decorators.ts";
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
 import type { LegacyFilterKind } from "../filters/legacy.ts";
@@ -25,6 +25,8 @@ export interface CalendarPageContext {
 	write: (key: string, value: unknown) => void;
 	notify: (message: string) => void;
 	choose: <Value extends string>(anchor: HTMLElement, choices: Choice<Value>[], pick: (value: Value) => void) => void;
+	search: (anchor: HTMLElement, choices: Choice<string>[], typedChoice: (query: string) => Choice<string> | undefined, pick: (value: string) => void) => void;
+	propertyNames: () => string[];
 	propertyTypes: () => Record<string, string>;
 	renderFilter: (settingEl: HTMLElement, filter: FilterGroup) => () => void;
 }
@@ -127,12 +129,35 @@ export function decoratorSummary(decorator: DotDecorator): string {
 		position: t(POSITION_LABELS[decorator.position]).toLowerCase(),
 	});
 	const parts = [...(decorator.name.trim() === "" ? [] : [t(SOURCE_LABELS[decorator.source])]), count, look];
+	if (decorator.source === "links" && decorator.linkPlaces.length > 0) parts.push(t("dotSummaryLinkPlaces", { places: decorator.linkPlaces.map(linkPlaceSummary).join(", ") }));
 	if (filtersLinkingNotes(decorator)) parts.push(t("dotSummaryFilters"));
 	if (decorator.cells.length === 1) parts.push(t(decorator.cells[0] === "day" ? "dotSummaryDaysOnly" : "dotSummaryWeeksOnly"));
 	if (!showsEveryTime(decorator.times)) parts.push(timesSummary(decorator.times));
 	if (sourceCanShowWithoutNote(decorator.source) && decorator.showWithoutNote) parts.push(t("dotSummaryWithoutNote"));
 	const summary = parts.join(" · ");
 	return summary.charAt(0).toLocaleUpperCase() + summary.slice(1);
+}
+
+export function linkPlaceLabel(place: LinkPlace): string {
+	switch (place.kind) {
+		case "body":
+			return t("linkPlaceBody");
+		case "anyProperty":
+			return t("linkPlaceAnyProperty");
+		case "property":
+			return t("linkPlaceProperty", { name: place.name });
+	}
+}
+
+function linkPlaceSummary(place: LinkPlace): string {
+	switch (place.kind) {
+		case "body":
+			return t("dotSummaryLinkPlaceBody");
+		case "anyProperty":
+			return t("dotSummaryLinkPlaceAnyProperty");
+		case "property":
+			return place.name;
+	}
 }
 
 export function decoratorWarning(decorator: DotDecorator, propertyTypes: Record<string, string>): string | undefined {
@@ -257,7 +282,7 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 					{ name: t("dotsPosition"), desc: t("dotsPositionDesc"), control: { type: "dropdown", key: key("position"), options: translatedLabels(POSITION_LABELS) } },
 				],
 			},
-			...(decorator.source === "links" ? filterItems(decorator, context) : []),
+			...(decorator.source === "links" ? [linkPlacesList(decorator, context), ...filterItems(decorator, context)] : []),
 		],
 	};
 }
@@ -301,6 +326,39 @@ function timesList(decorator: DotDecorator, context: CalendarPageContext): Setti
 				const remaining = timesToAdd(times);
 				if (remaining.length === 0) context.notify(t("everyDotTimeListed"));
 				else context.choose(anchor, remaining.map((time) => ({ value: time, name: t(TIME_LABELS[time]) })), (time) => write([...times, time]));
+			},
+		},
+	};
+}
+
+function linkPlacesList(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionList {
+	const { linkPlaces } = decorator;
+	const write = (next: LinkPlace[]) => context.write(decoratorKey(decorator.id, "linkPlaces"), next);
+	return {
+		type: "list",
+		heading: t("linkPlaces"),
+		emptyState: t("linkPlacesAnywhere"),
+		items: linkPlaces.map((place) => ({ name: linkPlaceLabel(place) })),
+		onDelete: (position) => write(linkPlaces.filter((_, index) => index !== position)),
+		addItem: {
+			name: t("addLinkPlace"),
+			action: (anchor: HTMLElement) => {
+				const offered = new Map(linkPlacesToAdd(linkPlaces, context.propertyNames()).map((place) => [linkPlaceValue(place), place]));
+				const listed = new Set(linkPlaces.map(linkPlaceValue));
+				const typed = new Map<string, LinkPlace>();
+				const typedChoice = (query: string): Choice<string> | undefined => {
+					const place = propertyPlace(query);
+					if (!place) return undefined;
+					const value = linkPlaceValue(place);
+					if (offered.has(value) || listed.has(value)) return undefined;
+					typed.set(value, place);
+					return { value, name: linkPlaceLabel(place) };
+				};
+				const choices = [...offered].map(([value, place]) => ({ value, name: linkPlaceLabel(place) }));
+				context.search(anchor, choices, typedChoice, (value) => {
+					const place = offered.get(value) ?? typed.get(value);
+					if (place) write([...linkPlaces, place]);
+				});
 			},
 		},
 	};

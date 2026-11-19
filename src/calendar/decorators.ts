@@ -32,7 +32,13 @@ export interface DotPlace {
 export const DOT_POSITIONS = ["below", "above", "topLeft", "topRight"] as const;
 export type DotPosition = (typeof DOT_POSITIONS)[number];
 
-export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times"] as const;
+export type LinkPlace = { kind: "body" } | { kind: "anyProperty" } | { kind: "property"; name: string };
+
+export interface LinkLocation {
+	property?: string;
+}
+
+export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "linkPlaces"] as const;
 export type DecoratorField = (typeof DECORATOR_FIELDS)[number];
 
 export interface DotDecorator {
@@ -48,6 +54,7 @@ export interface DotDecorator {
 	showWithoutNote: boolean;
 	cells: DotCell[];
 	times: DotTime[];
+	linkPlaces: LinkPlace[];
 	filter: FilterGroup;
 	legacyFilters: LegacyFilter[];
 	unreadableFilter?: unknown;
@@ -72,7 +79,7 @@ export const DEFAULT_WORDS_PER_DOT = 250;
 
 const DECORATOR_ID_PREFIX = "dots";
 
-const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | keyof LinkingNoteFilters>> = {
+const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | "linkPlaces" | keyof LinkingNoteFilters>> = {
 	words: { count: "perAmount", amountPerDot: DEFAULT_WORDS_PER_DOT, maxDots: MAX_DOTS, shape: "filled", color: "default", position: "below", showWithoutNote: false },
 	openTasks: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false },
 	links: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "accent", position: "below", showWithoutNote: true },
@@ -91,8 +98,9 @@ export function sourceCanShowWithoutNote(source: DotSource): boolean {
 }
 
 export function decoratorOf(source: DotSource, id: string): DotDecorator {
-	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], filter: emptyFilter(), legacyFilters: [] };
+	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], linkPlaces: [], filter: emptyFilter(), legacyFilters: [] };
 }
+
 
 export function newDecorator(decorators: readonly DotDecorator[], source: DotSource): DotDecorator {
 	return decoratorOf(source, freeId(decorators, DECORATOR_ID_PREFIX));
@@ -132,6 +140,7 @@ function mergeDecorator(data: Record<string, unknown>, earlier: readonly DotDeco
 		showWithoutNote: typeof data.showWithoutNote === "boolean" ? data.showWithoutNote : defaults.showWithoutNote,
 		cells: validCells(data.cells) ?? [...DOT_CELLS],
 		times: validTimes(data.times) ?? [...DOT_TIMES],
+		linkPlaces: source === "links" ? (validLinkPlaces(data.linkPlaces) ?? []) : [],
 		...(source === "links" ? mergeLinkingNoteFilters(data) : { filter: emptyFilter(), legacyFilters: [] }),
 	};
 }
@@ -170,6 +179,88 @@ export function linkingNoteMatcher(filters: LinkingNoteFilters, context: FilterC
 	if (legacyFilters.length === 0) return matches;
 	const { vault } = context;
 	return (note) => matchesLegacyFilters({ path: note.path, tags: vault.tags(note.path), frontmatter: vault.frontmatter(note.path) }, legacyFilters) && matches(note);
+}
+
+const BODY_PLACE_VALUE = "body";
+const ANY_PROPERTY_PLACE_VALUE = "anyProperty";
+const PROPERTY_PLACE_PREFIX = "property:";
+
+export function linkPlaceValue(place: LinkPlace): string {
+	switch (place.kind) {
+		case "body":
+			return BODY_PLACE_VALUE;
+		case "anyProperty":
+			return ANY_PROPERTY_PLACE_VALUE;
+		case "property":
+			return PROPERTY_PLACE_PREFIX + place.name.toLowerCase();
+	}
+}
+
+export function bodyPlace(): LinkPlace {
+	return { kind: "body" };
+}
+
+export function anyPropertyPlace(): LinkPlace {
+	return { kind: "anyProperty" };
+}
+
+export function propertyPlace(name: string): LinkPlace | undefined {
+	const trimmed = name.trim();
+	return trimmed === "" ? undefined : { kind: "property", name: trimmed };
+}
+
+function readLinkPlace(value: unknown): LinkPlace | undefined {
+	if (!isRecord(value)) return undefined;
+	if (value.kind === "body") return bodyPlace();
+	if (value.kind === "anyProperty") return anyPropertyPlace();
+	return value.kind === "property" && typeof value.name === "string" ? propertyPlace(value.name) : undefined;
+}
+
+export function validLinkPlaces(value: unknown): LinkPlace[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const places: LinkPlace[] = [];
+	for (const stored of value) {
+		const place = readLinkPlace(stored);
+		if (!place || places.some((listed) => linkPlaceValue(listed) === linkPlaceValue(place))) return undefined;
+		places.push(place);
+	}
+	return places;
+}
+
+export function linkPlacesToAdd(places: readonly LinkPlace[], propertyNames: readonly string[]): LinkPlace[] {
+	const candidates = [bodyPlace(), anyPropertyPlace(), ...propertyNames.flatMap((name) => propertyPlace(name) ?? [])];
+	const listed = new Set(places.map(linkPlaceValue));
+	return candidates.filter((place) => {
+		const value = linkPlaceValue(place);
+		if (listed.has(value)) return false;
+		listed.add(value);
+		return true;
+	});
+}
+
+export function propertyOfFrontmatterKey(key: string): string {
+	return key.replace(/\.\d+$/, "");
+}
+
+function linkedFromPlace(place: LinkPlace, location: LinkLocation): boolean {
+	switch (place.kind) {
+		case "body":
+			return location.property === undefined;
+		case "anyProperty":
+			return location.property !== undefined;
+		case "property":
+			return location.property?.toLowerCase() === place.name.toLowerCase();
+	}
+}
+
+export function linkedFromPlaces(places: readonly LinkPlace[], locations: readonly LinkLocation[]): boolean {
+	if (places.length === 0) return locations.length > 0;
+	return locations.some((location) => places.some((place) => linkedFromPlace(place, location)));
+}
+
+export function linkReachesTarget(targetPath: string, linkpath: string, resolvedPath: string | undefined): boolean {
+	if (resolvedPath !== undefined) return resolvedPath === targetPath;
+	return unresolvedKeysOf(targetPath).has(unresolvedKey(linkpath));
 }
 
 export function validCells(value: unknown): DotCell[] | undefined {
@@ -248,13 +339,17 @@ export function backlinkIndex(index: LinkIndex): BacklinkIndex {
 	}
 	return {
 		sourcesOf: (targetPath) => {
-			const withoutExtension = targetPath.replace(/\.md$/i, "");
-			const keys = new Set([withoutExtension, nameOf(withoutExtension)].map(unresolvedKey));
+			const keys = unresolvedKeysOf(targetPath);
 			const sources = new Set(resolvedSources.get(targetPath));
 			for (const key of keys) for (const source of unresolvedSources.get(key) ?? []) sources.add(source);
 			return [...sources];
 		},
 	};
+}
+
+function unresolvedKeysOf(targetPath: string): Set<string> {
+	const withoutExtension = targetPath.replace(/\.md$/i, "");
+	return new Set([withoutExtension, nameOf(withoutExtension)].map(unresolvedKey));
 }
 
 function nameOf(path: string): string {
