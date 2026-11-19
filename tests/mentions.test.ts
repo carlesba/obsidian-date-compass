@@ -273,6 +273,9 @@ test("plugins that suggest after the same trigger are named", () => {
 	assert.deepEqual(sameTriggerPlugins(";;", plugins), ["Note Compass"]);
 	assert.deepEqual(sameTriggerPlugins("@@", plugins), ["Date List"]);
 	assert.deepEqual(sameTriggerPlugins("@", [{ id: "note-compass", name: "Note Compass", settings: { mention: { enabled: false, trigger: "@" } } }]), []);
+	const rows = { mentions: [{ id: "1", trigger: "@", pickerId: "1" }, { id: "2", trigger: "!", pickerId: "2" }] };
+	assert.deepEqual(sameTriggerPlugins("!", [{ id: "note-compass", name: "Note Compass", settings: rows }]), ["Note Compass"]);
+	assert.deepEqual(sameTriggerPlugins("@", [{ id: "note-compass", name: "Note Compass", settings: { mentions: [] } }]), []);
 	assert.deepEqual(sameTriggerPlugins("@", [{ id: "nldates-obsidian", name: "NLD", settings: {} }]), ["NLD"]);
 });
 

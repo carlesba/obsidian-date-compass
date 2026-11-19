@@ -16,6 +16,7 @@ const TRIGGER_READERS: Record<string, TriggerReader> = {
 	"nldates-revived": NLDATES_TRIGGERS,
 	"date-list": (settings) => [settings.suggestTrigger ?? "@", settings.listSuggestTrigger],
 	"note-compass": (settings) => {
+		if (Array.isArray(settings.mentions)) return settings.mentions.map((mention) => (isRecord(mention) ? mention.trigger : undefined));
 		const mention = isRecord(settings.mention) ? settings.mention : {};
 		return mention.enabled === true ? [mention.trigger] : [];
 	},
