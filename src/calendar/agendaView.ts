@@ -9,7 +9,7 @@ import { renderAgenda } from "./agendaList.ts";
 import type { AgendaHandlers } from "./agendaList.ts";
 import { AGENDA_SCOPES } from "./agenda.ts";
 import type { AgendaScope, SelectedDateNote } from "./agenda.ts";
-import { agendaOf, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
+import { agendaOf, applyLook, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
 import type { CivilMonth } from "./grid.ts";
 import type { ScreenContext } from "./screen.ts";
 import { CALENDAR_RENDERED_EVENT, CALENDAR_VIEW_TYPE, CalendarView } from "./view.ts";
@@ -136,6 +136,7 @@ export class AgendaView extends ItemView implements HoverParent {
 			activePath: this.app.workspace.getActiveFile()?.path,
 		};
 		this.root.empty();
+		applyLook(this.root, settings.calendar);
 		this.renderScope();
 		const calendar = this.calendar();
 		const grids = this.listScope === "visible" && calendar ? calendar.visibleGrids() : [];

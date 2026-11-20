@@ -38,7 +38,7 @@ export type CellUse = "all" | "links" | "none";
 
 export type CellUseOf = (cell: NoteCell, kind: CellKind) => CellUse;
 
-const LABEL_CLASSES_LEFT_OUT = [CLICKABLE_CLASS, "active", "adjacent-month"];
+const LABEL_CLASSES_LEFT_OUT = [CLICKABLE_CLASS, "active"];
 
 const KIND_ORDER: readonly CellKind[] = ["day", "week", "month", "quarter", "year"];
 const DAYS_IN_WEEK = 7;

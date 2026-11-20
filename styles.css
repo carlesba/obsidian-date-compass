@@ -183,6 +183,10 @@
 	font-size: var(--font-ui-medium);
 }
 
+.date-compass-calendar.dims-without-note .agenda-date:not(.has-note):not(.today) {
+	color: var(--text-muted);
+}
+
 .date-compass-calendar.adjacent-dim-soft .day.adjacent-month {
 	opacity: 0.7;
 }

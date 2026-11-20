@@ -17,11 +17,11 @@ import { activeNoteTouchesVisible, touchesVisible } from "./paths.ts";
 import { renderAgenda } from "./agendaList.ts";
 import type { AgendaHandlers } from "./agendaList.ts";
 import type { SelectedDateNote } from "./agenda.ts";
-import { agendaOf, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
+import { agendaOf, applyLook, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
 import type { ScreenContext } from "./screen.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
-import { ADJACENT_DIMS, todayRowIndex } from "./settings.ts";
+import { todayRowIndex } from "./settings.ts";
 import type { CalendarSettings } from "./settings.ts";
 import { singleFlight } from "./singleFlight.ts";
 import { weekRuleOf } from "./weeks.ts";
@@ -33,8 +33,6 @@ export const CALENDAR_RENDERED_EVENT = "date-compass:calendar-rendered";
 
 const ROOT_CLASS = "date-compass-calendar";
 const MOBILE_CLASS = "is-mobile";
-const DIMS_WITHOUT_NOTE_CLASS = "dims-without-note";
-const ADJACENT_DIM_CLASS_PREFIX = "adjacent-dim-";
 const CONTEXT_MENU_SOURCE = "calendar-context-menu";
 const DELETE_ICON = "trash";
 const RENDER_DEBOUNCE_MS = 50;
@@ -206,8 +204,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		const grids = this.grids(calendar, rule);
 		const { models, paths } = calendarModels(context, grids, calendar.showWeekNumbers);
 		this.root.empty();
-		this.root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, calendar.dimWithoutNote);
-		for (const dim of ADJACENT_DIMS) this.root.toggleClass(`${ADJACENT_DIM_CLASS_PREFIX}${dim}`, dim === calendar.adjacentDim);
+		applyLook(this.root, calendar);
 		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months: models }, this.handlers);
 		if (calendar.agenda !== "off") {
 			const listed = agendaOf(context, calendar.agenda, { models, month: grids[0]?.month }, this.selected);

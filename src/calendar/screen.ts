@@ -15,6 +15,8 @@ import { visibleNotes } from "./paths.ts";
 import { agendaRows, agendaSections, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./agenda.ts";
 import type { AgendaRow, AgendaScope, AgendaSection, SelectedDateNote } from "./agenda.ts";
 import type { WeekRule } from "./weeks.ts";
+import { ADJACENT_DIMS } from "./settings.ts";
+import type { CalendarSettings } from "./settings.ts";
 
 export interface ScreenContext {
 	app: App;
@@ -78,6 +80,14 @@ export function agendaOf(context: ScreenContext, scope: AgendaScope, visible: Vi
 	const { models, paths } = calendarModels(context, [grid], true);
 	const month = monthOf(selected.date);
 	return { sections: sectionsOf(agendaRows(models, selectedCellUse(selected, range), listed, nameOf), month), shownMonth: month, paths };
+}
+
+const DIMS_WITHOUT_NOTE_CLASS = "dims-without-note";
+const ADJACENT_DIM_CLASS_PREFIX = "adjacent-dim-";
+
+export function applyLook(root: HTMLElement, calendar: CalendarSettings): void {
+	root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, calendar.dimWithoutNote);
+	for (const dim of ADJACENT_DIMS) root.toggleClass(`${ADJACENT_DIM_CLASS_PREFIX}${dim}`, dim === calendar.adjacentDim);
 }
 
 export function monthTitle(month: CivilMonth, shownMonth: CivilMonth | undefined): string {
