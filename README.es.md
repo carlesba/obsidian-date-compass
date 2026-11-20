@@ -300,10 +300,12 @@ La página de un comando tiene:
   fechas, y cancelar no cambia nada. En una propiedad dice "Las fechas se añadirán a la propiedad
   «{name}»." o "Las fechas sustituirán el valor de la propiedad «{name}»."; la frase dice sustituir
   en una propiedad de fecha o de fecha y hora. ⇧↵ en la lista de `@` abre este mismo cuadro.
-- **Cada fecha como enlace**: activado escribe cada fecha como un enlace. Desactivado escribe texto.
-  En una propiedad es el formato del tipo de propiedad: `YYYY-MM-DD` para fecha,
-  `YYYY-MM-DDTHH:mm` para fecha y hora, y el nombre de la nota en los demás tipos. En el cuerpo de
-  la nota es el nombre de la nota, o el texto del enlace cuando lo pides.
+- **Escribir cada fecha como**: **Enlace** escribe cada fecha como un enlace y muestra justo debajo
+  **Ruta en cada enlace**. **Texto plano** escribe la fecha en el formato del tipo de propiedad,
+  leído al ejecutar el comando: `YYYY-MM-DD` para fecha, `YYYY-MM-DDTHH:mm` para fecha y hora, y el
+  nombre de la nota en los demás tipos. En el cuerpo de la nota es el nombre de la nota, o el texto
+  del enlace cuando lo pides. El texto plano en una propiedad no lleva texto de enlace, así que sus
+  ajustes de texto de enlace se ocultan.
 - **Periodos de destino**: los periodos que acepta el comando, que se editan como en una mención. Las
   frases fuera de ellos se trasladan a un destino, como se describe en
   [Frases fuera de los destinos](#frases-fuera-de-los-destinos).
@@ -319,7 +321,7 @@ de Obsidian no tratan los enlaces Markdown como enlaces.
 
 El texto del enlace se escribe cuando pulsas ⌥↵ en el selector o en la lista de `@`, o activas el
 interruptor **Con texto en el enlace** del cuadro de fechas. En el móvil usa el interruptor. El texto
-sin enlace, con **Cada fecha como enlace** desactivado, nunca lleva texto de enlace en una propiedad.
+plano, con **Escribir cada fecha como** en **Texto plano**, nunca lleva texto de enlace en una propiedad.
 
 ### Ajustes de enlace
 

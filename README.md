@@ -288,10 +288,11 @@ A command page has:
   added to the property {name}." or "Dates will replace the value of the property {name}."; the
   sentence says replace for a date or date and time property. Shift+Enter in the `@` list opens this
   same box.
-- **Each date as link**: on writes each date as a link. Off writes plain text. In a property that is
-  the format of the property type: `YYYY-MM-DD` for a date property, `YYYY-MM-DDTHH:mm` for date and
-  time, and the note name for any other type. In the note body it is the note name, or the link text
-  when you ask for it.
+- **Write each date as**: **Link** writes each date as a link, and shows **Path in each link** right
+  under it. **Plain text** writes the date in the format of the property type, read when the command
+  runs: `YYYY-MM-DD` for a date property, `YYYY-MM-DDTHH:mm` for date and time, and the note name for
+  any other type. In the note body it is the note name, or the link text when you ask for it. Plain
+  text in a property has no link text, so its link text settings are hidden.
 - **Target periods**: the periods the command accepts, edited as in a mention. Phrases outside them
   move to a target, as described under [Phrases outside the targets](#phrases-outside-the-targets).
 - **Text around each link** and **Between several links**: only for **At the cursor**, and they apply
@@ -305,8 +306,8 @@ already holds a list, which stays a list. A link is always a wikilink in a prope
 do not treat Markdown links as links.
 
 The link text is written when you press ⌥↵ in the picker or the `@` list, or turn on the **With link
-text** switch in the dates box. On a phone use the switch. Plain text, with **Each date as link**
-off, never gets one in a property.
+text** switch in the dates box. On a phone use the switch. Plain text, with **Write each date as**
+set to **Plain text**, never gets one in a property.
 
 ### Link settings
 
