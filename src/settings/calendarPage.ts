@@ -9,7 +9,8 @@ import type { FilterGroup } from "../filters/filters.ts";
 import type { LegacyFilterKind } from "../filters/legacy.ts";
 import { EXTRA_WEEKS, MONTHS_SHOWN, WEEKS_SHOWN } from "../calendar/settings.ts";
 import type { CalendarSettings, CalendarViewKind, TodayRow } from "../calendar/settings.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
+import type { ReferenceList, ReferenceSources } from "../calendar/references.ts";
+import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_REFERENCES_KEY, CALENDAR_REFERENCE_SOURCES_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -55,6 +56,17 @@ const TODAY_ROW_LABELS: Record<TodayRow, TranslationKey> = {
 	first: "calendarTodayRowFirst",
 	middle: "calendarTodayRowMiddle",
 	last: "calendarTodayRowLast",
+};
+
+const REFERENCE_LIST_LABELS: Record<ReferenceList, TranslationKey> = {
+	off: "referencesOff",
+	selected: "referencesSelected",
+	visible: "referencesVisible",
+};
+
+const REFERENCE_SOURCE_LABELS: Record<ReferenceSources, TranslationKey> = {
+	dateProperties: "referenceSourcesDateProperties",
+	all: "referenceSourcesAll",
 };
 
 const COUNT_LABELS: Record<DotCount, TranslationKey> = {
@@ -193,6 +205,14 @@ export function calendarItems(decorators: DotDecorator[], context: CalendarPageC
 			],
 		},
 		decoratorsList(decorators, context),
+		{
+			type: "group",
+			heading: t("referencesHeading"),
+			items: [
+				{ name: t("references"), desc: t("referencesDesc"), control: { type: "dropdown", key: CALENDAR_REFERENCES_KEY, options: translatedLabels(REFERENCE_LIST_LABELS) } },
+				{ name: t("referenceSources"), desc: t("referenceSourcesDesc"), control: { type: "dropdown", key: CALENDAR_REFERENCE_SOURCES_KEY, options: translatedLabels(REFERENCE_SOURCE_LABELS) } },
+			],
+		},
 		{ type: "group", visible: false, items: decorators.map((decorator) => decoratorPage(decorator, context)) },
 	];
 }

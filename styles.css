@@ -442,3 +442,75 @@
 	font-size: var(--font-ui-small);
 	color: var(--text-muted);
 }
+
+.date-compass-calendar .references {
+	margin-top: var(--size-4-3);
+	padding-top: var(--size-4-2);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.date-compass-references-view .references {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: none;
+}
+
+.date-compass-calendar .reference {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	min-height: 24px;
+}
+
+.date-compass-calendar .reference-date {
+	flex: 0 0 2.5em;
+	padding: 1px 2px 2px;
+	font-size: var(--font-ui-smaller);
+}
+
+.date-compass-calendar .reference-note {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-size: var(--font-ui-small);
+	text-decoration: none;
+}
+
+.date-compass-calendar .reference-note:hover {
+	text-decoration: underline;
+}
+
+.date-compass-calendar .references-empty {
+	padding: var(--size-4-1) 0;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+}
+
+.date-compass-calendar.is-mobile .reference {
+	min-height: 36px;
+}
+
+.date-compass-calendar.is-mobile .reference-date {
+	font-size: var(--font-ui-small);
+}
+
+.date-compass-calendar.is-mobile .reference-note {
+	font-size: var(--font-ui-medium);
+}
+
+.date-compass-references-view .scope {
+	display: flex;
+	gap: var(--size-4-1);
+	margin: var(--size-4-2) 0;
+}
+
+.date-compass-references-view .scope button {
+	flex: 1 1 0;
+}
+
+.date-compass-references-view .scope button.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}

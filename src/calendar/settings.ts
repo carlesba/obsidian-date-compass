@@ -1,6 +1,8 @@
 import { isRecord } from "../dateNotes/periods.ts";
 import { mergeDecorators } from "./decorators.ts";
 import type { DotDecorator } from "./decorators.ts";
+import { REFERENCE_LISTS, REFERENCE_SOURCES } from "./references.ts";
+import type { ReferenceList, ReferenceSources } from "./references.ts";
 
 export const CALENDAR_VIEWS = ["month", "weeks"] as const;
 export type CalendarViewKind = (typeof CALENDAR_VIEWS)[number];
@@ -25,6 +27,8 @@ export interface CalendarSettings {
 	weeksShown: number;
 	todayRow: TodayRow;
 	decorators: DotDecorator[];
+	references: ReferenceList;
+	referenceSources: ReferenceSources;
 }
 
 export function defaultCalendar(): CalendarSettings {
@@ -60,5 +64,7 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		weeksShown: integer(data.weeksShown, WEEKS_SHOWN, 6),
 		todayRow: TODAY_ROWS.find((row) => row === data.todayRow) ?? "first",
 		decorators: mergeDecorators(data.decorators, data.wordsPerDot),
+		references: REFERENCE_LISTS.find((list) => list === data.references) ?? "off",
+		referenceSources: REFERENCE_SOURCES.find((sources) => sources === data.referenceSources) ?? "dateProperties",
 	};
 }

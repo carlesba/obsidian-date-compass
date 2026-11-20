@@ -429,6 +429,25 @@ counts: content, tasks, or where the link sits (body, property). An entry has a 
   notes count. Left empty, every note that links to the day or week, or that holds the date,
   counts.
 
+**Notes behind the dots.** A date property dot has no link to follow, so the calendar can list the
+notes behind its dots. In Settings → **Calendar**, **List under the calendar** chooses what the
+list shows:
+
+- **Off**: no list.
+- **Selected date**: the date note you opened last. The selection stays while you open other notes,
+  so following a row keeps the list in place. A week, month, quarter or year note lists every day
+  inside it. Tap a date in the calendar to select it; a date without a note gets its note first.
+- **Visible dates**: every date the calendar shows.
+
+**Notes to list** picks **Date properties**, or **Date properties and linking notes** to also list
+the notes behind linking-note dots. Each row shows the date and its dot exactly as the calendar
+draws them, then the note name, cut short on one line. The name opens the note.
+
+The **Dated notes** panel shows the same list in its own view, which you can drag to either sidebar
+like the calendar. Open it with **Open dated notes** in the command palette or its ribbon icon. Its
+header switches between **Selected date** and **Visible dates**, whatever the list under the
+calendar is set to; visible dates come from the open calendar.
+
 **Filter of linking notes.** The filter works like the note filters of Note Compass and of Bases:
 
 - **Add filter** asks which field the condition looks at, then the row takes an operator and a

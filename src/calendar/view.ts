@@ -10,12 +10,15 @@ import type { DateCompassSettings } from "../settings.ts";
 import { confirmCreateNote } from "./confirmModal.ts";
 import { monthGrid, monthOf, weeksAroundGrid } from "./grid.ts";
 import type { MonthGrid } from "./grid.ts";
-import { headerParts } from "./header.ts";
-import { calendarModel } from "./model.ts";
-import type { CalendarModel, NoteTarget } from "./model.ts";
+import type { NoteTarget } from "./model.ts";
 import { anchorAfterDayChange, monthAfterDayChange, sameDay, shiftMonth, shiftWeek, startOfMonthBefore, startOfNextMonth } from "./navigation.ts";
-import { createNoteDotsReader, localeWeekRule, momentOf, monthShortName, weekdayShortNames } from "./obsidianHost.ts";
-import { activeNoteTouchesVisible, touchesVisible, visibleNotes } from "./paths.ts";
+import { createNoteDotsReader, localeWeekRule, momentOf } from "./obsidianHost.ts";
+import { activeNoteTouchesVisible, touchesVisible } from "./paths.ts";
+import { renderReferences } from "./referenceList.ts";
+import type { ReferenceHandlers } from "./referenceList.ts";
+import type { SelectedDateNote } from "./references.ts";
+import { calendarModels, focusedDateNote, noteName, references } from "./screen.ts";
+import type { ScreenContext } from "./screen.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
 import { todayRowIndex } from "./settings.ts";
@@ -26,6 +29,7 @@ import type { WeekRule } from "./weeks.ts";
 
 export const CALENDAR_VIEW_TYPE = "date-compass-calendar";
 export const CALENDAR_ICON = "calendar-days";
+export const CALENDAR_RENDERED_EVENT = "date-compass:calendar-rendered";
 
 const ROOT_CLASS = "date-compass-calendar";
 const MOBILE_CLASS = "is-mobile";
@@ -42,6 +46,10 @@ export class CalendarView extends ItemView implements HoverParent {
 	private readonly dots = createNoteDotsReader(this.app, (path) => this.noteChanged(path));
 	private readonly requestRender = debounce(() => this.renderWhenShown(), RENDER_DEBOUNCE_MS, false);
 	private readonly openOncePerPath = singleFlight();
+	private readonly referenceHandlers: ReferenceHandlers = {
+		open: (notePath, event) => void this.app.workspace.openLinkText(notePath, "", Keymap.isModEvent(event)),
+		hover: (notePath, event, targetEl) => this.previewPath(notePath, event, targetEl),
+	};
 	private readonly handlers: CalendarHandlers = {
 		back: () => this.move(-1),
 		forward: () => this.move(1),
@@ -57,6 +65,8 @@ export class CalendarView extends ItemView implements HoverParent {
 	private anchor = this.today;
 	private visiblePaths: ReadonlySet<string> = new Set<string>();
 	private renderedActivePath: string | undefined;
+	private renderedGrids: MonthGrid[] = [];
+	private selected: SelectedDateNote | undefined;
 	private awaitsBeingShown = false;
 
 	constructor(leaf: WorkspaceLeaf, settings: () => DateCompassSettings) {
@@ -90,7 +100,12 @@ export class CalendarView extends ItemView implements HoverParent {
 		const shownObserver = new ResizeObserver(() => this.renderIfAwaited());
 		shownObserver.observe(this.contentEl);
 		this.register(() => shownObserver.disconnect());
+		this.selected = focusedDateNote(this.app, this.settings());
 		this.renderWhenShown();
+	}
+
+	visibleGrids(): readonly MonthGrid[] {
+		return this.renderedGrids;
 	}
 
 	async onClose(): Promise<void> {
@@ -138,6 +153,14 @@ export class CalendarView extends ItemView implements HoverParent {
 	}
 
 	private activeNoteChanged(): void {
+		const focused = focusedDateNote(this.app, this.settings());
+		if (focused && focused.path !== this.selected?.path) {
+			this.selected = focused;
+			if (this.settings().calendar.references === "selected") {
+				this.requestRender();
+				return;
+			}
+		}
 		if (activeNoteTouchesVisible(this.visiblePaths, this.app.workspace.getActiveFile()?.path, this.renderedActivePath)) this.requestRender();
 	}
 
@@ -172,35 +195,24 @@ export class CalendarView extends ItemView implements HoverParent {
 		this.awaitsBeingShown = false;
 		this.followToday();
 		const settings = this.settings();
-		const { periods } = settings.dateNotes;
 		const { calendar } = settings;
-		const { decorators } = calendar;
 		const rule = weekRuleOf(settings.weekStart, localeWeekRule());
 		const activePath = this.app.workspace.getActiveFile()?.path;
-		const visiblePaths = new Set<string>();
-		const modelOf = (grid: MonthGrid): CalendarModel => {
-			const notes = visibleNotes(grid, periods, momentOf);
-			for (const path of notes.visiblePaths) visiblePaths.add(path);
-			return calendarModel({
-				grid,
-				today: this.today,
-				notes,
-				parts: headerParts(grid.month, monthShortName(grid.month), periods),
-				rule,
-				weekdayNames: weekdayShortNames(),
-				showWeekNumbers: calendar.showWeekNumbers,
-				activePath,
-				noteExists: (path) => this.app.vault.getFileByPath(path) !== null,
-				showsDotsAbove: decorators.some((decorator) => decorator.position === "above"),
-				dotsOf: (path, place, hasNote, days) => this.dots.dotsOf(path, place, hasNote, days, decorators),
-			});
-		};
-		const months = this.grids(calendar, rule).map(modelOf);
-		this.visiblePaths = visiblePaths;
-		this.renderedActivePath = activePath;
+		const context: ScreenContext = { app: this.app, settings, dots: this.dots, today: this.today, rule, activePath };
+		const grids = this.grids(calendar, rule);
+		const { models, paths } = calendarModels(context, grids, calendar.showWeekNumbers);
 		this.root.empty();
 		this.root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, calendar.dimWithoutNote);
-		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months }, this.handlers);
+		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months: models }, this.handlers);
+		if (calendar.references !== "off") {
+			const listed = references(context, calendar.references, models, this.selected);
+			for (const path of listed.paths) paths.add(path);
+			renderReferences(this.root, listed.rows, t(calendar.references === "selected" && !this.selected ? "referencesNoSelection" : "referencesNone"), (path) => noteName(this.app, path), this.referenceHandlers);
+		}
+		this.visiblePaths = paths;
+		this.renderedActivePath = activePath;
+		this.renderedGrids = grids;
+		this.app.workspace.trigger(CALENDAR_RENDERED_EVENT);
 	}
 
 	private grids(calendar: CalendarSettings, rule: WeekRule): MonthGrid[] {
@@ -224,12 +236,16 @@ export class CalendarView extends ItemView implements HoverParent {
 	}
 
 	private previewNote(target: NoteTarget, event: MouseEvent, targetEl: HTMLElement): void {
+		this.previewPath(target.path, event, targetEl);
+	}
+
+	private previewPath(path: string, event: MouseEvent, targetEl: HTMLElement): void {
 		this.app.workspace.trigger("hover-link", {
 			event,
 			source: CALENDAR_VIEW_TYPE,
 			hoverParent: this,
 			targetEl,
-			linktext: target.path,
+			linktext: path,
 			sourcePath: "",
 		});
 	}

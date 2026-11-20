@@ -454,6 +454,28 @@ Una entrada tiene una fuente y un aspecto:
   qué notas cuentan. Si está vacío, cuenta toda nota que enlaza al día o a la semana, o que guarda
   la fecha.
 
+**Notas detrás de los puntos.** Un punto de propiedad de fecha no tiene enlace que seguir, así que
+el calendario puede listar las notas detrás de sus puntos. En Ajustes → **Calendario**, **Lista
+bajo el calendario** elige qué muestra la lista:
+
+- **Desactivada**: sin lista.
+- **Fecha seleccionada**: la última nota de fecha que abriste. La selección se mantiene mientras
+  abres otras notas, así que seguir una fila deja la lista en su sitio. Una nota de semana, mes,
+  trimestre o año lista todos sus días. Toca una fecha del calendario para seleccionarla; una fecha
+  sin nota recibe antes su nota.
+- **Fechas visibles**: todas las fechas que muestra el calendario.
+
+**Notas que listar** elige **Propiedades de fecha**, o **Propiedades de fecha y notas que
+enlazan** para listar también las notas detrás de los puntos de notas que enlazan. Cada fila
+muestra la fecha y su punto tal como los dibuja el calendario, y luego el nombre de la nota,
+recortado en una línea. El nombre abre la nota.
+
+El panel **Notas con fecha** muestra la misma lista en su propia vista, que puedes arrastrar a
+cualquier barra lateral como el calendario. Ábrelo con **Abrir notas con fecha** en la paleta de
+comandos o con su icono de la cinta. Su cabecera cambia entre **Fecha seleccionada** y **Fechas
+visibles**, sea cual sea el ajuste de la lista bajo el calendario; las fechas visibles vienen del
+calendario abierto.
+
 **Filtro de las notas que enlazan.** El filtro funciona como los filtros de notas de Note Compass
 y de Bases:
 

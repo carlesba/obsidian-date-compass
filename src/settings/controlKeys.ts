@@ -1,5 +1,6 @@
 import { t } from "../i18n/index.ts";
 import { CALENDAR_VIEWS, EXTRA_WEEKS, MONTHS_SHOWN, TODAY_ROWS, WEEKS_SHOWN, isInRange } from "../calendar/settings.ts";
+import { REFERENCE_LISTS, REFERENCE_SOURCES } from "../calendar/references.ts";
 import type { IntegerRange } from "../calendar/settings.ts";
 import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, WEEK_STARTS } from "../settings.ts";
 import type { DateCompassSettings } from "../settings.ts";
@@ -40,6 +41,10 @@ export const CALENDAR_WEEKS_AFTER_KEY = "calendar/weeksAfter";
 export const CALENDAR_WEEKS_SHOWN_KEY = "calendar/weeksShown";
 
 export const CALENDAR_TODAY_ROW_KEY = "calendar/todayRow";
+
+export const CALENDAR_REFERENCES_KEY = "calendar/references";
+
+export const CALENDAR_REFERENCE_SOURCES_KEY = "calendar/referenceSources";
 
 type CalendarIntegerField = "monthsShown" | "weeksBefore" | "weeksAfter" | "weeksShown";
 
@@ -331,6 +336,8 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return settings.calendar.dimWithoutNote;
 	if (key === CALENDAR_VIEW_KEY) return settings.calendar.view;
 	if (key === CALENDAR_TODAY_ROW_KEY) return settings.calendar.todayRow;
+	if (key === CALENDAR_REFERENCES_KEY) return settings.calendar.references;
+	if (key === CALENDAR_REFERENCE_SOURCES_KEY) return settings.calendar.referenceSources;
 	const integerField = CALENDAR_INTEGER_FIELDS[key];
 	if (integerField) return settings.calendar[integerField.field];
 	const decoratorControl = decoratorControlOfKey(settings, key);
@@ -362,6 +369,8 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return writeBoolean(value, (dims) => (calendar.dimWithoutNote = dims));
 	if (key === CALENDAR_VIEW_KEY) return writeChoice(CALENDAR_VIEWS, value, (view) => (calendar.view = view));
 	if (key === CALENDAR_TODAY_ROW_KEY) return writeChoice(TODAY_ROWS, value, (row) => (calendar.todayRow = row));
+	if (key === CALENDAR_REFERENCES_KEY) return writeChoice(REFERENCE_LISTS, value, (list) => (calendar.references = list));
+	if (key === CALENDAR_REFERENCE_SOURCES_KEY) return writeChoice(REFERENCE_SOURCES, value, (sources) => (calendar.referenceSources = sources));
 	const integerField = CALENDAR_INTEGER_FIELDS[key];
 	if (!integerField || !isInRange(value, integerField.range)) return false;
 	calendar[integerField.field] = value;
