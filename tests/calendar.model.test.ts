@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { addDays, isoDate } from "../src/parse/calendar.ts";
+import type { DateRange } from "../src/calendar/dateProperties.ts";
 import type { CivilDate } from "../src/parse/calendar.ts";
 import { monthGrid } from "../src/calendar/grid.ts";
 import type { CivilMonth } from "../src/calendar/grid.ts";
@@ -30,7 +31,7 @@ interface Scene {
 	existing?: string[];
 	activePath?: string;
 	change?: (periods: PeriodSettingsByPeriod) => void;
-	dotsOf?: (path: string, place: DotPlace, hasNote: boolean) => Dot[];
+	dotsOf?: (path: string, place: DotPlace, hasNote: boolean, days: DateRange) => Dot[];
 }
 
 function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers = true, existing = [], activePath, change, dotsOf = (_path, _place, hasNote) => (hasNote ? [FILLED] : []) }: Scene = {}): CalendarModel {
@@ -48,7 +49,7 @@ function modelOf({ month = NOVEMBER_2026, rule = ISO_WEEK_RULE, showWeekNumbers 
 		activePath,
 		noteExists: (path) => existing.includes(path),
 		showsDotsAbove: false,
-		dotsOf,
+		dotsOf: (path, place, hasNote, days) => ({ dots: dotsOf(path, place, hasNote, days), references: [] }),
 	});
 }
 

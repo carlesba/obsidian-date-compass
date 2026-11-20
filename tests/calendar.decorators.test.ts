@@ -16,7 +16,7 @@ test("the default dots keep the earlier calendar: word dots below, then a hollow
 	const [wordDots, taskDots] = defaultDecorators();
 	assert.deepEqual([wordDots.source, wordDots.count, wordDots.amountPerDot, wordDots.maxDots, wordDots.shape], ["words", "perAmount", 250, 5, "filled"]);
 	assert.deepEqual([taskDots.source, taskDots.count, taskDots.shape], ["openTasks", "presence", "hollow"]);
-	const amounts = { words: 749, openTasks: 1, links: 0 };
+	const amounts = { words: 749, openTasks: 1, links: 0, dateProperty: 0 };
 	assert.deepEqual(
 		dotsOfDecorators(defaultDecorators(), TODAY, true, (decorator) => amounts[decorator.source]).map((dot) => dot.shape),
 		["filled", "filled", "hollow"],

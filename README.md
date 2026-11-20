@@ -398,8 +398,14 @@ and changes neither setting.
 in list order. Each row shows its name, a preview of its dots on a sample day, and what it
 counts: content, tasks, or where the link sits (body, property). An entry has a source and a look:
 
-- **Source**: **Words** counts the words of the note, **Open tasks** its unfinished tasks, and
-  **Linking notes** the notes that link to it, from the body or from a property.
+- **Source**: **Words** counts the words of the note, **Open tasks** its unfinished tasks,
+  **Linking notes** the notes that link to it, from the body or from a property, and
+  **Date property** the notes whose date property falls on that date, without any link.
+- **Property**, for date property dots only: the property to read, such as `deadline`. A note
+  with `deadline: 2020-12-31` marks 31 December. The property can hold a date, a date and time, or
+  a list of dates, written as `YYYY-MM-DD`. A week, month, quarter or year counts the notes dated
+  on any of its days. A date command that writes plain text into a date property writes exactly
+  this format.
 - **Dots**: one dot as soon as there is something, or one dot per amount, such as one per 250
   words, up to a limit of one to five. Word dots always show at least one dot on a date with a note,
   so a word dot also tells you the note exists.
@@ -412,15 +418,16 @@ counts: content, tasks, or where the link sits (body, property). An entry has a 
 - **Shape**, **Color** and **Position**: a filled dot or a hollow ring, in the theme's default
   color, the accent or one of the theme's colors, below or above the number or in a top corner.
   On the highlighted day of the open note every dot takes the highlighted text color.
-- **Show on days without a note**, for linking notes only: a meeting note that links to next
+- **Show on days without a note**, for linking notes and date properties: a meeting note that links to next
   Tuesday marks Tuesday before its note exists.
 - **Link found in**, for linking notes only: where the link to the day or week has to be.
   **Note body** counts links and embeds in the text, **Any property** counts links in any property,
   and **Property: *name*** counts links in that property, including each item of a list property.
   Add as many places as you need with **+**, which lists the vault's properties and also takes a
   typed name; a note counts when it links from any of them. Left empty, it shows **Anywhere**.
-- **Only notes that match**, for linking notes only: a filter that decides which linking notes
-  count. Left empty, every note that links to the day or week counts.
+- **Only notes that match**, for linking notes and date properties: a filter that decides which
+  notes count. Left empty, every note that links to the day or week, or that holds the date,
+  counts.
 
 **Filter of linking notes.** The filter works like the note filters of Note Compass and of Bases:
 

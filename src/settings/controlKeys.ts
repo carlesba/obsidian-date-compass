@@ -55,7 +55,7 @@ const CALENDAR_KEY_PREFIX = "calendar/";
 
 const DECORATOR_KEY_PREFIX = "calendar/dots/";
 
-const DECORATOR_FIELDS_SHOWN_IN_THE_LIST: readonly DecoratorField[] = ["name", "amountPerDot", "maxDots"];
+const DECORATOR_FIELDS_SHOWN_IN_THE_LIST: readonly DecoratorField[] = ["name", "amountPerDot", "maxDots", "dateProperty"];
 
 export function decoratorKey(decoratorId: string, field: DecoratorField): string {
 	return `${DECORATOR_KEY_PREFIX}${decoratorId}/${field}`;
@@ -137,6 +137,9 @@ function writeDecoratorControl({ decorators, index, field }: DecoratorControl, v
 			decorator.linkPlaces = places;
 			return true;
 		}
+		case "dateProperty":
+			if (decorator.source !== "dateProperty") return false;
+			return writeText(value, (property) => (decorator.dateProperty = property));
 	}
 }
 

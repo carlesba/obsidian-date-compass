@@ -2,7 +2,7 @@ import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionRen
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { renderLabelWithDots } from "../calendar/cellDots.ts";
-import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, duplicateDecorator, filterProblem, linkPlaceValue, linkPlacesToAdd, newDecorator, previewDots, propertyPlace, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
+import { DOT_SOURCES, MAX_DOTS, MIN_DOTS, canRemoveCell, canRemoveTime, cellsToAdd, duplicateDecorator, filterProblem, linkPlaceValue, linkPlacesToAdd, newDecorator, previewDots, propertyPlace, readsNotes, sourceCanShowWithoutNote, timesToAdd } from "../calendar/decorators.ts";
 import type { DotCell, DotColor, DotCount, DotDecorator, DotPosition, DotShape, DotSource, DotTime, FilterProblem, LinkPlace } from "../calendar/decorators.ts";
 import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
@@ -43,6 +43,7 @@ export const SOURCE_LABELS: Record<DotSource, TranslationKey> = {
 	words: "dotSourceWords",
 	openTasks: "dotSourceOpenTasks",
 	links: "dotSourceLinks",
+	dateProperty: "dotSourceDateProperty",
 };
 
 const VIEW_LABELS: Record<CalendarViewKind, TranslationKey> = {
@@ -104,6 +105,7 @@ const AMOUNT_LABELS: Record<DotSource, TranslationKey> = {
 	words: "dotAmountWords",
 	openTasks: "dotAmountOpenTasks",
 	links: "dotAmountLinks",
+	dateProperty: "dotAmountDateProperty",
 };
 
 const LEGACY_FILTER_LABELS: Record<LegacyFilterKind, TranslationKey> = {
@@ -134,6 +136,8 @@ export function decoratorDescription(decorator: DotDecorator): string {
 			return t("dotDescriptionTasks");
 		case "links":
 			return decorator.linkPlaces.length === 0 ? t("dotDescriptionAnywhere") : decorator.linkPlaces.map(linkPlaceDescription).join(", ");
+		case "dateProperty":
+			return decorator.dateProperty === "" ? t("dotDescriptionNoDateProperty") : decorator.dateProperty;
 	}
 }
 
@@ -162,7 +166,8 @@ function linkPlaceDescription(place: LinkPlace): string {
 export function decoratorWarning(decorator: DotDecorator, propertyTypes: Record<string, string>): string | undefined {
 	const problem = filterProblem(decorator);
 	if (problem) return t(FILTER_PROBLEM_WARNINGS[problem]);
-	return decorator.source === "links" && inapplicableFilter(decorator.filter, propertyTypes) ? t("inapplicableLinkFilterWarning") : undefined;
+	if (decorator.source === "dateProperty" && decorator.dateProperty === "") return t("noDatePropertyWarning");
+	return readsNotes(decorator.source) && inapplicableFilter(decorator.filter, propertyTypes) ? t("inapplicableLinkFilterWarning") : undefined;
 }
 
 export function calendarPage(context: CalendarPageContext): IdentifiedPage {
@@ -269,6 +274,9 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 	const sourceItems: SettingGroupItem[] = [
 		{ name: t("dotsName"), desc: t("dotsNameDesc"), control: { type: "text", key: key("name"), placeholder: t(SOURCE_LABELS[decorator.source]) } },
 		{ name: t("dotsSource"), desc: t("dotsSourceDesc"), control: { type: "dropdown", key: key("source"), options: translatedLabels(SOURCE_LABELS) } },
+		...(decorator.source === "dateProperty"
+			? [{ name: t("dotsDateProperty"), desc: t("dotsDatePropertyDesc"), control: { type: "text" as const, key: key("dateProperty"), placeholder: "deadline" } }]
+			: []),
 		{ name: t("dotsCount"), desc: t("dotsCountDesc"), control: { type: "dropdown", key: key("count"), options: translatedLabels(COUNT_LABELS) } },
 		...(countsAmount
 			? [
@@ -300,7 +308,8 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 					{ name: t("dotsPosition"), desc: t("dotsPositionDesc"), control: { type: "dropdown", key: key("position"), options: translatedLabels(POSITION_LABELS) } },
 				],
 			},
-			...(decorator.source === "links" ? [linkPlacesList(decorator, context), ...filterItems(decorator, context)] : []),
+			...(decorator.source === "links" ? [linkPlacesList(decorator, context)] : []),
+			...(readsNotes(decorator.source) ? filterItems(decorator, context) : []),
 		],
 	};
 }
@@ -382,13 +391,19 @@ function linkPlacesList(decorator: DotDecorator, context: CalendarPageContext): 
 	};
 }
 
+function filterDescription(decorator: DotDecorator): string {
+	const empty = filterRules(decorator.filter).length === 0;
+	if (decorator.source === "dateProperty") return empty ? t("datedFilterEmptyDesc") : t("datedFilterDesc");
+	return empty ? t("linkFilterEmptyDesc") : t("linkFilterDesc");
+}
+
 function filterItems(decorator: DotDecorator, context: CalendarPageContext): SettingDefinitionItem[] {
 	const { legacyFilters } = decorator;
 	const filter: SettingDefinitionRender =
 		decorator.unreadableFilter === undefined
 			? {
 					name: t("linkFilter"),
-					desc: filterRules(decorator.filter).length === 0 ? t("linkFilterEmptyDesc") : t("linkFilterDesc"),
+					desc: filterDescription(decorator),
 					searchable: false,
 					render: (setting) => context.renderFilter(setting.settingEl, decorator.filter),
 				}

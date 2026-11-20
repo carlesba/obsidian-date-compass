@@ -78,10 +78,10 @@ export class CalendarView extends ItemView implements HoverParent {
 
 	async onOpen(): Promise<void> {
 		const { vault, metadataCache, workspace } = this.app;
-		this.registerEvent(vault.on("create", (file) => this.noteChanged(file.path)));
-		this.registerEvent(vault.on("delete", (file) => this.noteChanged(file.path)));
-		this.registerEvent(vault.on("rename", (file: TAbstractFile, oldPath: string) => this.noteChanged(file.path, oldPath)));
-		this.registerEvent(metadataCache.on("changed", (file) => this.noteChanged(file.path)));
+		this.registerEvent(vault.on("create", (file) => this.vaultNoteChanged(file.path)));
+		this.registerEvent(vault.on("delete", (file) => this.vaultNoteChanged(file.path)));
+		this.registerEvent(vault.on("rename", (file: TAbstractFile, oldPath: string) => this.vaultNoteChanged(file.path, oldPath)));
+		this.registerEvent(metadataCache.on("changed", (file) => this.vaultNoteChanged(file.path)));
 		this.registerEvent(metadataCache.on("resolved", () => this.linksChanged()));
 		this.registerEvent(workspace.on("file-open", () => this.activeNoteChanged()));
 		this.registerEvent(workspace.on("active-leaf-change", () => this.activeNoteChanged()));
@@ -124,6 +124,12 @@ export class CalendarView extends ItemView implements HoverParent {
 
 	private noteChanged(path: string, oldPath?: string): void {
 		if (touchesVisible(this.visiblePaths, path, oldPath)) this.requestRender();
+	}
+
+	private vaultNoteChanged(path: string, oldPath?: string): void {
+		this.dots.noteChanged(path, oldPath);
+		if (this.settings().calendar.decorators.some((decorator) => decorator.source === "dateProperty")) this.requestRender();
+		else this.noteChanged(path, oldPath);
 	}
 
 	private linksChanged(): void {
@@ -186,7 +192,7 @@ export class CalendarView extends ItemView implements HoverParent {
 				activePath,
 				noteExists: (path) => this.app.vault.getFileByPath(path) !== null,
 				showsDotsAbove: decorators.some((decorator) => decorator.position === "above"),
-				dotsOf: (path, place, hasNote) => this.dots.dotsOf(path, place, hasNote, decorators),
+				dotsOf: (path, place, hasNote, days) => this.dots.dotsOf(path, place, hasNote, days, decorators),
 			});
 		};
 		const months = this.grids(calendar, rule).map(modelOf);

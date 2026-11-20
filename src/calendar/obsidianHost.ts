@@ -2,8 +2,10 @@ import { getLinkpath, moment } from "obsidian";
 import type { App, TFile } from "obsidian";
 import type { Moment } from "moment";
 import type { CivilDate } from "../parse/calendar.ts";
-import { backlinkIndex, dotsOfDecorators, linkReachesTarget, linkedFromPlaces, linkingNoteMatcher, propertyOfFrontmatterKey } from "./decorators.ts";
-import type { BacklinkIndex, Dot, DotDecorator, DotPlace, LinkLocation } from "./decorators.ts";
+import { backlinkIndex, cellDotsOf, linkReachesTarget, linkedFromPlaces, linkingNoteMatcher, propertyOfFrontmatterKey } from "./decorators.ts";
+import type { BacklinkIndex, CellDots, DotDecorator, DotPlace, LinkLocation } from "./decorators.ts";
+import { datePropertyNotes } from "./dateProperties.ts";
+import type { DateRange } from "./dateProperties.ts";
 import { createFilterVault, propertyTypesOf } from "../filters/obsidianVault.ts";
 import type { VaultNote } from "../filters/vault.ts";
 import { FIXED_DATE_FORMAT } from "../filters/conditions.ts";
@@ -13,8 +15,9 @@ import type { CivilMonth } from "./grid.ts";
 import type { WeekRule } from "./weeks.ts";
 
 export interface NoteDotsReader {
-	dotsOf(path: string, place: DotPlace, hasNote: boolean, decorators: readonly DotDecorator[]): Dot[];
+	dotsOf(path: string, place: DotPlace, hasNote: boolean, days: DateRange, decorators: readonly DotDecorator[]): CellDots;
 	linksChanged(): void;
+	noteChanged(path: string, oldPath?: string): void;
 }
 
 export function localeWeekRule(): WeekRule {
@@ -80,13 +83,17 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 		const properties = (cache.frontmatterLinks ?? []).filter((link) => reachesTarget(link.link)).map((link): LinkLocation => ({ property: propertyOfFrontmatterKey(link.key) }));
 		return [...body, ...properties];
 	};
+	const dated = datePropertyNotes(
+		() => app.vault.getMarkdownFiles().map((file) => file.path),
+		(path) => app.metadataCache.getCache(path)?.frontmatter,
+	);
 	const wordsOf = (file: TFile): number => {
 		const counted = counts.get(file.path, file.stat.mtime);
 		if (counted === undefined) countWordsOf(file).catch(() => undefined);
 		return counted ?? 0;
 	};
 	return {
-		dotsOf: (path, place, hasNote, decorators) => {
+		dotsOf: (path, place, hasNote, days, decorators) => {
 			const file = hasNote ? app.vault.getFileByPath(path) : null;
 			let linkingNotes: VaultNote[] | undefined;
 			const locations = new Map<string, LinkLocation[]>();
@@ -95,7 +102,7 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 				locations.set(sourcePath, found);
 				return found;
 			};
-			return dotsOfDecorators(decorators, place, file !== null, (decorator) => {
+			return cellDotsOf(decorators, place, file !== null, (decorator) => {
 				switch (decorator.source) {
 					case "words":
 						return file ? wordsOf(file) : 0;
@@ -103,7 +110,11 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 						return file ? openTaskCount(app.metadataCache.getFileCache(file)?.listItems) : 0;
 					case "links":
 						linkingNotes ??= backlinksNow().sourcesOf(path).flatMap(linkingNoteOf);
-						return countLinkingNotes(linkingNotes, decorator, matcherOf(decorator), locationsOf);
+						return matchingLinkingNotes(linkingNotes, decorator, matcherOf(decorator), locationsOf);
+					case "dateProperty": {
+						const matches = matcherOf(decorator);
+						return dated.notesIn(decorator.dateProperty, days).filter((notePath) => linkingNoteOf(notePath).some(matches));
+					}
 				}
 			});
 		},
@@ -111,10 +122,11 @@ export function createNoteDotsReader(app: App, wordsCounted: (path: string) => v
 			backlinks = undefined;
 			matchers = new Map();
 		},
+		noteChanged: (path, oldPath) => dated.noteChanged(path, oldPath),
 	};
 }
 
-function countLinkingNotes(notes: readonly VaultNote[], decorator: DotDecorator, matches: (note: VaultNote) => boolean, locationsOf: (path: string) => LinkLocation[]): number {
+function matchingLinkingNotes(notes: readonly VaultNote[], decorator: DotDecorator, matches: (note: VaultNote) => boolean, locationsOf: (path: string) => LinkLocation[]): string[] {
 	const { linkPlaces } = decorator;
-	return notes.filter((note) => matches(note) && (linkPlaces.length === 0 || linkedFromPlaces(linkPlaces, locationsOf(note.path)))).length;
+	return notes.filter((note) => matches(note) && (linkPlaces.length === 0 || linkedFromPlaces(linkPlaces, locationsOf(note.path)))).map((note) => note.path);
 }

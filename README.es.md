@@ -421,8 +421,14 @@ en un día de ejemplo y qué cuenta: contenido, tareas o dónde está el enlace 
 Una entrada tiene una fuente y un aspecto:
 
 - **Fuente**: **Palabras** cuenta las palabras de la nota, **Tareas pendientes** sus tareas sin
-  terminar y **Notas que enlazan** las notas que enlazan a ella, desde el texto o desde una
-  propiedad.
+  terminar, **Notas que enlazan** las notas que enlazan a ella, desde el texto o desde una
+  propiedad, y **Propiedad de fecha** las notas cuya propiedad de fecha cae en esa fecha, sin
+  ningún enlace.
+- **Propiedad**, solo para propiedades de fecha: la propiedad que se lee, como `deadline`. Una
+  nota con `deadline: 2020-12-31` marca el 31 de diciembre. La propiedad puede guardar una fecha,
+  una fecha con hora o una lista de fechas, escritas como `YYYY-MM-DD`. Una semana, un mes, un
+  trimestre o un año cuenta las notas con fecha en cualquiera de sus días. Un comando de fecha que
+  escribe texto plano en una propiedad de fecha escribe justo este formato.
 - **Puntos**: un punto en cuanto hay algo, o un punto por cantidad, como uno cada 250 palabras,
   hasta un límite de uno a cinco. Los puntos de palabras muestran siempre al menos uno en una fecha
   con nota, así que un punto de palabras también indica que la nota existe.
@@ -436,7 +442,7 @@ Una entrada tiene una fuente y un aspecto:
   el de acento o uno de los colores del tema, debajo o encima del número o en una esquina
   superior. En el día resaltado de la nota abierta todos los puntos toman el color del texto
   resaltado.
-- **Mostrar en días sin nota**, solo para notas que enlazan: una nota de reunión que enlaza al
+- **Mostrar en días sin nota**, para notas que enlazan y propiedades de fecha: una nota de reunión que enlaza al
   martes que viene marca el martes antes de que exista su nota.
 - **Enlace en**, solo para notas que enlazan: dónde tiene que estar el enlace al día o a la semana.
   **Cuerpo de la nota** cuenta los enlaces e incrustaciones del texto, **Cualquier propiedad** los
@@ -444,8 +450,9 @@ Una entrada tiene una fuente y un aspecto:
   cada elemento de una propiedad de lista. Añade tantos sitios como quieras con **+**, que lista
   las propiedades de la bóveda y también acepta un nombre escrito; una nota cuenta cuando enlaza
   desde cualquiera de ellos. Si está vacía, muestra **Cualquier sitio**.
-- **Solo notas que cumplen**, solo para notas que enlazan: un filtro que decide qué notas que
-  enlazan cuentan. Si está vacío, cuenta toda nota que enlaza al día o a la semana.
+- **Solo notas que cumplen**, para notas que enlazan y propiedades de fecha: un filtro que decide
+  qué notas cuentan. Si está vacío, cuenta toda nota que enlaza al día o a la semana, o que guarda
+  la fecha.
 
 **Filtro de las notas que enlazan.** El filtro funciona como los filtros de notas de Note Compass
 y de Bases:

@@ -1,7 +1,9 @@
 import type { Period } from "../dateNotes/periods.ts";
 import { daysBetween } from "../parse/calendar.ts";
 import type { CivilDate } from "../parse/calendar.ts";
-import type { Dot, DotPlace, DotTime } from "./decorators.ts";
+import type { CellDots, Dot, DotPlace, DotReference, DotTime } from "./decorators.ts";
+import { dayRange, headerRange } from "./dateProperties.ts";
+import type { DateRange } from "./dateProperties.ts";
 import { firstDayOf, weekdayOrder } from "./grid.ts";
 import type { CivilMonth, MonthGrid } from "./grid.ts";
 import { quarterOf } from "./header.ts";
@@ -20,6 +22,7 @@ export interface NoteCell {
 	hasNote: boolean;
 	active: boolean;
 	dots: Dot[];
+	references: DotReference[];
 }
 
 export interface DayCell extends NoteCell {
@@ -73,7 +76,7 @@ export interface CalendarModelInput {
 	activePath: string | undefined;
 	noteExists: (path: string) => boolean;
 	showsDotsAbove: boolean;
-	dotsOf: (path: string, place: DotPlace, hasNote: boolean) => Dot[];
+	dotsOf: (path: string, place: DotPlace, hasNote: boolean, days: DateRange) => CellDots;
 }
 
 export const CLICKABLE_CLASS = "is-clickable";
@@ -84,7 +87,7 @@ export function calendarModel(input: CalendarModelInput): CalendarModel {
 	const displayed = firstDayOf(grid.month);
 	return {
 		title: parts.map((part) => ({
-			...noteCell(input, part.period, displayed, part.clickable ? notes.header[part.period] : undefined, { cell: part.period, time: headerTime(part.period, grid.month, today) }),
+			...noteCell(input, part.period, displayed, part.clickable ? notes.header[part.period] : undefined, { cell: part.period, time: headerTime(part.period, grid.month, today) }, headerRange(part.period, grid.month)),
 			period: part.period,
 			label: part.label,
 		})),
@@ -93,10 +96,10 @@ export function calendarModel(input: CalendarModelInput): CalendarModel {
 		showsDotsAbove: input.showsDotsAbove,
 		rows: grid.rows.map((row, rowIndex) => ({
 			week: showWeekNumbers
-				? { ...noteCell(input, "week", row.weekNoteDate, notes.rows[rowIndex]?.week, { cell: "week", time: weekTime(row.days.map((day) => day.date), today) }), label: String(row.weekNumber) }
+				? { ...noteCell(input, "week", row.weekNoteDate, notes.rows[rowIndex]?.week, { cell: "week", time: weekTime(row.days.map((day) => day.date), today) }, weekRange(row.days.map((day) => day.date))), label: String(row.weekNumber) }
 				: undefined,
 			days: row.days.map((day, column) => ({
-				...noteCell(input, "day", day.date, notes.rows[rowIndex]?.days[column], { cell: "day", time: dayTime(day.date, today) }),
+				...noteCell(input, "day", day.date, notes.rows[rowIndex]?.days[column], { cell: "day", time: dayTime(day.date, today) }, dayRange(day.date)),
 				label: String(day.date.day),
 				today: day.today,
 				adjacentMonth: day.adjacentMonth,
@@ -151,14 +154,19 @@ export function titlePartClasses(part: TitlePart): string[] {
 	return part.period === "quarter" ? [...classes, MONTH_LOOK_CLASS] : classes;
 }
 
-function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, place: DotPlace): NoteCell {
-	if (path === undefined) return { target: undefined, hasNote: false, active: false, dots: [] };
+function weekRange(days: readonly CivilDate[]): DateRange {
+	const [first] = days;
+	return { start: first, end: days[days.length - 1] ?? first };
+}
+
+function noteCell(input: CalendarModelInput, period: Period, date: CivilDate, path: string | undefined, place: DotPlace, days: DateRange): NoteCell {
+	if (path === undefined) return { target: undefined, hasNote: false, active: false, dots: [], references: [] };
 	const hasNote = input.noteExists(path);
 	return {
 		target: { period, date, path },
 		hasNote,
 		active: path === input.activePath,
-		dots: input.dotsOf(path, place, hasNote),
+		...input.dotsOf(path, place, hasNote, days),
 	};
 }
 

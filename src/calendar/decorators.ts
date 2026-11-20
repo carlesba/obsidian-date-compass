@@ -6,8 +6,9 @@ import { matchesLegacyFilters, migrateLegacyFilters, readLegacyFilters } from ".
 import type { LegacyFilter } from "../filters/legacy.ts";
 import type { VaultNote } from "../filters/vault.ts";
 
-export const DOT_SOURCES = ["words", "openTasks", "links"] as const;
+export const DOT_SOURCES = ["words", "openTasks", "links", "dateProperty"] as const;
 export type DotSource = (typeof DOT_SOURCES)[number];
+export type NoteSource = Extract<DotSource, "links" | "dateProperty">;
 
 export const DOT_COUNTS = ["presence", "perAmount"] as const;
 export type DotCount = (typeof DOT_COUNTS)[number];
@@ -38,7 +39,7 @@ export interface LinkLocation {
 	property?: string;
 }
 
-export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "linkPlaces"] as const;
+export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "linkPlaces", "dateProperty"] as const;
 export type DecoratorField = (typeof DECORATOR_FIELDS)[number];
 
 export interface DotDecorator {
@@ -55,6 +56,7 @@ export interface DotDecorator {
 	cells: DotCell[];
 	times: DotTime[];
 	linkPlaces: LinkPlace[];
+	dateProperty: string;
 	filter: FilterGroup;
 	legacyFilters: LegacyFilter[];
 	unreadableFilter?: unknown;
@@ -79,11 +81,16 @@ export const DEFAULT_WORDS_PER_DOT = 250;
 
 const DECORATOR_ID_PREFIX = "dots";
 
-const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | "linkPlaces" | keyof LinkingNoteFilters>> = {
+const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | "linkPlaces" | "dateProperty" | keyof LinkingNoteFilters>> = {
 	words: { count: "perAmount", amountPerDot: DEFAULT_WORDS_PER_DOT, maxDots: MAX_DOTS, shape: "filled", color: "default", position: "below", showWithoutNote: false },
 	openTasks: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false },
 	links: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "accent", position: "below", showWithoutNote: true },
+	dateProperty: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "red", position: "below", showWithoutNote: true },
 };
+
+export function readsNotes(source: DotSource): source is NoteSource {
+	return source === "links" || source === "dateProperty";
+}
 
 export function isAmountPerDot(value: unknown): value is number {
 	return typeof value === "number" && Number.isInteger(value) && value >= 1;
@@ -94,11 +101,11 @@ export function isMaxDots(value: unknown): value is number {
 }
 
 export function sourceCanShowWithoutNote(source: DotSource): boolean {
-	return source === "links";
+	return readsNotes(source);
 }
 
 export function decoratorOf(source: DotSource, id: string): DotDecorator {
-	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], linkPlaces: [], filter: emptyFilter(), legacyFilters: [] };
+	return { id, name: "", source, ...SOURCE_DEFAULTS[source], cells: [...DOT_CELLS], times: [...DOT_TIMES], linkPlaces: [], dateProperty: "", filter: emptyFilter(), legacyFilters: [] };
 }
 
 export function duplicateDecorator(decorators: readonly DotDecorator[], original: DotDecorator, name: string): DotDecorator {
@@ -145,7 +152,8 @@ function mergeDecorator(data: Record<string, unknown>, earlier: readonly DotDeco
 		cells: validCells(data.cells) ?? [...DOT_CELLS],
 		times: validTimes(data.times) ?? [...DOT_TIMES],
 		linkPlaces: source === "links" ? (validLinkPlaces(data.linkPlaces) ?? []) : [],
-		...(source === "links" ? mergeLinkingNoteFilters(data) : { filter: emptyFilter(), legacyFilters: [] }),
+		dateProperty: source === "dateProperty" && typeof data.dateProperty === "string" ? data.dateProperty.trim() : "",
+		...(readsNotes(source) ? mergeLinkingNoteFilters(data) : { filter: emptyFilter(), legacyFilters: [] }),
 	};
 }
 
@@ -167,7 +175,7 @@ function mergeLinkingNoteFilters(data: Record<string, unknown>): LinkingNoteFilt
 }
 
 export function filterProblem(decorator: DotDecorator): FilterProblem | undefined {
-	if (decorator.source !== "links") return undefined;
+	if (!readsNotes(decorator.source)) return undefined;
 	if (decorator.unreadableFilter !== undefined) return "unreadable";
 	return decorator.legacyFilters.length > 0 ? "legacy" : undefined;
 }
@@ -311,12 +319,36 @@ function dotOf(decorator: DotDecorator): Dot {
 	return { decoratorId: decorator.id, source: decorator.source, shape: decorator.shape, color: decorator.color, position: decorator.position };
 }
 
+export interface DotReference {
+	dot: Dot;
+	notePath: string;
+}
+
+export interface CellDots {
+	dots: Dot[];
+	references: DotReference[];
+}
+
+export type DecoratorReading = number | readonly string[];
+
 export function dotsOfDecorators(decorators: readonly DotDecorator[], place: DotPlace, hasNote: boolean, amountOf: (decorator: DotDecorator) => number): Dot[] {
-	return decorators.flatMap((decorator) => {
-		if (!shows(decorator, place, hasNote)) return [];
+	return cellDotsOf(decorators, place, hasNote, amountOf).dots;
+}
+
+export function cellDotsOf(decorators: readonly DotDecorator[], place: DotPlace, hasNote: boolean, readingOf: (decorator: DotDecorator) => DecoratorReading): CellDots {
+	const dots: Dot[] = [];
+	const references: DotReference[] = [];
+	for (const decorator of decorators) {
+		if (!shows(decorator, place, hasNote)) continue;
+		const reading = readingOf(decorator);
+		const notes = typeof reading === "number" ? [] : reading;
+		const count = dotCount(decorator, typeof reading === "number" ? reading : reading.length);
+		if (count === 0) continue;
 		const dot = dotOf(decorator);
-		return Array.from({ length: dotCount(decorator, amountOf(decorator)) }, () => dot);
-	});
+		for (let index = 0; index < count; index++) dots.push(dot);
+		for (const notePath of notes) references.push({ dot, notePath });
+	}
+	return { dots, references };
 }
 
 export interface LinkIndex {
