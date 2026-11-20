@@ -279,6 +279,7 @@ export const es: Translation = {
 	dotsDateProperty: "Propiedad",
 	dotsDatePropertyDesc: "La propiedad de fecha que se lee, como deadline. Una nota marca cada fecha que guarda su propiedad, sea una fecha, una fecha con hora o una lista de fechas.",
 	noDatePropertyWarning: "Elige la propiedad de fecha que leen estos puntos.",
+	unknownDatePropertyWarning: "Ninguna nota tiene una propiedad llamada {name}. Revisa cómo está escrita.",
 	dotTimePast: "Pasado",
 	dotTimeCurrent: "Actual (hoy, esta semana, este mes…)",
 	dotTimeFuture: "Futuro",

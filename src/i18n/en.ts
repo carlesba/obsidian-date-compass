@@ -277,6 +277,7 @@ export const en = {
 	dotsDateProperty: "Property",
 	dotsDatePropertyDesc: "The date property to read, such as deadline. A note marks each date its property holds, whether the property is a date, a date and time, or a list of dates.",
 	noDatePropertyWarning: "Choose the date property these dots read.",
+	unknownDatePropertyWarning: "No note has a property named {name}. Check the spelling.",
 	dotTimePast: "Past",
 	dotTimeCurrent: "Current (today, this week, this month…)",
 	dotTimeFuture: "Future",

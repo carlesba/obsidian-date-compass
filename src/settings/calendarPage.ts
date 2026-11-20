@@ -175,10 +175,15 @@ function linkPlaceDescription(place: LinkPlace): string {
 	}
 }
 
+function unknownProperty(name: string, propertyTypes: Record<string, string>): boolean {
+	return Object.keys(propertyTypes).length > 0 && !(name.trim().toLowerCase() in propertyTypes);
+}
+
 export function decoratorWarning(decorator: DotDecorator, propertyTypes: Record<string, string>): string | undefined {
 	const problem = filterProblem(decorator);
 	if (problem) return t(FILTER_PROBLEM_WARNINGS[problem]);
 	if (decorator.source === "dateProperty" && decorator.dateProperty === "") return t("noDatePropertyWarning");
+	if (decorator.source === "dateProperty" && unknownProperty(decorator.dateProperty, propertyTypes)) return t("unknownDatePropertyWarning", { name: decorator.dateProperty.trim() });
 	return readsNotes(decorator.source) && inapplicableFilter(decorator.filter, propertyTypes) ? t("inapplicableLinkFilterWarning") : undefined;
 }
 

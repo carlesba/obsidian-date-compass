@@ -86,6 +86,8 @@ test("the property control writes only on date property dots, and the row names 
 	assert.equal(decoratorDescription({ ...dated, dateProperty: "" }), "no property chosen");
 	assert.equal(decoratorWarning({ ...dated, dateProperty: "" }, {}), "Choose the date property these dots read.");
 	assert.equal(decoratorWarning(dated, {}), undefined);
+	assert.equal(decoratorWarning(dated, { deadline: "date" }), undefined);
+	assert.equal(decoratorWarning({ ...dated, dateProperty: "dealine" }, { deadline: "date" }), "No note has a property named dealine. Check the spelling.");
 	assert.equal(writeControl(settings, decoratorKey("dots-dated", "source"), "words"), true);
 	assert.equal(settings.calendar.decorators[2].dateProperty, "");
 });
