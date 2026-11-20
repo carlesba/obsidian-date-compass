@@ -17,7 +17,7 @@ import { activeNoteTouchesVisible, touchesVisible } from "./paths.ts";
 import { renderReferences } from "./referenceList.ts";
 import type { ReferenceHandlers } from "./referenceList.ts";
 import type { SelectedDateNote } from "./references.ts";
-import { calendarModels, focusedDateNote, noteName, references } from "./screen.ts";
+import { calendarModels, dotName, focusedDateNote, noteName, references } from "./screen.ts";
 import type { ScreenContext } from "./screen.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
@@ -49,6 +49,7 @@ export class CalendarView extends ItemView implements HoverParent {
 	private readonly referenceHandlers: ReferenceHandlers = {
 		open: (notePath, event) => void this.app.workspace.openLinkText(notePath, "", Keymap.isModEvent(event)),
 		hover: (notePath, event, targetEl) => this.previewPath(notePath, event, targetEl),
+		dotName: (decoratorId) => dotName(this.settings(), decoratorId),
 	};
 	private readonly handlers: CalendarHandlers = {
 		back: () => this.move(-1),

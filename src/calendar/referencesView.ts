@@ -9,7 +9,7 @@ import { renderReferences } from "./referenceList.ts";
 import type { ReferenceHandlers } from "./referenceList.ts";
 import { REFERENCE_SCOPES } from "./references.ts";
 import type { ReferenceScope, SelectedDateNote } from "./references.ts";
-import { calendarModels, focusedDateNote, noteName, references } from "./screen.ts";
+import { calendarModels, dotName, focusedDateNote, noteName, references } from "./screen.ts";
 import type { ScreenContext } from "./screen.ts";
 import { CALENDAR_RENDERED_EVENT, CALENDAR_VIEW_TYPE, CalendarView } from "./view.ts";
 import { weekRuleOf } from "./weeks.ts";
@@ -40,6 +40,7 @@ export class ReferencesView extends ItemView implements HoverParent {
 		open: (notePath, event) => void this.app.workspace.openLinkText(notePath, "", Keymap.isModEvent(event)),
 		hover: (notePath, event, targetEl) =>
 			this.app.workspace.trigger("hover-link", { event, source: REFERENCES_VIEW_TYPE, hoverParent: this, targetEl, linktext: notePath, sourcePath: "" }),
+		dotName: (decoratorId) => dotName(this.settings(), decoratorId),
 	};
 	private listScope: ReferenceScope = "selected";
 	private selected: SelectedDateNote | undefined;

@@ -2,6 +2,7 @@ import type { App } from "obsidian";
 import { dateOf, fileNameParts } from "../dateNotes/paths.ts";
 import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
+import { decoratorName } from "../settings/calendarPage.ts";
 import type { CivilDate } from "../parse/calendar.ts";
 import { weeksAroundGrid } from "./grid.ts";
 import type { MonthGrid } from "./grid.ts";
@@ -70,6 +71,11 @@ export function references(context: ScreenContext, scope: ReferenceScope, visibl
 	const grid = weeksAroundGrid(range.start, weeksCovering(range, rule), 0, rule, today);
 	const { models, paths } = calendarModels(context, [grid], true);
 	return { rows: referenceRows(models, selectedCellUse(selected, range), referenceSources, decoratorOrder, nameOf), paths };
+}
+
+export function dotName(settings: DateCompassSettings, decoratorId: string): string {
+	const decorator = settings.calendar.decorators.find((candidate) => candidate.id === decoratorId);
+	return decorator ? decoratorName(decorator) : "";
 }
 
 export function noteName(app: App, path: string): string {
