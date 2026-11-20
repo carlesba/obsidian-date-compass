@@ -231,6 +231,8 @@ export const es: Translation = {
 	agendaOff: "Desactivada",
 	agendaSelected: "Fecha seleccionada",
 	agendaVisible: "Fechas visibles",
+	agendaMonthHeadings: "Títulos de mes",
+	agendaMonthHeadingsDesc: "Empieza las filas de cada otro mes con su nombre, así un 20 del mes siguiente se lee como 20 de diciembre y no como el de este mes.",
 	agendaNone: "No hay nada en la agenda aquí.",
 	agendaNoSelection: "Abre una nota de fecha para ver su agenda.",
 	agendaViewTitle: "Agenda",

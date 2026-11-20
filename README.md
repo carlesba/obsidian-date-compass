@@ -440,6 +440,10 @@ agenda shows:
   inside it. Tap a date in the calendar to select it; a date without a note gets its note first.
 - **Visible dates**: every date the calendar shows.
 
+**Month headings**, on by default, starts the rows of each month other than the one the calendar
+shows with that month's name, such as **December**, with the year when it differs. A 20 under
+**December** is then December 20, not this month's.
+
 Each dots entry of **Linking notes** or **Date property** decides whether its notes appear with
 **Show in the agenda**: on by default for date properties, off for linking notes, whose notes the
 date note's backlinks already show. Each row shows the date and its dot exactly as the calendar

@@ -32,6 +32,7 @@ export interface CalendarSettings {
 	todayRow: TodayRow;
 	decorators: DotDecorator[];
 	agenda: AgendaMode;
+	agendaMonthHeadings: boolean;
 }
 
 export function defaultCalendar(): CalendarSettings {
@@ -68,6 +69,7 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		weeksShown: integer(data.weeksShown, WEEKS_SHOWN, 6),
 		todayRow: TODAY_ROWS.find((row) => row === data.todayRow) ?? "first",
 		decorators: mergeDecorators(data.decorators, data.wordsPerDot),
+		agendaMonthHeadings: typeof data.agendaMonthHeadings === "boolean" ? data.agendaMonthHeadings : true,
 		agenda: AGENDA_MODES.find((list) => list === data.agenda) ?? "off",
 	};
 }

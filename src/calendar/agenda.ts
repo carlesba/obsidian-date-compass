@@ -7,6 +7,7 @@ import type { Dot } from "./decorators.ts";
 import { monthOf, weekStartOf } from "./grid.ts";
 import { CLICKABLE_CLASS, dayClasses, titlePartClasses, weekClasses } from "./model.ts";
 import type { CalendarModel, NoteCell } from "./model.ts";
+import type { CivilMonth } from "./grid.ts";
 import type { WeekRule } from "./weeks.ts";
 
 export const AGENDA_MODES = ["off", "selected", "visible"] as const;
@@ -44,6 +45,29 @@ const DAYS_IN_WEEK = 7;
 
 export function visibleCellUse(_cell: NoteCell, kind: CellKind): CellUse {
 	return kind === "day" ? "all" : "links";
+}
+
+export interface AgendaSection {
+	month: CivilMonth | undefined;
+	rows: AgendaRow[];
+}
+
+export function agendaSections(rows: readonly AgendaRow[], shownMonth: CivilMonth, monthHeadings: boolean): AgendaSection[] {
+	const sections: AgendaSection[] = [];
+	for (const row of rows) {
+		const month = monthOf(row.startsOn);
+		const last = sections[sections.length - 1];
+		if (last && (!monthHeadings || sameMonth(last.month ?? shownMonth, month))) {
+			last.rows.push(row);
+			continue;
+		}
+		sections.push({ month: monthHeadings && (last || !sameMonth(month, shownMonth)) ? month : undefined, rows: [row] });
+	}
+	return sections;
+}
+
+function sameMonth(one: CivilMonth, other: CivilMonth): boolean {
+	return one.year === other.year && one.month === other.month;
 }
 
 export function selectedCellUse(selected: SelectedDateNote, range: DateRange): CellUseOf {

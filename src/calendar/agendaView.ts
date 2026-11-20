@@ -9,7 +9,8 @@ import { renderAgenda } from "./agendaList.ts";
 import type { AgendaHandlers } from "./agendaList.ts";
 import { AGENDA_SCOPES } from "./agenda.ts";
 import type { AgendaScope, SelectedDateNote } from "./agenda.ts";
-import { agendaOf, calendarModels, dotName, focusedDateNote, noteName } from "./screen.ts";
+import { agendaOf, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
+import type { CivilMonth } from "./grid.ts";
 import type { ScreenContext } from "./screen.ts";
 import { CALENDAR_RENDERED_EVENT, CALENDAR_VIEW_TYPE, CalendarView } from "./view.ts";
 import { weekRuleOf } from "./weeks.ts";
@@ -41,9 +42,11 @@ export class AgendaView extends ItemView implements HoverParent {
 		hover: (notePath, event, targetEl) =>
 			this.app.workspace.trigger("hover-link", { event, source: AGENDA_VIEW_TYPE, hoverParent: this, targetEl, linktext: notePath, sourcePath: "" }),
 		dotName: (decoratorId) => dotName(this.settings(), decoratorId),
+		monthTitle: (month) => monthTitle(month, this.shownMonth),
 	};
 	private listScope: AgendaScope = "selected";
 	private selected: SelectedDateNote | undefined;
+	private shownMonth: CivilMonth | undefined;
 
 	constructor(leaf: WorkspaceLeaf, settings: () => DateCompassSettings) {
 		super(leaf);
@@ -135,9 +138,11 @@ export class AgendaView extends ItemView implements HoverParent {
 		this.root.empty();
 		this.renderScope();
 		const calendar = this.calendar();
-		const visible = this.listScope === "visible" && calendar ? calendarModels(context, calendar.visibleGrids(), settings.calendar.showWeekNumbers).models : [];
-		const { rows } = agendaOf(context, this.listScope, visible, this.selected);
-		renderAgenda(this.root, rows, t(this.emptyText(calendar !== undefined)), (path) => noteName(this.app, path), this.handlers);
+		const grids = this.listScope === "visible" && calendar ? calendar.visibleGrids() : [];
+		const visible = { models: calendarModels(context, grids, settings.calendar.showWeekNumbers).models, month: grids[0]?.month };
+		const { sections, shownMonth } = agendaOf(context, this.listScope, visible, this.selected);
+		this.shownMonth = shownMonth;
+		renderAgenda(this.root, sections, t(this.emptyText(calendar !== undefined)), (path) => noteName(this.app, path), this.handlers);
 	}
 
 	private emptyText(calendarOpen: boolean): TranslationKey {

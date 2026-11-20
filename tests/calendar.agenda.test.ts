@@ -11,7 +11,7 @@ import { headerParts } from "../src/calendar/header.ts";
 import { calendarModel } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
-import { agendaRows, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "../src/calendar/agenda.ts";
+import { agendaRows, agendaSections, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "../src/calendar/agenda.ts";
 import type { SelectedDateNote } from "../src/calendar/agenda.ts";
 import { ISO_WEEK_RULE } from "../src/calendar/weeks.ts";
 import { dateNotesWithoutQuarter } from "./fixtures.ts";
@@ -97,4 +97,23 @@ test("a selected month covers its days only, not the days of the weeks around it
 	assert.deepEqual(selectedRows(december, DATED_ONLY), ["1 dots-dated Kickoff", "31 dots-dated Project foo", "31 dots-dated Tax filing"]);
 	assert.deepEqual(selectedRange(december, ISO_WEEK_RULE), { start: { year: 2020, month: 12, day: 1 }, end: { year: 2020, month: 12, day: 31 } });
 	assert.deepEqual(selectedRange({ ...december, period: "day" }, ISO_WEEK_RULE), dayRange(december.date));
+});
+
+test("month headings start each month other than the shown one, and turned off the rows stay in one section", () => {
+	const november = { year: 2020, month: 11 };
+	const grid = monthGrid(november, ISO_WEEK_RULE, TODAY, { before: 0, after: 4 });
+	const rows = agendaRows(modelsOf(grid), visibleCellUse, BOTH, name);
+	const headed = agendaSections(rows, november, true).map((section) => [section.month ? `${section.month.year}-${section.month.month}` : "", section.rows.map((row) => `${row.label} ${name(row.notePath)}`)]);
+	assert.deepEqual(headed, [
+		["2020-12", ["1 Kickoff", "53 Retro", "31 Meeting", "31 Project foo", "31 Tax filing"]],
+		["2021-1", ["2 Later"]],
+	]);
+	assert.deepEqual(
+		agendaSections(rows, { year: 2020, month: 12 }, true).map((section) => section.month?.month),
+		[undefined, 1],
+	);
+	assert.deepEqual(
+		agendaSections(rows, november, false).map((section) => [section.month, section.rows.length]),
+		[[undefined, 6]],
+	);
 });

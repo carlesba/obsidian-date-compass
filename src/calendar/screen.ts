@@ -4,16 +4,16 @@ import { obsidianMoment } from "../dateNotes/obsidianHost.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { decoratorName } from "../settings/calendarPage.ts";
 import type { CivilDate } from "../parse/calendar.ts";
-import { weeksAroundGrid } from "./grid.ts";
-import type { MonthGrid } from "./grid.ts";
+import { firstDayOf, monthOf, weeksAroundGrid } from "./grid.ts";
+import type { CivilMonth, MonthGrid } from "./grid.ts";
 import { headerParts } from "./header.ts";
 import { calendarModel } from "./model.ts";
 import type { CalendarModel } from "./model.ts";
 import { momentOf, monthShortName, weekdayShortNames } from "./obsidianHost.ts";
 import type { NoteDotsReader } from "./obsidianHost.ts";
 import { visibleNotes } from "./paths.ts";
-import { agendaRows, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./agenda.ts";
-import type { AgendaRow, AgendaScope, SelectedDateNote } from "./agenda.ts";
+import { agendaRows, agendaSections, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./agenda.ts";
+import type { AgendaRow, AgendaScope, AgendaSection, SelectedDateNote } from "./agenda.ts";
 import type { WeekRule } from "./weeks.ts";
 
 export interface ScreenContext {
@@ -56,20 +56,32 @@ export function calendarModels(context: ScreenContext, grids: readonly MonthGrid
 }
 
 export interface Agenda {
-	rows: AgendaRow[];
+	sections: AgendaSection[];
+	shownMonth: CivilMonth | undefined;
 	paths: Set<string>;
 }
 
-export function agendaOf(context: ScreenContext, scope: AgendaScope, visible: readonly CalendarModel[], selected: SelectedDateNote | undefined): Agenda {
+export interface VisibleDates {
+	models: readonly CalendarModel[];
+	month: CivilMonth | undefined;
+}
+
+export function agendaOf(context: ScreenContext, scope: AgendaScope, visible: VisibleDates, selected: SelectedDateNote | undefined): Agenda {
 	const { app, settings, rule, today } = context;
 	const listed = settings.calendar.decorators.filter((decorator) => decorator.inAgenda).map((decorator) => decorator.id);
 	const nameOf = (path: string) => noteName(app, path);
-	if (scope === "visible") return { rows: agendaRows(visible, visibleCellUse, listed, nameOf), paths: new Set() };
-	if (!selected) return { rows: [], paths: new Set() };
+	const sectionsOf = (rows: AgendaRow[], month: CivilMonth | undefined) => (month ? agendaSections(rows, month, settings.calendar.agendaMonthHeadings) : [{ month: undefined, rows }]);
+	if (scope === "visible") return { sections: sectionsOf(agendaRows(visible.models, visibleCellUse, listed, nameOf), visible.month), shownMonth: visible.month, paths: new Set() };
+	if (!selected) return { sections: [], shownMonth: undefined, paths: new Set() };
 	const range = selectedRange(selected, rule);
 	const grid = weeksAroundGrid(range.start, weeksCovering(range, rule), 0, rule, today);
 	const { models, paths } = calendarModels(context, [grid], true);
-	return { rows: agendaRows(models, selectedCellUse(selected, range), listed, nameOf), paths };
+	const month = monthOf(selected.date);
+	return { sections: sectionsOf(agendaRows(models, selectedCellUse(selected, range), listed, nameOf), month), shownMonth: month, paths };
+}
+
+export function monthTitle(month: CivilMonth, shownMonth: CivilMonth | undefined): string {
+	return momentOf(firstDayOf(month)).format(month.year === shownMonth?.year ? "MMMM" : "MMMM YYYY");
 }
 
 export function dotName(settings: DateCompassSettings, decoratorId: string): string {

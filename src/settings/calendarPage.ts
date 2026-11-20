@@ -10,7 +10,7 @@ import type { LegacyFilterKind } from "../filters/legacy.ts";
 import { EXTRA_WEEKS, MONTHS_SHOWN, WEEKS_SHOWN } from "../calendar/settings.ts";
 import type { AdjacentDim, CalendarSettings, CalendarViewKind, TodayRow } from "../calendar/settings.ts";
 import type { AgendaMode } from "../calendar/agenda.ts";
-import { CALENDAR_ADJACENT_DIM_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_AGENDA_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
+import { CALENDAR_ADJACENT_DIM_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_AGENDA_KEY, CALENDAR_AGENDA_MONTH_HEADINGS_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -223,6 +223,7 @@ export function calendarItems(decorators: DotDecorator[], context: CalendarPageC
 			heading: t("agendaHeading"),
 			items: [
 				{ name: t("agenda"), desc: t("agendaDesc"), control: { type: "dropdown", key: CALENDAR_AGENDA_KEY, options: translatedLabels(AGENDA_MODE_LABELS) } },
+				{ name: t("agendaMonthHeadings"), desc: t("agendaMonthHeadingsDesc"), control: { type: "toggle", key: CALENDAR_AGENDA_MONTH_HEADINGS_KEY } },
 			],
 		},
 		{ type: "group", visible: false, items: decorators.map((decorator) => decoratorPage(decorator, context)) },

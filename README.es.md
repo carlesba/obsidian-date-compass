@@ -467,6 +467,10 @@ calendario** elige qué muestra la agenda:
   sin nota recibe antes su nota.
 - **Fechas visibles**: todas las fechas que muestra el calendario.
 
+**Títulos de mes**, activado por defecto, empieza las filas de cada mes distinto del que muestra el
+calendario con el nombre de ese mes, como **diciembre**, con el año cuando es otro. Un 20 bajo
+**diciembre** es entonces el 20 de diciembre, no el de este mes.
+
 Cada entrada de puntos de **Notas que enlazan** o de **Propiedad de fecha** decide si sus notas
 aparecen con **Mostrar en la agenda**: activado por defecto para las propiedades de fecha y
 desactivado para las notas que enlazan, que ya muestran los enlaces entrantes de la nota de fecha.

@@ -229,6 +229,8 @@ export const en = {
 	agendaOff: "Off",
 	agendaSelected: "Selected date",
 	agendaVisible: "Visible dates",
+	agendaMonthHeadings: "Month headings",
+	agendaMonthHeadingsDesc: "Start the rows of each other month with its name, so a 20 in the next month reads as December 20 and not as this month's.",
 	agendaNone: "Nothing on the agenda here.",
 	agendaNoSelection: "Open a date note to see its agenda.",
 	agendaViewTitle: "Agenda",

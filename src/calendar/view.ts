@@ -9,7 +9,7 @@ import type { CivilDate } from "../parse/calendar.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { confirmCreateNote } from "./confirmModal.ts";
 import { monthGrid, monthOf, weeksAroundGrid } from "./grid.ts";
-import type { MonthGrid } from "./grid.ts";
+import type { CivilMonth, MonthGrid } from "./grid.ts";
 import type { NoteTarget } from "./model.ts";
 import { anchorAfterDayChange, monthAfterDayChange, sameDay, shiftMonth, shiftWeek, startOfMonthBefore, startOfNextMonth } from "./navigation.ts";
 import { createNoteDotsReader, localeWeekRule, momentOf } from "./obsidianHost.ts";
@@ -17,7 +17,7 @@ import { activeNoteTouchesVisible, touchesVisible } from "./paths.ts";
 import { renderAgenda } from "./agendaList.ts";
 import type { AgendaHandlers } from "./agendaList.ts";
 import type { SelectedDateNote } from "./agenda.ts";
-import { agendaOf, calendarModels, dotName, focusedDateNote, noteName } from "./screen.ts";
+import { agendaOf, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
 import type { ScreenContext } from "./screen.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
@@ -51,6 +51,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		open: (notePath, event) => void this.app.workspace.openLinkText(notePath, "", Keymap.isModEvent(event)),
 		hover: (notePath, event, targetEl) => this.previewPath(notePath, event, targetEl),
 		dotName: (decoratorId) => dotName(this.settings(), decoratorId),
+		monthTitle: (month) => monthTitle(month, this.agendaMonth),
 	};
 	private readonly handlers: CalendarHandlers = {
 		back: () => this.move(-1),
@@ -69,6 +70,7 @@ export class CalendarView extends ItemView implements HoverParent {
 	private renderedActivePath: string | undefined;
 	private renderedGrids: MonthGrid[] = [];
 	private selected: SelectedDateNote | undefined;
+	private agendaMonth: CivilMonth | undefined;
 	private awaitsBeingShown = false;
 
 	constructor(leaf: WorkspaceLeaf, settings: () => DateCompassSettings) {
@@ -208,9 +210,10 @@ export class CalendarView extends ItemView implements HoverParent {
 		for (const dim of ADJACENT_DIMS) this.root.toggleClass(`${ADJACENT_DIM_CLASS_PREFIX}${dim}`, dim === calendar.adjacentDim);
 		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months: models }, this.handlers);
 		if (calendar.agenda !== "off") {
-			const listed = agendaOf(context, calendar.agenda, models, this.selected);
+			const listed = agendaOf(context, calendar.agenda, { models, month: grids[0]?.month }, this.selected);
 			for (const path of listed.paths) paths.add(path);
-			renderAgenda(this.root, listed.rows, t(calendar.agenda === "selected" && !this.selected ? "agendaNoSelection" : "agendaNone"), (path) => noteName(this.app, path), this.agendaHandlers);
+			this.agendaMonth = listed.shownMonth;
+			renderAgenda(this.root, listed.sections, t(calendar.agenda === "selected" && !this.selected ? "agendaNoSelection" : "agendaNone"), (path) => noteName(this.app, path), this.agendaHandlers);
 		}
 		this.visiblePaths = paths;
 		this.renderedActivePath = activePath;
