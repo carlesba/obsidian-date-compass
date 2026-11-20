@@ -196,7 +196,7 @@ function renderedRow(render: (setting: never) => unknown): TypedRow {
 		infoEl: {
 			createDiv: ({ text }: { text: string }) => {
 				samples.push(text);
-				return { setText: (next: string) => void samples.push(next) };
+				return { setText: (next: string) => void samples.push(next), remove: () => undefined };
 			},
 		},
 		addText: (build: (text: typeof component) => unknown) => void build(component),

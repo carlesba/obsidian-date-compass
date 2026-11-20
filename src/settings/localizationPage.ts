@@ -111,7 +111,7 @@ function readingGroup(context: LocalizationPageContext): SettingDefinitionGroup 
 				name: t("dayMonthOrder"),
 				desc: t("dayMonthOrderDesc"),
 				render: (setting) => {
-					const showSample = addTodaySample(setting, dayMonthOrderSample(context.dayMonthOrder(), context.today()));
+					const sample = addTodaySample(setting, dayMonthOrderSample(context.dayMonthOrder(), context.today()));
 					setting.addDropdown((dropdown) =>
 						dropdown
 							.addOptions(translatedLabels(DAY_MONTH_ORDER_LABELS))
@@ -120,9 +120,10 @@ function readingGroup(context: LocalizationPageContext): SettingDefinitionGroup 
 								const order = DAY_MONTH_ORDERS.find((known) => known === picked);
 								if (!order) return;
 								context.write(DAY_MONTH_ORDER_KEY, order);
-								showSample(dayMonthOrderSample(order, context.today()));
+								sample.show(dayMonthOrderSample(order, context.today()));
 							}),
 					);
+					return sample.remove;
 				},
 			},
 		],

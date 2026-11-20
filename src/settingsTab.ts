@@ -40,8 +40,10 @@ const WEEK_FORMAT_KEY = periodKey("week", "format");
 
 const TYPING_PAUSE_MS = 800;
 
+const PAGE_TITLE_SELECTOR = ".setting-page-title";
+
 interface OpenSettingPage {
-	page?: { tab?: unknown; pagePath?: unknown; title?: unknown };
+	page?: { tab?: unknown; pagePath?: unknown; title?: unknown; titlebarEl?: unknown };
 }
 
 interface AppWithSettingModal {
@@ -260,7 +262,9 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		for (const { page } of modal.pageStack as OpenSettingPage[]) {
 			if (page?.tab !== this || !Array.isArray(page.pagePath)) continue;
 			const definition = pageAt(this.settingItems, page.pagePath as string[]);
-			if (definition) page.title = definition.name;
+			if (!definition) continue;
+			page.title = definition.name;
+			if (page.titlebarEl instanceof HTMLElement) page.titlebarEl.querySelector(PAGE_TITLE_SELECTOR)?.setText(definition.name);
 		}
 		modal.updatePageTitle();
 	}

@@ -126,16 +126,17 @@ function linkTextFields({ keyPrefix, style, host }: LinkStyleSection): Partial<R
 			desc: t("aliasFormatSettingDesc"),
 			visible: () => style().aliasShape === "format",
 			render: (setting) => {
-				const showSample = addTodaySample(setting, aliasFormatSample(style().aliasFormat, host.today()));
+				const sample = addTodaySample(setting, aliasFormatSample(style().aliasFormat, host.today()));
 				setting.addText((text) =>
 					text
 						.setPlaceholder(DEFAULT_ALIAS_FORMAT)
 						.setValue(style().aliasFormat)
 						.onChange((typed) => {
-							showSample(aliasFormatSample(typed, host.today()));
+							sample.show(aliasFormatSample(typed, host.today()));
 							host.write(linkStyleKey(keyPrefix, "aliasFormat"), typed);
 						}),
 				);
+				return sample.remove;
 			},
 		},
 	};
