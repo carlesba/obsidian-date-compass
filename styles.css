@@ -459,15 +459,30 @@
 
 .date-compass-calendar .agenda-row {
 	display: flex;
-	align-items: center;
+	align-items: baseline;
 	gap: var(--size-4-2);
 	min-height: 24px;
 }
 
 .date-compass-calendar .agenda-date {
 	flex: 0 0 2.5em;
-	padding: 1px 2px 2px;
+	padding: 4px 2px 6px;
 	font-size: var(--font-ui-smaller);
+}
+
+.date-compass-calendar .agenda-date .dot-below,
+.date-compass-calendar .agenda-date .dot-above {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+.date-compass-calendar .agenda-date .dot-below {
+	bottom: 1px;
+}
+
+.date-compass-calendar .agenda-date .dot-above {
+	top: 0;
 }
 
 .date-compass-calendar .agenda-note {
