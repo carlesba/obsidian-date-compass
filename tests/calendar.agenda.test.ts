@@ -11,8 +11,8 @@ import { headerParts } from "../src/calendar/header.ts";
 import { calendarModel } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
-import { referenceRows, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "../src/calendar/references.ts";
-import type { ReferenceSources, SelectedDateNote } from "../src/calendar/references.ts";
+import { agendaRows, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "../src/calendar/agenda.ts";
+import type { SelectedDateNote } from "../src/calendar/agenda.ts";
 import { ISO_WEEK_RULE } from "../src/calendar/weeks.ts";
 import { dateNotesWithoutQuarter } from "./fixtures.ts";
 import { moment } from "./moment.ts";
@@ -20,7 +20,8 @@ import { moment } from "./moment.ts";
 const TODAY = { year: 2020, month: 12, day: 15 };
 const DATED: Dot = { decoratorId: "dots-dated", source: "dateProperty", shape: "filled", color: "red", position: "below" };
 const LINKED: Dot = { decoratorId: "dots-links", source: "links", shape: "filled", color: "accent", position: "below" };
-const ORDER = ["dots-links", "dots-dated"];
+const DATED_ONLY = ["dots-dated"];
+const BOTH = ["dots-links", "dots-dated"];
 const toMoment = (date: CivilDate) => moment(isoDate(date), "YYYY-MM-DD", true);
 const periods = dateNotesWithoutQuarter().periods;
 
@@ -57,17 +58,17 @@ function modelsOf(grid: MonthGrid): CalendarModel[] {
 }
 
 const name = (path: string) => path.replace(/\.md$/, "");
-const rowsOf = (models: CalendarModel[], use: Parameters<typeof referenceRows>[1], sources: ReferenceSources) =>
-	referenceRows(models, use, sources, ORDER, name).map((row) => `${row.label} ${row.dot.decoratorId} ${name(row.notePath)}`);
+const rowsOf = (models: CalendarModel[], use: Parameters<typeof agendaRows>[1], listed: readonly string[]) =>
+	agendaRows(models, use, listed, name).map((row) => `${row.label} ${row.dot.decoratorId} ${name(row.notePath)}`);
 
 test("the visible dates list each dated note once on its day, sorted by date, entry and name", () => {
 	const models = modelsOf(monthGrid({ year: 2020, month: 12 }, ISO_WEEK_RULE, TODAY));
-	assert.deepEqual(rowsOf(models, visibleCellUse, "dateProperties"), ["1 dots-dated Kickoff", "31 dots-dated Project foo", "31 dots-dated Tax filing", "2 dots-dated Later"]);
+	assert.deepEqual(rowsOf(models, visibleCellUse, DATED_ONLY), ["1 dots-dated Kickoff", "31 dots-dated Project foo", "31 dots-dated Tax filing", "2 dots-dated Later"]);
 });
 
-test("listing linking notes too adds them on the cell of the note they link to", () => {
+test("linking-note entries shown in the agenda add their notes on the cell of the note they link to", () => {
 	const models = modelsOf(monthGrid({ year: 2020, month: 12 }, ISO_WEEK_RULE, TODAY));
-	assert.deepEqual(rowsOf(models, visibleCellUse, "all"), [
+	assert.deepEqual(rowsOf(models, visibleCellUse, BOTH), [
 		"1 dots-dated Kickoff",
 		"53 dots-links Retro",
 		"31 dots-links Meeting",
@@ -77,23 +78,23 @@ test("listing linking notes too adds them on the cell of the note they link to",
 	]);
 });
 
-function selectedRows(selected: SelectedDateNote, sources: ReferenceSources): string[] {
+function selectedRows(selected: SelectedDateNote, listed: readonly string[]): string[] {
 	const range = selectedRange(selected, ISO_WEEK_RULE);
 	const grid = weeksAroundGrid(range.start, weeksCovering(range, ISO_WEEK_RULE), 0, ISO_WEEK_RULE, TODAY);
-	return rowsOf(modelsOf(grid), selectedCellUse(selected, range), sources);
+	return rowsOf(modelsOf(grid), selectedCellUse(selected, range), listed);
 }
 
 test("a selected day lists only that day, and a selected week its own links and every day inside it", () => {
 	const lastDay: SelectedDateNote = { period: "day", date: { year: 2020, month: 12, day: 31 }, path: "2020-12-31.md" };
-	assert.deepEqual(selectedRows(lastDay, "all"), ["31 dots-links Meeting", "31 dots-dated Project foo", "31 dots-dated Tax filing"]);
+	assert.deepEqual(selectedRows(lastDay, BOTH), ["31 dots-links Meeting", "31 dots-dated Project foo", "31 dots-dated Tax filing"]);
 	const lastWeek: SelectedDateNote = { period: "week", date: { year: 2020, month: 12, day: 28 }, path: "2020-W53.md" };
-	assert.deepEqual(selectedRows(lastWeek, "dateProperties"), ["31 dots-dated Project foo", "31 dots-dated Tax filing", "2 dots-dated Later"]);
-	assert.deepEqual(selectedRows(lastWeek, "all")[0], "53 dots-links Retro");
+	assert.deepEqual(selectedRows(lastWeek, DATED_ONLY), ["31 dots-dated Project foo", "31 dots-dated Tax filing", "2 dots-dated Later"]);
+	assert.deepEqual(selectedRows(lastWeek, BOTH)[0], "53 dots-links Retro");
 });
 
 test("a selected month covers its days only, not the days of the weeks around it", () => {
 	const december: SelectedDateNote = { period: "month", date: { year: 2020, month: 12, day: 1 }, path: "2020-12.md" };
-	assert.deepEqual(selectedRows(december, "dateProperties"), ["1 dots-dated Kickoff", "31 dots-dated Project foo", "31 dots-dated Tax filing"]);
+	assert.deepEqual(selectedRows(december, DATED_ONLY), ["1 dots-dated Kickoff", "31 dots-dated Project foo", "31 dots-dated Tax filing"]);
 	assert.deepEqual(selectedRange(december, ISO_WEEK_RULE), { start: { year: 2020, month: 12, day: 1 }, end: { year: 2020, month: 12, day: 31 } });
 	assert.deepEqual(selectedRange({ ...december, period: "day" }, ISO_WEEK_RULE), dayRange(december.date));
 });

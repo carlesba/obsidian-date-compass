@@ -430,24 +430,26 @@ counts: content, tasks, or where the link sits (body, property). An entry has a 
   notes count. Left empty, every note that links to the day or week, or that holds the date,
   counts.
 
-**Notes behind the dots.** A date property dot has no link to follow, so the calendar can list the
-notes behind its dots. In Settings → **Calendar**, **List under the calendar** chooses what the
-list shows:
+**Agenda.** A date property dot has no link to follow, so the calendar can list the notes behind
+its dots in an agenda. In Settings → **Calendar**, **Agenda under the calendar** chooses what the
+agenda shows:
 
-- **Off**: no list.
+- **Off**: no agenda.
 - **Selected date**: the date note you opened last. The selection stays while you open other notes,
-  so following a row keeps the list in place. A week, month, quarter or year note lists every day
+  so following a row keeps the agenda in place. A week, month, quarter or year note lists every day
   inside it. Tap a date in the calendar to select it; a date without a note gets its note first.
 - **Visible dates**: every date the calendar shows.
 
-**Notes to list** picks **Date properties**, or **Date properties and linking notes** to also list
-the notes behind linking-note dots. Each row shows the date and its dot exactly as the calendar
-draws them, then the note name, cut short on one line. The name opens the note.
+Each dots entry of **Linking notes** or **Date property** decides whether its notes appear with
+**Show in the agenda**: on by default for date properties, off for linking notes, whose notes the
+date note's backlinks already show. Each row shows the date and its dot exactly as the calendar
+draws them, then the note name, cut short on one line. Hovering the date names the dots entry, and
+the name opens the note.
 
-The **Dated notes** panel shows the same list in its own view, which you can drag to either sidebar
-like the calendar. Open it with **Open dated notes** in the command palette or its ribbon icon. Its
-header switches between **Selected date** and **Visible dates**, whatever the list under the
-calendar is set to; visible dates come from the open calendar.
+The **Agenda** panel shows the same list in its own view, which you can drag to either sidebar like
+the calendar. Open it with **Open agenda** in the command palette or its ribbon icon. Its header
+switches between **Selected date** and **Visible dates**, whatever the agenda under the calendar is
+set to; visible dates come from the open calendar.
 
 **Filter of linking notes.** The filter works like the note filters of Note Compass and of Bases:
 
@@ -488,11 +490,13 @@ Settings → **Calendar**:
 
 - **View**: **Month** or **Weeks**, with their options described above. Month by default.
 - **Show week numbers**: add the week column. On by default.
-- **Dim dates without a note**: show days, weeks, months, quarters and years that have no note
-  yet in a muted color. Days of the previous and next month are see-through either way, so both
-  differences show at once. Off by default.
 - **Confirm before creating a note**: ask before creating a note that does not exist yet. On by
   default.
+- **Appearance** → **Dim dates without a note**: show days, weeks, months, quarters and years that
+  have no note yet in a muted color. Days of other months fade on their own, so both differences
+  show at once. Off by default.
+- **Appearance** → **Days of other months**: **No dim**, **Soft dim** or **Hard dim** for the days
+  of the month before and after. Hard dim by default.
 - **Dots**: the list of dots described above, with + to add an entry by its source. Each row has a
   pencil that opens the entry and a copy button that duplicates it, named "*name* copy", right
   below the original.

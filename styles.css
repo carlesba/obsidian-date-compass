@@ -184,7 +184,11 @@
 	font-size: var(--font-ui-medium);
 }
 
-.date-compass-calendar .day.adjacent-month {
+.date-compass-calendar.adjacent-dim-soft .day.adjacent-month {
+	opacity: 0.7;
+}
+
+.date-compass-calendar.adjacent-dim-hard .day.adjacent-month {
 	opacity: 0.4;
 }
 
@@ -443,32 +447,32 @@
 	color: var(--text-muted);
 }
 
-.date-compass-calendar .references {
+.date-compass-calendar .agenda {
 	margin-top: var(--size-4-3);
 	padding-top: var(--size-4-2);
 	border-top: 1px solid var(--background-modifier-border);
 }
 
-.date-compass-references-view .references {
+.date-compass-agenda-view .agenda {
 	margin-top: 0;
 	padding-top: 0;
 	border-top: none;
 }
 
-.date-compass-calendar .reference {
+.date-compass-calendar .agenda-row {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2);
 	min-height: 24px;
 }
 
-.date-compass-calendar .reference-date {
+.date-compass-calendar .agenda-date {
 	flex: 0 0 2.5em;
 	padding: 1px 2px 2px;
 	font-size: var(--font-ui-smaller);
 }
 
-.date-compass-calendar .reference-note {
+.date-compass-calendar .agenda-note {
 	flex: 1 1 auto;
 	min-width: 0;
 	overflow: hidden;
@@ -478,39 +482,39 @@
 	text-decoration: none;
 }
 
-.date-compass-calendar .reference-note:hover {
+.date-compass-calendar .agenda-note:hover {
 	text-decoration: underline;
 }
 
-.date-compass-calendar .references-empty {
+.date-compass-calendar .agenda-empty {
 	padding: var(--size-4-1) 0;
 	font-size: var(--font-ui-smaller);
 	color: var(--text-faint);
 }
 
-.date-compass-calendar.is-mobile .reference {
+.date-compass-calendar.is-mobile .agenda-row {
 	min-height: 36px;
 }
 
-.date-compass-calendar.is-mobile .reference-date {
+.date-compass-calendar.is-mobile .agenda-date {
 	font-size: var(--font-ui-small);
 }
 
-.date-compass-calendar.is-mobile .reference-note {
+.date-compass-calendar.is-mobile .agenda-note {
 	font-size: var(--font-ui-medium);
 }
 
-.date-compass-references-view .scope {
+.date-compass-agenda-view .scope {
 	display: flex;
 	gap: var(--size-4-1);
 	margin: var(--size-4-2) 0;
 }
 
-.date-compass-references-view .scope button {
+.date-compass-agenda-view .scope button {
 	flex: 1 1 0;
 }
 
-.date-compass-references-view .scope button.is-active {
+.date-compass-agenda-view .scope button.is-active {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 }

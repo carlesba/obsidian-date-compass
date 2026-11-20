@@ -456,27 +456,28 @@ Una entrada tiene una fuente y un aspecto:
   qué notas cuentan. Si está vacío, cuenta toda nota que enlaza al día o a la semana, o que guarda
   la fecha.
 
-**Notas detrás de los puntos.** Un punto de propiedad de fecha no tiene enlace que seguir, así que
-el calendario puede listar las notas detrás de sus puntos. En Ajustes → **Calendario**, **Lista
-bajo el calendario** elige qué muestra la lista:
+**Agenda.** Un punto de propiedad de fecha no tiene enlace que seguir, así que el calendario puede
+listar las notas detrás de sus puntos en una agenda. En Ajustes → **Calendario**, **Agenda bajo el
+calendario** elige qué muestra la agenda:
 
-- **Desactivada**: sin lista.
+- **Desactivada**: sin agenda.
 - **Fecha seleccionada**: la última nota de fecha que abriste. La selección se mantiene mientras
-  abres otras notas, así que seguir una fila deja la lista en su sitio. Una nota de semana, mes,
+  abres otras notas, así que seguir una fila deja la agenda en su sitio. Una nota de semana, mes,
   trimestre o año lista todos sus días. Toca una fecha del calendario para seleccionarla; una fecha
   sin nota recibe antes su nota.
 - **Fechas visibles**: todas las fechas que muestra el calendario.
 
-**Notas que listar** elige **Propiedades de fecha**, o **Propiedades de fecha y notas que
-enlazan** para listar también las notas detrás de los puntos de notas que enlazan. Cada fila
-muestra la fecha y su punto tal como los dibuja el calendario, y luego el nombre de la nota,
-recortado en una línea. El nombre abre la nota.
+Cada entrada de puntos de **Notas que enlazan** o de **Propiedad de fecha** decide si sus notas
+aparecen con **Mostrar en la agenda**: activado por defecto para las propiedades de fecha y
+desactivado para las notas que enlazan, que ya muestran los enlaces entrantes de la nota de fecha.
+Cada fila muestra la fecha y su punto tal como los dibuja el calendario, y luego el nombre de la
+nota, recortado en una línea. Al pasar el puntero por la fecha aparece el nombre de la entrada de
+puntos, y el nombre abre la nota.
 
-El panel **Notas con fecha** muestra la misma lista en su propia vista, que puedes arrastrar a
-cualquier barra lateral como el calendario. Ábrelo con **Abrir notas con fecha** en la paleta de
-comandos o con su icono de la cinta. Su cabecera cambia entre **Fecha seleccionada** y **Fechas
-visibles**, sea cual sea el ajuste de la lista bajo el calendario; las fechas visibles vienen del
-calendario abierto.
+El panel **Agenda** muestra la misma lista en su propia vista, que puedes arrastrar a cualquier
+barra lateral como el calendario. Ábrelo con **Abrir agenda** en la paleta de comandos o con su
+icono de la cinta. Su cabecera cambia entre **Fecha seleccionada** y **Fechas visibles**, sea cual
+sea el ajuste de la agenda bajo el calendario; las fechas visibles vienen del calendario abierto.
 
 **Filtro de las notas que enlazan.** El filtro funciona como los filtros de notas de Note Compass
 y de Bases:
@@ -524,11 +525,13 @@ Ajustes → **Calendario**:
 
 - **Vista**: **Mes** o **Semanas**, con sus opciones descritas arriba. Mes por defecto.
 - **Mostrar números de semana**: añade la columna de semanas. Activado por defecto.
-- **Atenuar fechas sin nota**: muestra en un color apagado los días, semanas, meses, trimestres y
-  años que aún no tienen nota. Los días del mes anterior y del siguiente se ven translúcidos en
-  cualquier caso, así que se distinguen las dos cosas a la vez. Desactivado por defecto.
 - **Confirmar antes de crear una nota**: pregunta antes de crear una nota que aún no existe.
   Activado por defecto.
+- **Aspecto** → **Atenuar fechas sin nota**: muestra en un color apagado los días, semanas, meses,
+  trimestres y años que aún no tienen nota. Los días de otros meses se atenúan por su cuenta, así
+  que se distinguen las dos cosas a la vez. Desactivado por defecto.
+- **Aspecto** → **Días de otros meses**: **Sin atenuar**, **Atenuado suave** o **Atenuado fuerte**
+  para los días del mes anterior y del siguiente. Atenuado fuerte por defecto.
 - **Puntos**: la lista de puntos descrita arriba, con + para añadir una entrada según su fuente.
   Cada fila tiene un lápiz que abre la entrada y un botón de copia que la duplica, con el nombre
   "*nombre* copia", justo debajo de la original.

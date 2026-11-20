@@ -12,8 +12,8 @@ import type { CalendarModel } from "./model.ts";
 import { momentOf, monthShortName, weekdayShortNames } from "./obsidianHost.ts";
 import type { NoteDotsReader } from "./obsidianHost.ts";
 import { visibleNotes } from "./paths.ts";
-import { referenceRows, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./references.ts";
-import type { ReferenceRow, ReferenceScope, SelectedDateNote } from "./references.ts";
+import { agendaRows, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./agenda.ts";
+import type { AgendaRow, AgendaScope, SelectedDateNote } from "./agenda.ts";
 import type { WeekRule } from "./weeks.ts";
 
 export interface ScreenContext {
@@ -55,22 +55,21 @@ export function calendarModels(context: ScreenContext, grids: readonly MonthGrid
 	return { models, paths };
 }
 
-export interface References {
-	rows: ReferenceRow[];
+export interface Agenda {
+	rows: AgendaRow[];
 	paths: Set<string>;
 }
 
-export function references(context: ScreenContext, scope: ReferenceScope, visible: readonly CalendarModel[], selected: SelectedDateNote | undefined): References {
+export function agendaOf(context: ScreenContext, scope: AgendaScope, visible: readonly CalendarModel[], selected: SelectedDateNote | undefined): Agenda {
 	const { app, settings, rule, today } = context;
-	const decoratorOrder = settings.calendar.decorators.map((decorator) => decorator.id);
+	const listed = settings.calendar.decorators.filter((decorator) => decorator.inAgenda).map((decorator) => decorator.id);
 	const nameOf = (path: string) => noteName(app, path);
-	const { referenceSources } = settings.calendar;
-	if (scope === "visible") return { rows: referenceRows(visible, visibleCellUse, referenceSources, decoratorOrder, nameOf), paths: new Set() };
+	if (scope === "visible") return { rows: agendaRows(visible, visibleCellUse, listed, nameOf), paths: new Set() };
 	if (!selected) return { rows: [], paths: new Set() };
 	const range = selectedRange(selected, rule);
 	const grid = weeksAroundGrid(range.start, weeksCovering(range, rule), 0, rule, today);
 	const { models, paths } = calendarModels(context, [grid], true);
-	return { rows: referenceRows(models, selectedCellUse(selected, range), referenceSources, decoratorOrder, nameOf), paths };
+	return { rows: agendaRows(models, selectedCellUse(selected, range), listed, nameOf), paths };
 }
 
 export function dotName(settings: DateCompassSettings, decoratorId: string): string {

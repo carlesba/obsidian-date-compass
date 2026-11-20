@@ -1,6 +1,6 @@
 import { t } from "../i18n/index.ts";
-import { CALENDAR_VIEWS, EXTRA_WEEKS, MONTHS_SHOWN, TODAY_ROWS, WEEKS_SHOWN, isInRange } from "../calendar/settings.ts";
-import { REFERENCE_LISTS, REFERENCE_SOURCES } from "../calendar/references.ts";
+import { ADJACENT_DIMS, CALENDAR_VIEWS, EXTRA_WEEKS, MONTHS_SHOWN, TODAY_ROWS, WEEKS_SHOWN, isInRange } from "../calendar/settings.ts";
+import { AGENDA_MODES } from "../calendar/agenda.ts";
 import type { IntegerRange } from "../calendar/settings.ts";
 import { DAY_MONTH_ORDERS, NEXT_WEEKDAY_MEANINGS, WEEK_STARTS } from "../settings.ts";
 import type { DateCompassSettings } from "../settings.ts";
@@ -11,7 +11,7 @@ import type { Mention, MentionField } from "../mentions/settings.ts";
 import { ALIAS_SHAPES, LINK_SEPARATORS, LINK_STYLE_FIELDS, isLinkTemplate, validTargets } from "../insertion/linkStyle.ts";
 import type { LinkStyle, LinkStyleField } from "../insertion/linkStyle.ts";
 import { LINK_PATHS } from "../insertion/linkPath.ts";
-import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, validCells, validLinkPlaces, validTimes } from "../calendar/decorators.ts";
+import { DECORATOR_FIELDS, DOT_COLORS, DOT_COUNTS, DOT_POSITIONS, DOT_SHAPES, DOT_SOURCES, decoratorOf, isAmountPerDot, isMaxDots, readsNotes, validCells, validLinkPlaces, validTimes } from "../calendar/decorators.ts";
 import type { DecoratorField, DotDecorator } from "../calendar/decorators.ts";
 import { ASK_KINDS, COMMAND_DESTINATIONS, COMMAND_FIELDS, WRITE_MODES } from "../commands/settings.ts";
 import type { CommandField, DateCommand } from "../commands/settings.ts";
@@ -30,6 +30,8 @@ export const CALENDAR_CONFIRM_BEFORE_CREATE_KEY = "calendar/confirmBeforeCreate"
 
 export const CALENDAR_DIM_WITHOUT_NOTE_KEY = "calendar/dimWithoutNote";
 
+export const CALENDAR_ADJACENT_DIM_KEY = "calendar/adjacentDim";
+
 export const CALENDAR_VIEW_KEY = "calendar/view";
 
 export const CALENDAR_MONTHS_SHOWN_KEY = "calendar/monthsShown";
@@ -42,9 +44,7 @@ export const CALENDAR_WEEKS_SHOWN_KEY = "calendar/weeksShown";
 
 export const CALENDAR_TODAY_ROW_KEY = "calendar/todayRow";
 
-export const CALENDAR_REFERENCES_KEY = "calendar/references";
-
-export const CALENDAR_REFERENCE_SOURCES_KEY = "calendar/referenceSources";
+export const CALENDAR_AGENDA_KEY = "calendar/agenda";
 
 type CalendarIntegerField = "monthsShown" | "weeksBefore" | "weeksAfter" | "weeksShown";
 
@@ -142,6 +142,9 @@ function writeDecoratorControl({ decorators, index, field }: DecoratorControl, v
 			decorator.linkPlaces = places;
 			return true;
 		}
+		case "inAgenda":
+			if (!readsNotes(decorator.source)) return false;
+			return writeBoolean(value, (listed) => (decorator.inAgenda = listed));
 		case "dateProperty":
 			if (decorator.source !== "dateProperty") return false;
 			return writeText(value, (property) => (decorator.dateProperty = property));
@@ -338,10 +341,10 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return settings.calendar.showWeekNumbers;
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return settings.calendar.confirmBeforeCreate;
 	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return settings.calendar.dimWithoutNote;
+	if (key === CALENDAR_ADJACENT_DIM_KEY) return settings.calendar.adjacentDim;
 	if (key === CALENDAR_VIEW_KEY) return settings.calendar.view;
 	if (key === CALENDAR_TODAY_ROW_KEY) return settings.calendar.todayRow;
-	if (key === CALENDAR_REFERENCES_KEY) return settings.calendar.references;
-	if (key === CALENDAR_REFERENCE_SOURCES_KEY) return settings.calendar.referenceSources;
+	if (key === CALENDAR_AGENDA_KEY) return settings.calendar.agenda;
 	const integerField = CALENDAR_INTEGER_FIELDS[key];
 	if (integerField) return settings.calendar[integerField.field];
 	const decoratorControl = decoratorControlOfKey(settings, key);
@@ -371,10 +374,10 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 	if (key === CALENDAR_SHOW_WEEK_NUMBERS_KEY) return writeBoolean(value, (shown) => (calendar.showWeekNumbers = shown));
 	if (key === CALENDAR_CONFIRM_BEFORE_CREATE_KEY) return writeBoolean(value, (confirm) => (calendar.confirmBeforeCreate = confirm));
 	if (key === CALENDAR_DIM_WITHOUT_NOTE_KEY) return writeBoolean(value, (dims) => (calendar.dimWithoutNote = dims));
+	if (key === CALENDAR_ADJACENT_DIM_KEY) return writeChoice(ADJACENT_DIMS, value, (dim) => (calendar.adjacentDim = dim));
 	if (key === CALENDAR_VIEW_KEY) return writeChoice(CALENDAR_VIEWS, value, (view) => (calendar.view = view));
 	if (key === CALENDAR_TODAY_ROW_KEY) return writeChoice(TODAY_ROWS, value, (row) => (calendar.todayRow = row));
-	if (key === CALENDAR_REFERENCES_KEY) return writeChoice(REFERENCE_LISTS, value, (list) => (calendar.references = list));
-	if (key === CALENDAR_REFERENCE_SOURCES_KEY) return writeChoice(REFERENCE_SOURCES, value, (sources) => (calendar.referenceSources = sources));
+	if (key === CALENDAR_AGENDA_KEY) return writeChoice(AGENDA_MODES, value, (list) => (calendar.agenda = list));
 	const integerField = CALENDAR_INTEGER_FIELDS[key];
 	if (!integerField || !isInRange(value, integerField.range)) return false;
 	calendar[integerField.field] = value;

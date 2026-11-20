@@ -5,7 +5,7 @@ import { dateOf } from "../dateNotes/paths.ts";
 import { t } from "../i18n/index.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { CALENDAR_ICON, CALENDAR_VIEW_TYPE, CalendarView } from "./view.ts";
-import { REFERENCES_ICON, REFERENCES_VIEW_TYPE, ReferencesView } from "./referencesView.ts";
+import { AGENDA_ICON, AGENDA_VIEW_TYPE, AgendaView } from "./agendaView.ts";
 
 export function registerCalendar(plugin: Plugin, settings: () => DateCompassSettings): void {
 	const { app } = plugin;
@@ -13,10 +13,10 @@ export function registerCalendar(plugin: Plugin, settings: () => DateCompassSett
 	plugin.registerHoverLinkSource(CALENDAR_VIEW_TYPE, { display: t("calendarViewTitle"), defaultMod: true });
 	plugin.addRibbonIcon(CALENDAR_ICON, t("calendarRibbonTooltip"), () => void revealCalendar(app));
 	plugin.addCommand({ id: "open-calendar", name: t("openCalendar"), callback: () => void revealCalendar(app) });
-	plugin.registerView(REFERENCES_VIEW_TYPE, (leaf) => new ReferencesView(leaf, settings));
-	plugin.registerHoverLinkSource(REFERENCES_VIEW_TYPE, { display: t("referencesViewTitle"), defaultMod: true });
-	plugin.addRibbonIcon(REFERENCES_ICON, t("referencesRibbonTooltip"), () => void revealSidebarView(app, REFERENCES_VIEW_TYPE));
-	plugin.addCommand({ id: "open-dated-notes", name: t("openReferences"), callback: () => void revealSidebarView(app, REFERENCES_VIEW_TYPE) });
+	plugin.registerView(AGENDA_VIEW_TYPE, (leaf) => new AgendaView(leaf, settings));
+	plugin.registerHoverLinkSource(AGENDA_VIEW_TYPE, { display: t("agendaViewTitle"), defaultMod: true });
+	plugin.addRibbonIcon(AGENDA_ICON, t("agendaRibbonTooltip"), () => void revealSidebarView(app, AGENDA_VIEW_TYPE));
+	plugin.addCommand({ id: "open-agenda", name: t("openAgenda"), callback: () => void revealSidebarView(app, AGENDA_VIEW_TYPE) });
 	plugin.addCommand({
 		id: "reveal-active-note-in-calendar",
 		name: t("revealActiveNoteInCalendar"),
@@ -28,8 +28,8 @@ export function refreshCalendars(app: App): void {
 	for (const leaf of app.workspace.getLeavesOfType(CALENDAR_VIEW_TYPE)) {
 		if (leaf.view instanceof CalendarView) leaf.view.refresh();
 	}
-	for (const leaf of app.workspace.getLeavesOfType(REFERENCES_VIEW_TYPE)) {
-		if (leaf.view instanceof ReferencesView) leaf.view.refresh();
+	for (const leaf of app.workspace.getLeavesOfType(AGENDA_VIEW_TYPE)) {
+		if (leaf.view instanceof AgendaView) leaf.view.refresh();
 	}
 }
 

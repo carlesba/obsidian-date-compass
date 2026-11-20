@@ -1,11 +1,14 @@
 import { isRecord } from "../dateNotes/periods.ts";
 import { mergeDecorators } from "./decorators.ts";
 import type { DotDecorator } from "./decorators.ts";
-import { REFERENCE_LISTS, REFERENCE_SOURCES } from "./references.ts";
-import type { ReferenceList, ReferenceSources } from "./references.ts";
+import { AGENDA_MODES } from "./agenda.ts";
+import type { AgendaMode } from "./agenda.ts";
 
 export const CALENDAR_VIEWS = ["month", "weeks"] as const;
 export type CalendarViewKind = (typeof CALENDAR_VIEWS)[number];
+
+export const ADJACENT_DIMS = ["none", "soft", "hard"] as const;
+export type AdjacentDim = (typeof ADJACENT_DIMS)[number];
 
 export const TODAY_ROWS = ["first", "middle", "last"] as const;
 export type TodayRow = (typeof TODAY_ROWS)[number];
@@ -20,6 +23,7 @@ export interface CalendarSettings {
 	showWeekNumbers: boolean;
 	confirmBeforeCreate: boolean;
 	dimWithoutNote: boolean;
+	adjacentDim: AdjacentDim;
 	view: CalendarViewKind;
 	monthsShown: number;
 	weeksBefore: number;
@@ -27,8 +31,7 @@ export interface CalendarSettings {
 	weeksShown: number;
 	todayRow: TodayRow;
 	decorators: DotDecorator[];
-	references: ReferenceList;
-	referenceSources: ReferenceSources;
+	agenda: AgendaMode;
 }
 
 export function defaultCalendar(): CalendarSettings {
@@ -57,6 +60,7 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		showWeekNumbers: typeof data.showWeekNumbers === "boolean" ? data.showWeekNumbers : true,
 		confirmBeforeCreate: typeof data.confirmBeforeCreate === "boolean" ? data.confirmBeforeCreate : true,
 		dimWithoutNote: typeof data.dimWithoutNote === "boolean" ? data.dimWithoutNote : false,
+		adjacentDim: ADJACENT_DIMS.find((dim) => dim === data.adjacentDim) ?? "hard",
 		view: CALENDAR_VIEWS.find((view) => view === data.view) ?? "month",
 		monthsShown: integer(data.monthsShown, MONTHS_SHOWN, 1),
 		weeksBefore: integer(data.weeksBefore, EXTRA_WEEKS, 0),
@@ -64,7 +68,6 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		weeksShown: integer(data.weeksShown, WEEKS_SHOWN, 6),
 		todayRow: TODAY_ROWS.find((row) => row === data.todayRow) ?? "first",
 		decorators: mergeDecorators(data.decorators, data.wordsPerDot),
-		references: REFERENCE_LISTS.find((list) => list === data.references) ?? "off",
-		referenceSources: REFERENCE_SOURCES.find((sources) => sources === data.referenceSources) ?? "dateProperties",
+		agenda: AGENDA_MODES.find((list) => list === data.agenda) ?? "off",
 	};
 }

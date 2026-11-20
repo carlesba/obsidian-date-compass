@@ -8,9 +8,9 @@ import { filterRules } from "../filters/filters.ts";
 import type { FilterGroup } from "../filters/filters.ts";
 import type { LegacyFilterKind } from "../filters/legacy.ts";
 import { EXTRA_WEEKS, MONTHS_SHOWN, WEEKS_SHOWN } from "../calendar/settings.ts";
-import type { CalendarSettings, CalendarViewKind, TodayRow } from "../calendar/settings.ts";
-import type { ReferenceList, ReferenceSources } from "../calendar/references.ts";
-import { CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_REFERENCES_KEY, CALENDAR_REFERENCE_SOURCES_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
+import type { AdjacentDim, CalendarSettings, CalendarViewKind, TodayRow } from "../calendar/settings.ts";
+import type { AgendaMode } from "../calendar/agenda.ts";
+import { CALENDAR_ADJACENT_DIM_KEY, CALENDAR_CONFIRM_BEFORE_CREATE_KEY, CALENDAR_DIM_WITHOUT_NOTE_KEY, CALENDAR_MONTHS_SHOWN_KEY, CALENDAR_AGENDA_KEY, CALENDAR_SHOW_WEEK_NUMBERS_KEY, CALENDAR_TODAY_ROW_KEY, CALENDAR_VIEW_KEY, CALENDAR_WEEKS_AFTER_KEY, CALENDAR_WEEKS_BEFORE_KEY, CALENDAR_WEEKS_SHOWN_KEY, decoratorKey } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
 import { inapplicableFilter } from "./filterForm.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -52,21 +52,22 @@ const VIEW_LABELS: Record<CalendarViewKind, TranslationKey> = {
 	weeks: "calendarViewWeeks",
 };
 
+const ADJACENT_DIM_LABELS: Record<AdjacentDim, TranslationKey> = {
+	none: "adjacentDimNone",
+	soft: "adjacentDimSoft",
+	hard: "adjacentDimHard",
+};
+
 const TODAY_ROW_LABELS: Record<TodayRow, TranslationKey> = {
 	first: "calendarTodayRowFirst",
 	middle: "calendarTodayRowMiddle",
 	last: "calendarTodayRowLast",
 };
 
-const REFERENCE_LIST_LABELS: Record<ReferenceList, TranslationKey> = {
-	off: "referencesOff",
-	selected: "referencesSelected",
-	visible: "referencesVisible",
-};
-
-const REFERENCE_SOURCE_LABELS: Record<ReferenceSources, TranslationKey> = {
-	dateProperties: "referenceSourcesDateProperties",
-	all: "referenceSourcesAll",
+const AGENDA_MODE_LABELS: Record<AgendaMode, TranslationKey> = {
+	off: "agendaOff",
+	selected: "agendaSelected",
+	visible: "agendaVisible",
 };
 
 const COUNT_LABELS: Record<DotCount, TranslationKey> = {
@@ -205,17 +206,23 @@ export function calendarItems(decorators: DotDecorator[], context: CalendarPageC
 			type: "group",
 			items: [
 				{ name: t("calendarShowWeekNumbers"), desc: t("calendarShowWeekNumbersDesc"), control: { type: "toggle", key: CALENDAR_SHOW_WEEK_NUMBERS_KEY } },
-				{ name: t("calendarDimWithoutNote"), desc: t("calendarDimWithoutNoteDesc"), control: { type: "toggle", key: CALENDAR_DIM_WITHOUT_NOTE_KEY } },
 				{ name: t("calendarConfirmBeforeCreate"), desc: t("calendarConfirmBeforeCreateDesc"), control: { type: "toggle", key: CALENDAR_CONFIRM_BEFORE_CREATE_KEY } },
+			],
+		},
+		{
+			type: "group",
+			heading: t("appearanceHeading"),
+			items: [
+				{ name: t("calendarDimWithoutNote"), desc: t("calendarDimWithoutNoteDesc"), control: { type: "toggle", key: CALENDAR_DIM_WITHOUT_NOTE_KEY } },
+				{ name: t("calendarAdjacentDim"), desc: t("calendarAdjacentDimDesc"), control: { type: "dropdown", key: CALENDAR_ADJACENT_DIM_KEY, options: translatedLabels(ADJACENT_DIM_LABELS) } },
 			],
 		},
 		decoratorsList(decorators, context),
 		{
 			type: "group",
-			heading: t("referencesHeading"),
+			heading: t("agendaHeading"),
 			items: [
-				{ name: t("references"), desc: t("referencesDesc"), control: { type: "dropdown", key: CALENDAR_REFERENCES_KEY, options: translatedLabels(REFERENCE_LIST_LABELS) } },
-				{ name: t("referenceSources"), desc: t("referenceSourcesDesc"), control: { type: "dropdown", key: CALENDAR_REFERENCE_SOURCES_KEY, options: translatedLabels(REFERENCE_SOURCE_LABELS) } },
+				{ name: t("agenda"), desc: t("agendaDesc"), control: { type: "dropdown", key: CALENDAR_AGENDA_KEY, options: translatedLabels(AGENDA_MODE_LABELS) } },
 			],
 		},
 		{ type: "group", visible: false, items: decorators.map((decorator) => decoratorPage(decorator, context)) },
@@ -312,6 +319,7 @@ function decoratorPage(decorator: DotDecorator, context: CalendarPageContext): I
 		...(sourceCanShowWithoutNote(decorator.source)
 			? [{ name: t("dotsShowWithoutNote"), desc: t("dotsShowWithoutNoteDesc"), control: { type: "toggle" as const, key: key("showWithoutNote") } }]
 			: []),
+		...(readsNotes(decorator.source) ? [{ name: t("dotsInAgenda"), desc: t("dotsInAgendaDesc"), control: { type: "toggle" as const, key: key("inAgenda") } }] : []),
 	];
 	return {
 		type: "page",

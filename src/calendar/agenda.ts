@@ -9,18 +9,15 @@ import { CLICKABLE_CLASS, dayClasses, titlePartClasses, weekClasses } from "./mo
 import type { CalendarModel, NoteCell } from "./model.ts";
 import type { WeekRule } from "./weeks.ts";
 
-export const REFERENCE_LISTS = ["off", "selected", "visible"] as const;
-export type ReferenceList = (typeof REFERENCE_LISTS)[number];
+export const AGENDA_MODES = ["off", "selected", "visible"] as const;
+export type AgendaMode = (typeof AGENDA_MODES)[number];
 
-export const REFERENCE_SCOPES = ["selected", "visible"] as const;
-export type ReferenceScope = (typeof REFERENCE_SCOPES)[number];
-
-export const REFERENCE_SOURCES = ["dateProperties", "all"] as const;
-export type ReferenceSources = (typeof REFERENCE_SOURCES)[number];
+export const AGENDA_SCOPES = ["selected", "visible"] as const;
+export type AgendaScope = (typeof AGENDA_SCOPES)[number];
 
 export type CellKind = Period;
 
-export interface ReferenceRow {
+export interface AgendaRow {
 	kind: CellKind;
 	label: string;
 	labelClasses: string[];
@@ -79,19 +76,18 @@ function withinRange(date: CivilDate, range: DateRange): boolean {
 	return daysBetween(range.start, date) >= 0 && daysBetween(date, range.end) >= 0;
 }
 
-export function referenceRows(
+export function agendaRows(
 	models: readonly CalendarModel[],
 	useOf: CellUseOf,
-	sources: ReferenceSources,
-	decoratorOrder: readonly string[],
+	listedDecorators: readonly string[],
 	nameOf: (path: string) => string,
-): ReferenceRow[] {
-	const rows = new Map<string, ReferenceRow>();
+): AgendaRow[] {
+	const rows = new Map<string, AgendaRow>();
 	const add = (cell: NoteCell, kind: CellKind, label: string, classes: string[], startsOn?: CivilDate) => {
 		const use = useOf(cell, kind);
 		if (use === "none" || !cell.target) return;
 		for (const { dot, notePath } of cell.references) {
-			if (dot.source === "links" ? sources !== "all" : use !== "all") continue;
+			if (!listedDecorators.includes(dot.decoratorId) || (dot.source !== "links" && use !== "all")) continue;
 			const key = `${cell.target.path}\n${dot.decoratorId}\n${notePath}`;
 			const labelClasses = classes.filter((name) => !LABEL_CLASSES_LEFT_OUT.includes(name));
 			if (!rows.has(key)) rows.set(key, { kind, label, labelClasses, startsOn: startsOn ?? cell.target.date, cell, dot, notePath });
@@ -104,10 +100,10 @@ export function referenceRows(
 			for (const day of row.days) add(day, "day", day.label, dayClasses(day));
 		}
 	}
-	const sortKey = (row: ReferenceRow): [string, number, number, string] => [
+	const sortKey = (row: AgendaRow): [string, number, number, string] => [
 		isoDate(row.startsOn),
 		KIND_ORDER.indexOf(row.kind),
-		decoratorOrder.indexOf(row.dot.decoratorId),
+		listedDecorators.indexOf(row.dot.decoratorId),
 		nameOf(row.notePath).toLowerCase(),
 	];
 	return [...rows.values()].sort((one, other) => compareKeys(sortKey(one), sortKey(other)));

@@ -14,14 +14,14 @@ import type { NoteTarget } from "./model.ts";
 import { anchorAfterDayChange, monthAfterDayChange, sameDay, shiftMonth, shiftWeek, startOfMonthBefore, startOfNextMonth } from "./navigation.ts";
 import { createNoteDotsReader, localeWeekRule, momentOf } from "./obsidianHost.ts";
 import { activeNoteTouchesVisible, touchesVisible } from "./paths.ts";
-import { renderReferences } from "./referenceList.ts";
-import type { ReferenceHandlers } from "./referenceList.ts";
-import type { SelectedDateNote } from "./references.ts";
-import { calendarModels, dotName, focusedDateNote, noteName, references } from "./screen.ts";
+import { renderAgenda } from "./agendaList.ts";
+import type { AgendaHandlers } from "./agendaList.ts";
+import type { SelectedDateNote } from "./agenda.ts";
+import { agendaOf, calendarModels, dotName, focusedDateNote, noteName } from "./screen.ts";
 import type { ScreenContext } from "./screen.ts";
 import { renderCalendar } from "./render.ts";
 import type { CalendarHandlers } from "./render.ts";
-import { todayRowIndex } from "./settings.ts";
+import { ADJACENT_DIMS, todayRowIndex } from "./settings.ts";
 import type { CalendarSettings } from "./settings.ts";
 import { singleFlight } from "./singleFlight.ts";
 import { weekRuleOf } from "./weeks.ts";
@@ -34,6 +34,7 @@ export const CALENDAR_RENDERED_EVENT = "date-compass:calendar-rendered";
 const ROOT_CLASS = "date-compass-calendar";
 const MOBILE_CLASS = "is-mobile";
 const DIMS_WITHOUT_NOTE_CLASS = "dims-without-note";
+const ADJACENT_DIM_CLASS_PREFIX = "adjacent-dim-";
 const CONTEXT_MENU_SOURCE = "calendar-context-menu";
 const DELETE_ICON = "trash";
 const RENDER_DEBOUNCE_MS = 50;
@@ -46,7 +47,7 @@ export class CalendarView extends ItemView implements HoverParent {
 	private readonly dots = createNoteDotsReader(this.app, (path) => this.noteChanged(path));
 	private readonly requestRender = debounce(() => this.renderWhenShown(), RENDER_DEBOUNCE_MS, false);
 	private readonly openOncePerPath = singleFlight();
-	private readonly referenceHandlers: ReferenceHandlers = {
+	private readonly agendaHandlers: AgendaHandlers = {
 		open: (notePath, event) => void this.app.workspace.openLinkText(notePath, "", Keymap.isModEvent(event)),
 		hover: (notePath, event, targetEl) => this.previewPath(notePath, event, targetEl),
 		dotName: (decoratorId) => dotName(this.settings(), decoratorId),
@@ -157,7 +158,7 @@ export class CalendarView extends ItemView implements HoverParent {
 		const focused = focusedDateNote(this.app, this.settings());
 		if (focused && focused.path !== this.selected?.path) {
 			this.selected = focused;
-			if (this.settings().calendar.references === "selected") {
+			if (this.settings().calendar.agenda === "selected") {
 				this.requestRender();
 				return;
 			}
@@ -204,11 +205,12 @@ export class CalendarView extends ItemView implements HoverParent {
 		const { models, paths } = calendarModels(context, grids, calendar.showWeekNumbers);
 		this.root.empty();
 		this.root.toggleClass(DIMS_WITHOUT_NOTE_CLASS, calendar.dimWithoutNote);
+		for (const dim of ADJACENT_DIMS) this.root.toggleClass(`${ADJACENT_DIM_CLASS_PREFIX}${dim}`, dim === calendar.adjacentDim);
 		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months: models }, this.handlers);
-		if (calendar.references !== "off") {
-			const listed = references(context, calendar.references, models, this.selected);
+		if (calendar.agenda !== "off") {
+			const listed = agendaOf(context, calendar.agenda, models, this.selected);
 			for (const path of listed.paths) paths.add(path);
-			renderReferences(this.root, listed.rows, t(calendar.references === "selected" && !this.selected ? "referencesNoSelection" : "referencesNone"), (path) => noteName(this.app, path), this.referenceHandlers);
+			renderAgenda(this.root, listed.rows, t(calendar.agenda === "selected" && !this.selected ? "agendaNoSelection" : "agendaNone"), (path) => noteName(this.app, path), this.agendaHandlers);
 		}
 		this.visiblePaths = paths;
 		this.renderedActivePath = activePath;

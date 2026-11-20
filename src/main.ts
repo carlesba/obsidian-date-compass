@@ -77,7 +77,7 @@ export default class DateCompassPlugin extends Plugin {
 
 	private syncRibbon(): void {
 		if (!this.app.workspace.layoutReady) return;
-		this.ribbonButtons.sync(ribbonButtons(this.settings.ribbonButtons, this.settings, [t("calendarRibbonTooltip"), t("referencesRibbonTooltip")]));
+		this.ribbonButtons.sync(ribbonButtons(this.settings.ribbonButtons, this.settings, [t("calendarRibbonTooltip"), t("agendaRibbonTooltip")]));
 	}
 
 	resetSettings(): void {

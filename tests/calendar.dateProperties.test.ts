@@ -69,6 +69,10 @@ test("a stored date property entry keeps its property and filter", () => {
 	assert.equal(stored.source, "dateProperty");
 	assert.equal(stored.dateProperty, "deadline");
 	assert.equal(stored.showWithoutNote, true);
+	assert.equal(stored.inAgenda, true);
+	assert.equal(mergeDecorators([{ id: "dots-1", source: "links", inAgenda: true }], undefined)[0].inAgenda, true);
+	assert.equal(mergeDecorators([{ id: "dots-1", source: "links" }], undefined)[0].inAgenda, false);
+	assert.equal(mergeDecorators([{ id: "dots-1", source: "words", inAgenda: true }], undefined)[0].inAgenda, false);
 	const [words] = mergeDecorators([{ id: "dots-1", source: "words", dateProperty: "deadline" }], undefined);
 	assert.equal(words.dateProperty, "");
 });
@@ -88,6 +92,9 @@ test("the property control writes only on date property dots, and the row names 
 	assert.equal(decoratorWarning(dated, {}), undefined);
 	assert.equal(decoratorWarning(dated, { deadline: "date" }), undefined);
 	assert.equal(decoratorWarning({ ...dated, dateProperty: "dealine" }, { deadline: "date" }), "No note has a property named dealine. Check the spelling.");
+	assert.equal(writeControl(settings, decoratorKey("dots-dated", "inAgenda"), false), true);
+	assert.equal(settings.calendar.decorators[2].inAgenda, false);
+	assert.equal(writeControl(settings, decoratorKey(settings.calendar.decorators[0].id, "inAgenda"), true), false);
 	assert.equal(writeControl(settings, decoratorKey("dots-dated", "source"), "words"), true);
 	assert.equal(settings.calendar.decorators[2].dateProperty, "");
 });

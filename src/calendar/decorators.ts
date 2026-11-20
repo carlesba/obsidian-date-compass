@@ -39,7 +39,7 @@ export interface LinkLocation {
 	property?: string;
 }
 
-export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "linkPlaces", "dateProperty"] as const;
+export const DECORATOR_FIELDS = ["name", "source", "count", "amountPerDot", "maxDots", "shape", "color", "position", "showWithoutNote", "cells", "times", "linkPlaces", "dateProperty", "inAgenda"] as const;
 export type DecoratorField = (typeof DECORATOR_FIELDS)[number];
 
 export interface DotDecorator {
@@ -53,6 +53,7 @@ export interface DotDecorator {
 	color: DotColor;
 	position: DotPosition;
 	showWithoutNote: boolean;
+	inAgenda: boolean;
 	cells: DotCell[];
 	times: DotTime[];
 	linkPlaces: LinkPlace[];
@@ -82,10 +83,10 @@ export const DEFAULT_WORDS_PER_DOT = 250;
 const DECORATOR_ID_PREFIX = "dots";
 
 const SOURCE_DEFAULTS: Record<DotSource, Omit<DotDecorator, "id" | "name" | "source" | "cells" | "times" | "linkPlaces" | "dateProperty" | keyof LinkingNoteFilters>> = {
-	words: { count: "perAmount", amountPerDot: DEFAULT_WORDS_PER_DOT, maxDots: MAX_DOTS, shape: "filled", color: "default", position: "below", showWithoutNote: false },
-	openTasks: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false },
-	links: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "accent", position: "below", showWithoutNote: true },
-	dateProperty: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "red", position: "below", showWithoutNote: true },
+	words: { count: "perAmount", amountPerDot: DEFAULT_WORDS_PER_DOT, maxDots: MAX_DOTS, shape: "filled", color: "default", position: "below", showWithoutNote: false, inAgenda: false },
+	openTasks: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "hollow", color: "default", position: "below", showWithoutNote: false, inAgenda: false },
+	links: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "accent", position: "below", showWithoutNote: true, inAgenda: false },
+	dateProperty: { count: "presence", amountPerDot: 1, maxDots: 1, shape: "filled", color: "red", position: "below", showWithoutNote: true, inAgenda: true },
 };
 
 export function readsNotes(source: DotSource): source is NoteSource {
@@ -149,6 +150,7 @@ function mergeDecorator(data: Record<string, unknown>, earlier: readonly DotDeco
 		color: oneOf(DOT_COLORS, data.color, defaults.color),
 		position: oneOf(DOT_POSITIONS, data.position, defaults.position),
 		showWithoutNote: typeof data.showWithoutNote === "boolean" ? data.showWithoutNote : defaults.showWithoutNote,
+		inAgenda: readsNotes(source) && typeof data.inAgenda === "boolean" ? data.inAgenda : defaults.inAgenda,
 		cells: validCells(data.cells) ?? [...DOT_CELLS],
 		times: validTimes(data.times) ?? [...DOT_TIMES],
 		linkPlaces: source === "links" ? (validLinkPlaces(data.linkPlaces) ?? []) : [],
