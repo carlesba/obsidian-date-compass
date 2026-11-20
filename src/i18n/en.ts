@@ -165,8 +165,10 @@ export const en = {
 	askDates: "Dates",
 	commandAsksDate: "Which date for {name}?",
 	commandAsksDates: "Which dates for {name}?",
-	commandLink: "Each date as link",
-	commandLinkDesc: "Write each date as a link to its note. Off writes plain text. In a property that is the format of the property type: YYYY-MM-DD for date, with the time for date and time, and the note name otherwise. In the note body it is the note name, or the link text when you ask for it.",
+	commandLink: "Write each date as",
+	commandLinkDesc: "Link writes a link to the note of each date. Plain text writes the date in the format its place expects, read from the property type: YYYY-MM-DD in a date property, with the time in a date and time property, and the note name in any other property. In the note body it is the note name, or the link text when you ask for it.",
+	writeAsLink: "Link",
+	writeAsText: "Plain text",
 
 	commandsList: "Commands",
 	noCommandsYet: "No commands yet. Add one to write dates from the command palette.",

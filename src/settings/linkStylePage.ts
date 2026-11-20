@@ -55,6 +55,10 @@ export function targetNames(targets: readonly Period[]): string {
 	return targets.map((period) => t(PERIOD_LABELS[period])).join(", ");
 }
 
+export function linkStyleItem(section: LinkStyleSection, field: LinkStyleField): SettingGroupItem | undefined {
+	return linkFields(section)[field] ?? linkTextFields(section)[field];
+}
+
 export function linkStyleItems(section: LinkStyleSection): SettingDefinitionItem[] {
 	const shown = LINK_STYLE_FIELDS.filter((field) => (section.fields ?? LINK_STYLE_FIELDS).includes(field));
 	const shownOf = (fields: Partial<Record<LinkStyleField, SettingGroupItem>>): SettingGroupItem[] =>

@@ -5,8 +5,9 @@ import { commandName, commandWarning, newCommand } from "../commands/settings.ts
 import type { AskKind, CommandDestination, DateCommand, WriteMode } from "../commands/settings.ts";
 import type { LinkStyleField } from "../insertion/linkStyle.ts";
 import { commandKey, commandKeyPrefix } from "./controlKeys.ts";
+import type { WriteAs } from "./controlKeys.ts";
 import { moveEntry } from "./entryList.ts";
-import { linkStyleItems } from "./linkStylePage.ts";
+import { linkStyleItem, linkStyleItems } from "./linkStylePage.ts";
 import type { LinkStyleHost } from "./linkStylePage.ts";
 import type { IdentifiedPage } from "./pages.ts";
 import { LIST_ROW_EDIT_CLASS, leadWithListControls } from "./listRow.ts";
@@ -37,9 +38,14 @@ export const DESTINATION_LABELS: Record<CommandDestination, TranslationKey> = {
 	cursor: "destinationCursor",
 };
 
-const LINK_STYLE_FIELDS_BY_DESTINATION: Record<CommandDestination, readonly LinkStyleField[]> = {
-	property: ["targets", "linkPath", "aliasShape", "aliasFormat"],
-	cursor: ["targets", "template", "linkPath", "separator", "aliasShape", "aliasFormat"],
+const WRITE_AS_LABELS: Record<WriteAs, TranslationKey> = {
+	link: "writeAsLink",
+	text: "writeAsText",
+};
+
+const LINK_STYLE_FIELDS_BY_DESTINATION: Record<CommandDestination, Record<WriteAs, readonly LinkStyleField[]>> = {
+	property: { link: ["targets", "aliasShape", "aliasFormat"], text: ["targets"] },
+	cursor: { link: ["targets", "template", "separator", "aliasShape", "aliasFormat"], text: ["targets", "template", "separator", "aliasShape", "aliasFormat"] },
 };
 
 const SUMMARIES: Record<WriteMode, TranslationKey> = {
@@ -107,6 +113,9 @@ function commandRow(command: DateCommand, context: CommandsPageContext): Setting
 
 function commandPage(command: DateCommand, context: CommandsPageContext): IdentifiedPage {
 	const writesToProperty = command.destination === "property";
+	const writeAs: WriteAs = command.link ? "link" : "text";
+	const style = { keyPrefix: commandKeyPrefix(command.id), style: () => command, host: context };
+	const linkPath = linkStyleItem(style, "linkPath");
 	return {
 		type: "page",
 		id: commandPageId(command),
@@ -127,10 +136,11 @@ function commandPage(command: DateCommand, context: CommandsPageContext): Identi
 							]
 						: []),
 					{ name: t("commandAsks"), desc: t("commandAsksDesc"), control: { type: "dropdown", key: commandKey(command.id, "asks"), options: translatedLabels(ASK_LABELS) } },
-					{ name: t("commandLink"), desc: t("commandLinkDesc"), control: { type: "toggle", key: commandKey(command.id, "link") } },
+					{ name: t("commandLink"), desc: t("commandLinkDesc"), control: { type: "dropdown", key: commandKey(command.id, "link"), options: translatedLabels(WRITE_AS_LABELS) } },
+					...(command.link && linkPath ? [linkPath] : []),
 				],
 			},
-			...linkStyleItems({ keyPrefix: commandKeyPrefix(command.id), style: () => command, host: context, fields: LINK_STYLE_FIELDS_BY_DESTINATION[command.destination] }),
+			...linkStyleItems({ ...style, fields: LINK_STYLE_FIELDS_BY_DESTINATION[command.destination][writeAs] }),
 		],
 	};
 }

@@ -248,11 +248,20 @@ test("a property command page shows the property and add or replace, and no temp
 		"Property to set",
 		"When the property already has a value",
 		"What it asks for",
-		"Each date as link",
-		"Target periods",
+		"Write each date as",
 		"Path in each link",
+		"Target periods",
 		"What the link text says",
 		"Date format of the link text",
+	]);
+	assert.deepEqual(namesOf(commandPageOf({ ...ADD_DATES, link: false }).items ?? []), [
+		"Name",
+		"Where it writes",
+		"Property to set",
+		"When the property already has a value",
+		"What it asks for",
+		"Write each date as",
+		"Target periods",
 	]);
 });
 
@@ -262,10 +271,10 @@ test("a cursor command page hides the property fields and shows the template and
 		"Name",
 		"Where it writes",
 		"What it asks for",
-		"Each date as link",
+		"Write each date as",
+		"Path in each link",
 		"Target periods",
 		"Text around each link",
-		"Path in each link",
 		"Between several links",
 		"What the link text says",
 		"Date format of the link text",

@@ -167,8 +167,10 @@ export const es: Translation = {
 	askDates: "Fechas",
 	commandAsksDate: "¿Qué fecha para {name}?",
 	commandAsksDates: "¿Qué fechas para {name}?",
-	commandLink: "Cada fecha como enlace",
-	commandLinkDesc: "Escribe cada fecha como un enlace a su nota. Si está desactivado, escribe texto. En una propiedad es el formato del tipo de propiedad: AAAA-MM-DD para fecha, con la hora para fecha y hora, y el nombre de la nota en los demás casos. En el cuerpo de la nota es el nombre de la nota, o el texto del enlace cuando lo pides.",
+	commandLink: "Escribir cada fecha como",
+	commandLinkDesc: "Enlace escribe un enlace a la nota de cada fecha. Texto plano escribe la fecha en el formato que espera su sitio, según el tipo de la propiedad: AAAA-MM-DD en una propiedad de fecha, con la hora en una de fecha y hora, y el nombre de la nota en cualquier otra propiedad. En el cuerpo de la nota es el nombre de la nota, o el texto del enlace cuando lo pides.",
+	writeAsLink: "Enlace",
+	writeAsText: "Texto plano",
 
 	commandsList: "Comandos",
 	noCommandsYet: "Aún no hay comandos. Añade uno para escribir fechas desde la paleta de comandos.",

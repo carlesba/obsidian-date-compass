@@ -287,14 +287,18 @@ function commandControlOfKey(settings: DateCompassSettings, key: string): Comman
 	return parts && command ? { command, field: parts.field } : undefined;
 }
 
+export const WRITE_AS_CHOICES = ["link", "text"] as const;
+export type WriteAs = (typeof WRITE_AS_CHOICES)[number];
+
 function readCommandControl({ command, field }: CommandControl): unknown {
+	if (field === "link") return command.link ? "link" : "text";
 	return command[field];
 }
 
 function writeCommandControl({ command, field }: CommandControl, value: unknown): boolean {
 	switch (field) {
 		case "link":
-			return writeBoolean(value, (link) => (command.link = link));
+			return writeChoice(WRITE_AS_CHOICES, value, (writeAs) => (command.link = writeAs === "link"));
 		case "asks":
 			return writeChoice(ASK_KINDS, value, (asks) => (command.asks = asks));
 		case "mode":

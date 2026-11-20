@@ -176,7 +176,8 @@ test("the command controls read and write every field of a command and refuse ba
 	assert.equal(readControl(settings, key("property")), "dates");
 	assert.equal(writeControl(settings, key("property"), "when"), true);
 	assert.equal(writeControl(settings, key("name"), "Mine"), true);
-	assert.equal(writeControl(settings, key("link"), false), true);
+	assert.equal(writeControl(settings, key("link"), "text"), true);
+	assert.equal(readControl(settings, key("link")), "text");
 	assert.equal(writeControl(settings, key("asks"), "date"), true);
 	assert.equal(readControl(settings, key("mode")), "add");
 	assert.equal(writeControl(settings, key("mode"), "replace"), true);
@@ -186,7 +187,7 @@ test("the command controls read and write every field of a command and refuse ba
 	assert.deepEqual(settings.commands[1], { ...STYLE, id: "set-dates", name: "Mine", destination: "cursor", property: "when", mode: "replace", asks: "date", link: false });
 	assert.equal(writeControl(settings, key("asks"), "periodicNote"), false);
 	assert.equal(writeControl(settings, key("mode"), "append"), false);
-	assert.equal(writeControl(settings, key("link"), "no"), false);
+	assert.equal(writeControl(settings, key("link"), false), false);
 	assert.equal(writeControl(settings, key("name"), 3), false);
 	assert.equal(writeControl(settings, "commands/set-dates/enabled", false), false);
 	assert.equal(writeControl(settings, commandKey("missing", "name"), "x"), false);
@@ -221,7 +222,7 @@ test("each command has one page with all its fields and nothing nests below it",
 	const [, hidden] = (page.items ?? []) as unknown as [unknown, { items: { id: string; items: unknown[] }[] }];
 	assert.equal(hidden.items.length, 3);
 	assert.deepEqual(controlKeysOf(hidden.items[1].items), ["name", "destination", "property", "mode", "asks", "link", "linkPath", "aliasShape"].map((field) => `commands/set-dates/${field}`));
-	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "destination", "asks", "link", "template", "linkPath", "separator", "aliasShape"].map((field) => `commands/insert-dates/${field}`));
+	assert.deepEqual(controlKeysOf(hidden.items[0].items), ["name", "destination", "asks", "link", "linkPath", "template", "separator", "aliasShape"].map((field) => `commands/insert-dates/${field}`));
 	assert.equal(pagePath([{ type: "group", items: [page] }], "command-set-reminders")?.join("/"), "commands/command-set-reminders");
 	assert.equal(pagePath([page], "nowhere"), undefined);
 });
