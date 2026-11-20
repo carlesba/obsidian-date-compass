@@ -19,6 +19,7 @@ import { RibbonButtons } from "./ribbon/sync.ts";
 
 export default class DateCompassPlugin extends Plugin {
 	settings: DateCompassSettings = defaultSettings();
+	private settingTab?: DateCompassSettingTab;
 	readonly api = createObsidianDateCompassApi(this.app, () => this.settings);
 	private interfaceLanguage = DEFAULT_LANGUAGE;
 	private readonly paletteCommands = new PaletteCommands(this, ({ id, name, needsEditor, command }) =>
@@ -54,7 +55,8 @@ export default class DateCompassPlugin extends Plugin {
 		}
 		setLanguage(this.interfaceLanguage);
 		this.settings = mergeSettings(await this.loadData(), this.interfaceLanguage);
-		this.addSettingTab(new DateCompassSettingTab(this.app, this));
+		this.settingTab = new DateCompassSettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 		registerDateNoteCommands(this, () => this.settings.dateNotes);
 		registerCalendar(this, () => this.settings);
 		this.addCommand({
@@ -90,8 +92,18 @@ export default class DateCompassPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
+	async onExternalSettingsChange(): Promise<void> {
+		this.settings = mergeSettings(await this.loadData(), this.interfaceLanguage);
+		this.applySettings();
+		this.settingTab?.update();
+	}
+
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
+		this.applySettings();
+	}
+
+	private applySettings(): void {
 		this.paletteCommands.sync(this.settings.commands);
 		this.syncRibbon();
 		refreshCalendars(this.app);
