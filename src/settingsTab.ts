@@ -25,7 +25,7 @@ import { enabledPluginsWithTriggers, slashCommandsEnabled } from "./mentions/obs
 import type { Mention } from "./mentions/settings.ts";
 import { commandsPage } from "./settings/commandsPage.ts";
 import { localizationPage } from "./settings/localizationPage.ts";
-import { pagePath } from "./settings/pages.ts";
+import { pageAt, pagePath } from "./settings/pages.ts";
 import { renderFilter } from "./settings/filterEditor.ts";
 import { createFilterVault, propertySuggestions, propertyTypesOf } from "./filters/obsidianVault.ts";
 import type { PropertySuggestion } from "./filters/obsidianVault.ts";
@@ -40,8 +40,12 @@ const WEEK_FORMAT_KEY = periodKey("week", "format");
 
 const TYPING_PAUSE_MS = 800;
 
+interface OpenSettingPage {
+	page?: { tab?: unknown; pagePath?: unknown; title?: unknown };
+}
+
 interface AppWithSettingModal {
-	setting?: { openPagePath?: (tabId: string, path: string[]) => unknown };
+	setting?: { openPagePath?: (tabId: string, path: string[]) => unknown; pageStack?: unknown; updatePageTitle?: () => void };
 }
 
 function sectionPage(name: TranslationKey, desc: TranslationKey, items: SettingDefinitionItem[] = []): SettingDefinitionPage {
@@ -243,6 +247,22 @@ export class DateCompassSettingTab extends PluginSettingTab {
 		mutate();
 		await this.plugin.saveSettings();
 		this.update();
+	}
+
+	update(): void {
+		super.update();
+		this.refreshOpenPageTitles();
+	}
+
+	private refreshOpenPageTitles(): void {
+		const modal = (this.app as App & AppWithSettingModal).setting;
+		if (!Array.isArray(modal?.pageStack) || typeof modal.updatePageTitle !== "function") return;
+		for (const { page } of modal.pageStack as OpenSettingPage[]) {
+			if (page?.tab !== this || !Array.isArray(page.pagePath)) continue;
+			const definition = pageAt(this.settingItems, page.pagePath as string[]);
+			if (definition) page.title = definition.name;
+		}
+		modal.updatePageTitle();
 	}
 
 	private openPage(pageId: string): void {

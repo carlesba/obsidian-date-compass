@@ -12,7 +12,7 @@ import { mentionsPage } from "../src/settings/mentionsPage.ts";
 import { moment } from "./moment.ts";
 import { localizationPage } from "../src/settings/localizationPage.ts";
 import type { LanguageChoice, LocalizationPageContext } from "../src/settings/localizationPage.ts";
-import { pagePath } from "../src/settings/pages.ts";
+import { pageAt, pagePath } from "../src/settings/pages.ts";
 import { DEFAULT_LANGUAGE, setLanguage } from "../src/i18n/index.ts";
 import type { DateCompassSettings, ParserLanguage } from "../src/settings.ts";
 import { presetCommands } from "../src/commands/settings.ts";
@@ -367,6 +367,8 @@ test("Mentions is a page with one row per mention and a hidden page for each", (
 	assert.equal(((page().items ?? [])[1] as unknown as ItemLike).visible, false);
 	assert.deepEqual(subPages().map((subPage) => [subPage.id, subPage.name]), [["mention-day", "@"], ["mention-month", "#"]]);
 	assert.deepEqual(pagePath([{ type: "group", items: [page()] }], "mention-month"), ["mentions", "mention-month"]);
+	assert.equal(pageAt([{ type: "group", items: [page()] }], ["mentions", "mention-month"])?.name, "#");
+	assert.equal(pageAt([{ type: "group", items: [page()] }], ["mentions", "mention-week"]), undefined);
 });
 
 test("the page of a mention has its trigger first, then its link style, and flags a clashing trigger", () => {

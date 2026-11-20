@@ -21,3 +21,18 @@ export function pagePath(items: readonly SettingDefinitionItem[], pageId: string
 	}
 	return undefined;
 }
+
+export function pageAt(items: readonly SettingDefinitionItem[], path: readonly string[]): SettingDefinitionPage | undefined {
+	const [first, ...rest] = path;
+	if (first === undefined) return undefined;
+	for (const item of items) {
+		if (!("type" in item)) continue;
+		if (item.type === "page") {
+			if (pageIdOf(item) !== first) continue;
+			return rest.length === 0 ? item : item.items && pageAt(item.items, rest);
+		}
+		const inGroup = item.items && pageAt(item.items, path);
+		if (inGroup) return inGroup;
+	}
+	return undefined;
+}
