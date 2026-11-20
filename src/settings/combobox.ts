@@ -1,4 +1,5 @@
-import { SearchComponent, setIcon } from "obsidian";
+import { Platform, SearchComponent, SuggestModal, setIcon } from "obsidian";
+import type { App } from "obsidian";
 
 export interface ComboboxItem {
 	value: string;
@@ -9,6 +10,7 @@ export interface ComboboxItem {
 }
 
 export interface ComboboxOptions {
+	app: App;
 	items: () => ComboboxItem[];
 	placeholder: string;
 	searchPlaceholder: string;
@@ -16,7 +18,7 @@ export interface ComboboxOptions {
 	extraItem?: (query: string, items: readonly ComboboxItem[]) => ComboboxItem | undefined;
 }
 
-export type ComboboxListOptions = Pick<ComboboxOptions, "items" | "searchPlaceholder" | "extraItem">;
+export type ComboboxListOptions = Pick<ComboboxOptions, "app" | "items" | "searchPlaceholder" | "extraItem">;
 
 const POPOVER_GAP = 5;
 
@@ -27,7 +29,7 @@ export class Combobox {
 	private readonly options: ComboboxOptions;
 	private selected: ComboboxItem | undefined;
 	private disabled = false;
-	private popover: ComboboxPopover | undefined;
+	private popover: OpenComboboxList | undefined;
 
 	constructor(parentEl: HTMLElement, options: ComboboxOptions) {
 		this.options = options;
@@ -83,7 +85,7 @@ export class Combobox {
 		if (this.disabled || this.popover) return;
 		this.buttonEl.addClass("has-focus");
 		this.buttonEl.setAttribute("aria-expanded", "true");
-		this.popover = new ComboboxPopover(this.buttonEl, this.options, this.selected?.value, query, {
+		this.popover = openComboboxList(this.buttonEl, this.options, this.selected?.value, query, {
 			choose: (item) => {
 				this.close();
 				this.setValue(item);
@@ -109,7 +111,68 @@ export interface PopoverActions {
 	dismiss: () => void;
 }
 
-export class ComboboxPopover {
+export interface OpenComboboxList {
+	destroy(): void;
+}
+
+export function openComboboxList(
+	anchorEl: HTMLElement,
+	options: ComboboxListOptions,
+	selectedValue: string | undefined,
+	query: string,
+	actions: PopoverActions,
+): OpenComboboxList {
+	if (Platform.isMobile) return new ComboboxModal(options, selectedValue, query, actions);
+	return new ComboboxPopover(anchorEl, options, selectedValue, query, actions);
+}
+
+class ComboboxModal extends SuggestModal<ComboboxItem> implements OpenComboboxList {
+	private settled = false;
+
+	constructor(
+		private readonly options: ComboboxListOptions,
+		private readonly selectedValue: string | undefined,
+		query: string,
+		private readonly actions: PopoverActions,
+	) {
+		super(options.app);
+		this.setPlaceholder(options.searchPlaceholder);
+		this.open();
+		if (query === "") return;
+		this.inputEl.value = query;
+		this.inputEl.dispatchEvent(new Event("input"));
+	}
+
+	getSuggestions(query: string): ComboboxItem[] {
+		return shownItems(this.options, query);
+	}
+
+	renderSuggestion(item: ComboboxItem, el: HTMLElement): void {
+		renderItemContent(item, el, this.selectedValue);
+	}
+
+	selectSuggestion(item: ComboboxItem, evt: MouseEvent | KeyboardEvent): void {
+		this.settled = true;
+		super.selectSuggestion(item, evt);
+	}
+
+	onChooseSuggestion(item: ComboboxItem): void {
+		this.actions.choose(item);
+	}
+
+	onClose(): void {
+		if (this.settled) return;
+		this.settled = true;
+		this.actions.dismiss();
+	}
+
+	destroy(): void {
+		this.settled = true;
+		this.close();
+	}
+}
+
+class ComboboxPopover implements OpenComboboxList {
 	private readonly suggestEl: HTMLElement;
 	private readonly listEl: HTMLElement;
 	private readonly search: SearchComponent;
@@ -171,11 +234,7 @@ export class ComboboxPopover {
 	}
 
 	private render(fromTyping: boolean): void {
-		const query = this.search.getValue().trim().toLowerCase();
-		const items = this.options.items();
-		this.shown = query === "" ? items : items.filter((item) => matches(item, query));
-		const extra = this.options.extraItem?.(this.search.getValue().trim(), items);
-		if (extra) this.shown.push(extra);
+		this.shown = shownItems(this.options, this.search.getValue());
 		this.listEl.empty();
 		this.shown.forEach((item, index) => this.renderItem(item, index));
 		const selectedIndex = this.shown.findIndex((item) => item.value === this.selectedValue);
@@ -183,16 +242,8 @@ export class ComboboxPopover {
 	}
 
 	private renderItem(item: ComboboxItem, index: number): void {
-		const itemEl = this.listEl.createDiv({ cls: ["suggestion-item", "mod-complex", "mod-toggle"] });
-		if (item.value === this.selectedValue) setIcon(itemEl.createDiv({ cls: ["suggestion-icon", "mod-checked"] }), "lucide-check");
-		if (item.icon) {
-			const flairEl = itemEl.createDiv({ cls: "suggestion-icon" }).createSpan({ cls: "suggestion-flair" });
-			setIcon(flairEl, item.icon);
-		}
-		const titleEl = itemEl.createDiv({ cls: "suggestion-content" }).createDiv({ cls: "suggestion-title" });
-		if (item.render) item.render(titleEl);
-		else titleEl.setText(item.label);
-		if (item.detail) itemEl.createDiv({ cls: "suggestion-aux" }).createSpan({ cls: ["suggestion-flair", "u-small"], text: item.detail });
+		const itemEl = this.listEl.createDiv({ cls: "suggestion-item" });
+		renderItemContent(item, itemEl, this.selectedValue);
 		itemEl.addEventListener("mousemove", () => this.highlight(index, false));
 		itemEl.addEventListener("click", (event) => {
 			event.preventDefault();
@@ -221,6 +272,28 @@ export class ComboboxPopover {
 		const left = Math.max(POPOVER_GAP, Math.min(rect.left, win.innerWidth - width - POPOVER_GAP));
 		this.suggestEl.setCssStyles({ top: `${top}px`, left: `${left}px` });
 	}
+}
+
+function shownItems(options: ComboboxListOptions, rawQuery: string): ComboboxItem[] {
+	const typed = rawQuery.trim();
+	const query = typed.toLowerCase();
+	const items = options.items();
+	const shown = query === "" ? items : items.filter((item) => matches(item, query));
+	const extra = options.extraItem?.(typed, items);
+	return extra ? [...shown, extra] : shown;
+}
+
+function renderItemContent(item: ComboboxItem, itemEl: HTMLElement, selectedValue: string | undefined): void {
+	itemEl.addClasses(["mod-complex", "mod-toggle"]);
+	if (item.value === selectedValue) setIcon(itemEl.createDiv({ cls: ["suggestion-icon", "mod-checked"] }), "lucide-check");
+	if (item.icon) {
+		const flairEl = itemEl.createDiv({ cls: "suggestion-icon" }).createSpan({ cls: "suggestion-flair" });
+		setIcon(flairEl, item.icon);
+	}
+	const titleEl = itemEl.createDiv({ cls: "suggestion-content" }).createDiv({ cls: "suggestion-title" });
+	if (item.render) item.render(titleEl);
+	else titleEl.setText(item.label);
+	if (item.detail) itemEl.createDiv({ cls: "suggestion-aux" }).createSpan({ cls: ["suggestion-flair", "u-small"], text: item.detail });
 }
 
 function matches(item: ComboboxItem, query: string): boolean {

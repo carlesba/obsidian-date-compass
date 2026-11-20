@@ -242,6 +242,7 @@ function renderRule(parentEl: HTMLElement, rule: FilterRule, place: GroupPlace &
 
 function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: FilterGroup, editing: FilterEditing): void {
 	const combobox = new Combobox(expressionEl, {
+		app: editing.app,
 		items: () => fieldItems(editing),
 		placeholder: t("filterProperty"),
 		searchPlaceholder: t("filterSearch"),
@@ -293,6 +294,7 @@ function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, ru
 	const { operator } = rule.condition;
 	const operators = Object.entries(operatorOptions(type, operator)).map(([value, label]) => ({ value, label }));
 	const combobox = new Combobox(expressionEl, {
+		app: editing.app,
 		items: () => operators,
 		placeholder: "",
 		searchPlaceholder: t("filterSearch"),

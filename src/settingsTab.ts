@@ -29,7 +29,8 @@ import { pagePath } from "./settings/pages.ts";
 import { renderFilter } from "./settings/filterEditor.ts";
 import { createFilterVault, propertySuggestions, propertyTypesOf } from "./filters/obsidianVault.ts";
 import type { PropertySuggestion } from "./filters/obsidianVault.ts";
-import { ComboboxPopover } from "./settings/combobox.ts";
+import { openComboboxList } from "./settings/combobox.ts";
+import type { OpenComboboxList } from "./settings/combobox.ts";
 
 const MENTION_FIELDS_THAT_CHANGE_THE_PAGE: readonly MentionControlField[] = ["targets", "aliasShape"];
 
@@ -186,9 +187,10 @@ export class DateCompassSettingTab extends PluginSettingTab {
 	}
 
 	private search(anchor: HTMLElement, choices: Choice<string>[], typedChoice: (query: string) => Choice<string> | undefined, pick: (value: string) => void): void {
-		const popover: ComboboxPopover = new ComboboxPopover(
+		const popover: OpenComboboxList = openComboboxList(
 			anchor,
 			{
+				app: this.app,
 				items: () => choices.map((choice) => ({ value: choice.value, label: choice.name })),
 				searchPlaceholder: t("filterSearch"),
 				extraItem: (query) => {
