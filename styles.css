@@ -449,6 +449,22 @@
 	color: var(--text-muted);
 }
 
+.date-compass-calendar:has(> .calendar + .agenda) {
+	display: flex;
+	flex-direction: column;
+	block-size: 100%;
+}
+
+.date-compass-calendar:has(> .calendar + .agenda) > :is(.nav, .calendar) {
+	flex-shrink: 0;
+}
+
+.date-compass-calendar > .calendar + .agenda {
+	flex: 1;
+	min-block-size: 3rem;
+	overflow-y: auto;
+}
+
 .date-compass-calendar .agenda {
 	margin-top: var(--size-4-3);
 	padding-top: var(--size-4-2);
