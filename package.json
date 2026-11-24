@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-date-compass",
-	"version": "0.10.1",
+	"version": "0.11.0",
 	"description": "Type dates the way you say them and link them to your date notes.",
 	"main": "main.js",
 	"private": true,
