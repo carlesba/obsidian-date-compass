@@ -4,6 +4,7 @@ import { isoDate } from "../src/parse/calendar.ts";
 import type { CivilDate } from "../src/parse/calendar.ts";
 import { dayRange } from "../src/calendar/dateProperties.ts";
 import type { DateRange } from "../src/calendar/dateProperties.ts";
+import { decoratorOf } from "../src/calendar/decorators.ts";
 import type { Dot, DotPlace, DotReference } from "../src/calendar/decorators.ts";
 import { monthGrid, weeksAroundGrid } from "../src/calendar/grid.ts";
 import type { MonthGrid } from "../src/calendar/grid.ts";
@@ -11,7 +12,7 @@ import { headerParts } from "../src/calendar/header.ts";
 import { calendarModel } from "../src/calendar/model.ts";
 import type { CalendarModel } from "../src/calendar/model.ts";
 import { visibleNotes } from "../src/calendar/paths.ts";
-import { agendaRows, agendaSections, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "../src/calendar/agenda.ts";
+import { agendaLists, agendaRows, agendaSections, hiddenListsOf, toggledList, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "../src/calendar/agenda.ts";
 import type { SelectedDateNote } from "../src/calendar/agenda.ts";
 import { ISO_WEEK_RULE } from "../src/calendar/weeks.ts";
 import { dateNotesWithoutQuarter } from "./fixtures.ts";
@@ -116,4 +117,26 @@ test("month headings start each month other than the shown one, and turned off t
 		agendaSections(rows, november, false).map((section) => [section.month, section.rows.length]),
 		[[undefined, 6]],
 	);
+});
+
+test("the agenda filter offers one list per dots entry shown in the agenda, drawn with that entry's dot, in settings order", () => {
+	const dated = { ...decoratorOf("dateProperty", "dots-dated"), position: "topRight" as const };
+	const linked = { ...decoratorOf("links", "dots-links"), inAgenda: true };
+	const decorators = [dated, decoratorOf("words", "dots-words"), linked, decoratorOf("links", "dots-backlinks")];
+	assert.deepEqual(
+		agendaLists(decorators).map((dot) => [dot.decoratorId, dot.position, dot.color]),
+		[
+			[dated.id, "topRight", dated.color],
+			[linked.id, linked.position, linked.color],
+		],
+	);
+});
+
+test("tapping a list hides it, tapping it again shows it, and a saved choice keeps only entry ids", () => {
+	const hidden = toggledList([], "dots-dated");
+	assert.deepEqual(hidden, ["dots-dated"]);
+	assert.deepEqual(toggledList(hidden, "dots-links"), ["dots-dated", "dots-links"]);
+	assert.deepEqual(toggledList(hidden, "dots-dated"), []);
+	assert.deepEqual(hiddenListsOf(["dots-dated", 3, null]), ["dots-dated"]);
+	assert.deepEqual(hiddenListsOf(undefined), []);
 });

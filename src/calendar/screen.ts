@@ -12,7 +12,7 @@ import type { CalendarModel } from "./model.ts";
 import { momentOf, monthShortName, weekdayShortNames } from "./obsidianHost.ts";
 import type { NoteDotsReader } from "./obsidianHost.ts";
 import { visibleNotes } from "./paths.ts";
-import { agendaRows, agendaSections, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./agenda.ts";
+import { agendaLists, agendaRows, agendaSections, selectedCellUse, selectedRange, visibleCellUse, weeksCovering } from "./agenda.ts";
 import type { AgendaRow, AgendaScope, AgendaSection, SelectedDateNote } from "./agenda.ts";
 import type { WeekRule } from "./weeks.ts";
 import { ADJACENT_DIMS } from "./settings.ts";
@@ -68,9 +68,11 @@ export interface VisibleDates {
 	month: CivilMonth | undefined;
 }
 
-export function agendaOf(context: ScreenContext, scope: AgendaScope, visible: VisibleDates, selected: SelectedDateNote | undefined): Agenda {
+export function agendaOf(context: ScreenContext, scope: AgendaScope, visible: VisibleDates, selected: SelectedDateNote | undefined, hiddenLists: readonly string[]): Agenda {
 	const { app, settings, rule, today } = context;
-	const listed = settings.calendar.decorators.filter((decorator) => decorator.inAgenda).map((decorator) => decorator.id);
+	const listed = agendaLists(settings.calendar.decorators)
+		.map((dot) => dot.decoratorId)
+		.filter((id) => !hiddenLists.includes(id));
 	const nameOf = (path: string) => noteName(app, path);
 	const sectionsOf = (rows: AgendaRow[], month: CivilMonth | undefined) => (month ? agendaSections(rows, month, settings.calendar.agendaMonthHeadings) : [{ month: undefined, rows }]);
 	if (scope === "visible") return { sections: sectionsOf(agendaRows(visible.models, visibleCellUse, listed, nameOf), visible.month), shownMonth: visible.month, paths: new Set() };

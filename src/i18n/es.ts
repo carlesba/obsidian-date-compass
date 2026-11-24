@@ -233,6 +233,8 @@ export const es: Translation = {
 	agendaVisible: "Fechas visibles",
 	agendaMonthHeadings: "Títulos de mes",
 	agendaMonthHeadingsDesc: "Empieza las filas de cada otro mes con su nombre, así un 20 del mes siguiente se lee como 20 de diciembre y no como el de este mes.",
+	agendaFilter: "Filtro de la agenda",
+	agendaFilterDesc: "Muestra un botón por cada entrada de puntos arriba a la derecha de la agenda, dibujado con el punto de la entrada. Toca un botón para ocultar o mostrar las notas de esa entrada. La agenda bajo el calendario y el panel Agenda recuerdan cada uno su propia elección.",
 	agendaNone: "No hay nada en la agenda aquí.",
 	agendaNoSelection: "Abre una nota de fecha para ver su agenda.",
 	agendaViewTitle: "Agenda",

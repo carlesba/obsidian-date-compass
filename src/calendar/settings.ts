@@ -33,6 +33,7 @@ export interface CalendarSettings {
 	decorators: DotDecorator[];
 	agenda: AgendaMode;
 	agendaMonthHeadings: boolean;
+	agendaFilter: boolean;
 }
 
 export function defaultCalendar(): CalendarSettings {
@@ -70,6 +71,7 @@ export function mergeCalendar(stored: unknown): CalendarSettings {
 		todayRow: TODAY_ROWS.find((row) => row === data.todayRow) ?? "first",
 		decorators: mergeDecorators(data.decorators, data.wordsPerDot),
 		agendaMonthHeadings: typeof data.agendaMonthHeadings === "boolean" ? data.agendaMonthHeadings : true,
+		agendaFilter: typeof data.agendaFilter === "boolean" ? data.agendaFilter : false,
 		agenda: AGENDA_MODES.find((list) => list === data.agenda) ?? "off",
 	};
 }

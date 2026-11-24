@@ -455,6 +455,12 @@ the calendar. Open it with **Open agenda** in the command palette or its ribbon 
 switches between **Selected date** and **Visible dates**, whatever the agenda under the calendar is
 set to; visible dates come from the open calendar.
 
+**Agenda filter**, off by default, adds one button per dots entry shown in the agenda at its top
+right. Each button draws the entry's dot on a small box, in the dot's shape, colour and position,
+so it matches the dots on the rows, and hovering it names the entry. Tap a button to hide that
+entry's notes, and tap it again to show them. The agenda under the calendar and the Agenda panel
+each remember their own choice, and turning the setting off shows every entry again.
+
 **Filter of linking notes.** The filter works like the note filters of Note Compass and of Bases:
 
 - **Add filter** asks which field the condition looks at, then the row takes an operator and a

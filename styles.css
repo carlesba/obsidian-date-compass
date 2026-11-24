@@ -531,6 +531,63 @@
 	padding-top: 0;
 }
 
+.date-compass-calendar .agenda-filter {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--size-4-1);
+	margin-bottom: var(--size-4-1);
+}
+
+.date-compass-calendar .agenda-filter + .agenda-month {
+	padding-top: 0;
+}
+
+.date-compass-calendar .agenda-filter-list {
+	height: auto;
+	padding: 3px 4px;
+	background-color: transparent;
+	box-shadow: none;
+}
+
+.date-compass-calendar .agenda-filter-list:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.date-compass-calendar .agenda-filter-list.is-hidden {
+	opacity: 0.35;
+}
+
+.date-compass-calendar .agenda-filter-mark {
+	position: relative;
+	width: 16px;
+	height: 16px;
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: var(--radius-s);
+}
+
+.date-compass-calendar .agenda-filter-mark .dot-below,
+.date-compass-calendar .agenda-filter-mark .dot-above {
+	position: absolute;
+	left: 0;
+	right: 0;
+}
+
+.date-compass-calendar .agenda-filter-mark .dot-below {
+	bottom: 1px;
+}
+
+.date-compass-calendar .agenda-filter-mark .dot-above {
+	top: 1px;
+}
+
+.date-compass-calendar .agenda-filter-mark .dot-corner {
+	top: 1px;
+}
+
+.date-compass-calendar.is-mobile .agenda-filter-list {
+	padding: 6px 8px;
+}
+
 .date-compass-calendar .agenda-empty {
 	padding: var(--size-4-1) 0;
 	font-size: var(--font-ui-smaller);

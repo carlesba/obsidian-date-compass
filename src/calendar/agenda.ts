@@ -3,7 +3,8 @@ import { addDays, daysBetween, isoDate } from "../parse/calendar.ts";
 import type { CivilDate } from "../parse/calendar.ts";
 import { dayRange, headerRange } from "./dateProperties.ts";
 import type { DateRange } from "./dateProperties.ts";
-import type { Dot } from "./decorators.ts";
+import { dotOf } from "./decorators.ts";
+import type { Dot, DotDecorator } from "./decorators.ts";
 import { monthOf, weekStartOf } from "./grid.ts";
 import { CLICKABLE_CLASS, dayClasses, titlePartClasses, weekClasses } from "./model.ts";
 import type { CalendarModel, NoteCell } from "./model.ts";
@@ -42,6 +43,18 @@ const LABEL_CLASSES_LEFT_OUT = [CLICKABLE_CLASS, "active"];
 
 const KIND_ORDER: readonly CellKind[] = ["day", "week", "month", "quarter", "year"];
 const DAYS_IN_WEEK = 7;
+
+export function agendaLists(decorators: readonly DotDecorator[]): Dot[] {
+	return decorators.filter((decorator) => decorator.inAgenda).map(dotOf);
+}
+
+export function hiddenListsOf(value: unknown): string[] {
+	return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+}
+
+export function toggledList(hidden: readonly string[], decoratorId: string): string[] {
+	return hidden.includes(decoratorId) ? hidden.filter((id) => id !== decoratorId) : [...hidden, decoratorId];
+}
 
 export function visibleCellUse(_cell: NoteCell, kind: CellKind): CellUse {
 	return kind === "day" ? "all" : "links";

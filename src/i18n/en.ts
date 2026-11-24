@@ -231,6 +231,8 @@ export const en = {
 	agendaVisible: "Visible dates",
 	agendaMonthHeadings: "Month headings",
 	agendaMonthHeadingsDesc: "Start the rows of each other month with its name, so a 20 in the next month reads as December 20 and not as this month's.",
+	agendaFilter: "Agenda filter",
+	agendaFilterDesc: "Show one button per dots entry at the top right of the agenda, drawn with the entry's dot. Tap a button to hide or show that entry's notes. The agenda under the calendar and the Agenda panel each remember their own choice.",
 	agendaNone: "Nothing on the agenda here.",
 	agendaNoSelection: "Open a date note to see its agenda.",
 	agendaViewTitle: "Agenda",

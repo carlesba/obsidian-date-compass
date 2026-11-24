@@ -1,5 +1,5 @@
 import { ItemView, Keymap, Menu, Platform, debounce } from "obsidian";
-import type { HoverParent, HoverPopover, TAbstractFile, WorkspaceLeaf } from "obsidian";
+import type { HoverParent, HoverPopover, TAbstractFile, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { openDateNote } from "../dateNotes/commands.ts";
 import type { DateNotePane } from "../dateNotes/commands.ts";
 import { fileNameParts } from "../dateNotes/paths.ts";
@@ -15,7 +15,8 @@ import { anchorAfterDayChange, monthAfterDayChange, sameDay, shiftMonth, shiftWe
 import { createNoteDotsReader, localeWeekRule, momentOf } from "./obsidianHost.ts";
 import { activeNoteTouchesVisible, touchesVisible } from "./paths.ts";
 import { renderAgenda } from "./agendaList.ts";
-import type { AgendaHandlers } from "./agendaList.ts";
+import type { AgendaFilter, AgendaHandlers } from "./agendaList.ts";
+import { agendaLists, hiddenListsOf, toggledList } from "./agenda.ts";
 import type { SelectedDateNote } from "./agenda.ts";
 import { agendaOf, applyLook, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
 import type { ScreenContext } from "./screen.ts";
@@ -69,6 +70,7 @@ export class CalendarView extends ItemView implements HoverParent {
 	private renderedGrids: MonthGrid[] = [];
 	private selected: SelectedDateNote | undefined;
 	private agendaMonth: CivilMonth | undefined;
+	private hiddenLists: string[] = [];
 	private awaitsBeingShown = false;
 
 	constructor(leaf: WorkspaceLeaf, settings: () => DateCompassSettings) {
@@ -86,6 +88,16 @@ export class CalendarView extends ItemView implements HoverParent {
 
 	getIcon(): string {
 		return CALENDAR_ICON;
+	}
+
+	getState(): Record<string, unknown> {
+		return { ...super.getState(), hiddenLists: this.hiddenLists };
+	}
+
+	async setState(state: { hiddenLists?: unknown }, result: ViewStateResult): Promise<void> {
+		this.hiddenLists = hiddenListsOf(state.hiddenLists);
+		await super.setState(state, result);
+		this.requestRender();
 	}
 
 	async onOpen(): Promise<void> {
@@ -193,6 +205,12 @@ export class CalendarView extends ItemView implements HoverParent {
 		else this.awaitsBeingShown = true;
 	}
 
+	private toggleList(decoratorId: string): void {
+		this.hiddenLists = toggledList(this.hiddenLists, decoratorId);
+		this.app.workspace.requestSaveLayout();
+		this.render();
+	}
+
 	private render(): void {
 		this.awaitsBeingShown = false;
 		this.followToday();
@@ -207,10 +225,14 @@ export class CalendarView extends ItemView implements HoverParent {
 		applyLook(this.root, calendar);
 		renderCalendar(this.root, { step: calendar.view === "weeks" ? "week" : "month", months: models }, this.handlers);
 		if (calendar.agenda !== "off") {
-			const listed = agendaOf(context, calendar.agenda, { models, month: grids[0]?.month }, this.selected);
+			const filter: AgendaFilter | undefined = calendar.agendaFilter
+				? { lists: agendaLists(calendar.decorators), hidden: this.hiddenLists, toggle: (decoratorId) => this.toggleList(decoratorId) }
+				: undefined;
+			const listed = agendaOf(context, calendar.agenda, { models, month: grids[0]?.month }, this.selected, filter?.hidden ?? []);
 			for (const path of listed.paths) paths.add(path);
 			this.agendaMonth = listed.shownMonth;
-			renderAgenda(this.root, listed.sections, t(calendar.agenda === "selected" && !this.selected ? "agendaNoSelection" : "agendaNone"), (path) => noteName(this.app, path), this.agendaHandlers);
+			const emptyText = t(calendar.agenda === "selected" && !this.selected ? "agendaNoSelection" : "agendaNone");
+			renderAgenda(this.root, listed.sections, emptyText, (path) => noteName(this.app, path), this.agendaHandlers, filter);
 		}
 		this.visiblePaths = paths;
 		this.renderedActivePath = activePath;

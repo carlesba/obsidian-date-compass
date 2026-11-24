@@ -48,6 +48,8 @@ export const CALENDAR_AGENDA_KEY = "calendar/agenda";
 
 export const CALENDAR_AGENDA_MONTH_HEADINGS_KEY = "calendar/agendaMonthHeadings";
 
+export const CALENDAR_AGENDA_FILTER_KEY = "calendar/agendaFilter";
+
 type CalendarIntegerField = "monthsShown" | "weeksBefore" | "weeksAfter" | "weeksShown";
 
 const CALENDAR_INTEGER_FIELDS: Record<string, { field: CalendarIntegerField; range: IntegerRange }> = {
@@ -348,6 +350,7 @@ export function readControl(settings: DateCompassSettings, key: string): unknown
 	if (key === CALENDAR_TODAY_ROW_KEY) return settings.calendar.todayRow;
 	if (key === CALENDAR_AGENDA_KEY) return settings.calendar.agenda;
 	if (key === CALENDAR_AGENDA_MONTH_HEADINGS_KEY) return settings.calendar.agendaMonthHeadings;
+	if (key === CALENDAR_AGENDA_FILTER_KEY) return settings.calendar.agendaFilter;
 	const integerField = CALENDAR_INTEGER_FIELDS[key];
 	if (integerField) return settings.calendar[integerField.field];
 	const decoratorControl = decoratorControlOfKey(settings, key);
@@ -381,6 +384,7 @@ function writeCalendarControl(settings: DateCompassSettings, key: string, value:
 	if (key === CALENDAR_VIEW_KEY) return writeChoice(CALENDAR_VIEWS, value, (view) => (calendar.view = view));
 	if (key === CALENDAR_TODAY_ROW_KEY) return writeChoice(TODAY_ROWS, value, (row) => (calendar.todayRow = row));
 	if (key === CALENDAR_AGENDA_MONTH_HEADINGS_KEY) return writeBoolean(value, (shown) => (calendar.agendaMonthHeadings = shown));
+	if (key === CALENDAR_AGENDA_FILTER_KEY) return writeBoolean(value, (filters) => (calendar.agendaFilter = filters));
 	if (key === CALENDAR_AGENDA_KEY) return writeChoice(AGENDA_MODES, value, (list) => (calendar.agenda = list));
 	const integerField = CALENDAR_INTEGER_FIELDS[key];
 	if (!integerField || !isInRange(value, integerField.range)) return false;

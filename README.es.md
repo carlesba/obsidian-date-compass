@@ -483,6 +483,13 @@ barra lateral como el calendario. Ábrelo con **Abrir agenda** en la paleta de c
 icono de la cinta. Su cabecera cambia entre **Fecha seleccionada** y **Fechas visibles**, sea cual
 sea el ajuste de la agenda bajo el calendario; las fechas visibles vienen del calendario abierto.
 
+**Filtro de la agenda**, desactivado por defecto, añade arriba a la derecha de la agenda un botón por
+cada entrada de puntos que aparece en ella. Cada botón dibuja el punto de la entrada sobre una caja
+pequeña, con su forma, su color y su posición, así coincide con los puntos de las filas, y al pasar
+el puntero aparece el nombre de la entrada. Toca un botón para ocultar las notas de esa entrada, y
+tócalo otra vez para mostrarlas. La agenda bajo el calendario y el panel Agenda recuerdan cada uno
+su propia elección, y desactivar el ajuste vuelve a mostrar todas las entradas.
+
 **Filtro de las notas que enlazan.** El filtro funciona como los filtros de notas de Note Compass
 y de Bases:
 

@@ -317,7 +317,7 @@ export function previewDots(decorator: DotDecorator): Dot[] {
 	return Array.from({ length: count }, () => dotOf(decorator));
 }
 
-function dotOf(decorator: DotDecorator): Dot {
+export function dotOf(decorator: DotDecorator): Dot {
 	return { decoratorId: decorator.id, source: decorator.source, shape: decorator.shape, color: decorator.color, position: decorator.position };
 }
 

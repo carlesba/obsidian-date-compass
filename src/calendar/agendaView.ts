@@ -6,8 +6,8 @@ import { civilOf } from "../parse/calendar.ts";
 import type { DateCompassSettings } from "../settings.ts";
 import { createNoteDotsReader, localeWeekRule } from "./obsidianHost.ts";
 import { renderAgenda } from "./agendaList.ts";
-import type { AgendaHandlers } from "./agendaList.ts";
-import { AGENDA_SCOPES } from "./agenda.ts";
+import type { AgendaFilter, AgendaHandlers } from "./agendaList.ts";
+import { AGENDA_SCOPES, agendaLists, hiddenListsOf, toggledList } from "./agenda.ts";
 import type { AgendaScope, SelectedDateNote } from "./agenda.ts";
 import { agendaOf, applyLook, calendarModels, dotName, focusedDateNote, monthTitle, noteName } from "./screen.ts";
 import type { CivilMonth } from "./grid.ts";
@@ -29,6 +29,7 @@ const SCOPE_LABELS: Record<AgendaScope, TranslationKey> = {
 
 interface AgendaViewState {
 	scope?: unknown;
+	hiddenLists?: unknown;
 }
 
 export class AgendaView extends ItemView implements HoverParent {
@@ -45,6 +46,7 @@ export class AgendaView extends ItemView implements HoverParent {
 		monthTitle: (month) => monthTitle(month, this.shownMonth),
 	};
 	private listScope: AgendaScope = "selected";
+	private hiddenLists: string[] = [];
 	private selected: SelectedDateNote | undefined;
 	private shownMonth: CivilMonth | undefined;
 
@@ -66,12 +68,13 @@ export class AgendaView extends ItemView implements HoverParent {
 	}
 
 	getState(): Record<string, unknown> {
-		return { ...super.getState(), scope: this.listScope };
+		return { ...super.getState(), scope: this.listScope, hiddenLists: this.hiddenLists };
 	}
 
 	async setState(state: AgendaViewState, result: ViewStateResult): Promise<void> {
 		const scope = AGENDA_SCOPES.find((candidate) => candidate === state.scope);
 		if (scope) this.listScope = scope;
+		this.hiddenLists = hiddenListsOf(state.hiddenLists);
 		await super.setState(state, result);
 		this.render();
 	}
@@ -125,6 +128,12 @@ export class AgendaView extends ItemView implements HoverParent {
 		this.render();
 	}
 
+	private toggleList(decoratorId: string): void {
+		this.hiddenLists = toggledList(this.hiddenLists, decoratorId);
+		this.app.workspace.requestSaveLayout();
+		this.render();
+	}
+
 	private render(): void {
 		const settings = this.settings();
 		const context: ScreenContext = {
@@ -141,9 +150,12 @@ export class AgendaView extends ItemView implements HoverParent {
 		const calendar = this.calendar();
 		const grids = this.listScope === "visible" && calendar ? calendar.visibleGrids() : [];
 		const visible = { models: calendarModels(context, grids, settings.calendar.showWeekNumbers).models, month: grids[0]?.month };
-		const { sections, shownMonth } = agendaOf(context, this.listScope, visible, this.selected);
+		const filter: AgendaFilter | undefined = settings.calendar.agendaFilter
+			? { lists: agendaLists(settings.calendar.decorators), hidden: this.hiddenLists, toggle: (decoratorId) => this.toggleList(decoratorId) }
+			: undefined;
+		const { sections, shownMonth } = agendaOf(context, this.listScope, visible, this.selected, filter?.hidden ?? []);
 		this.shownMonth = shownMonth;
-		renderAgenda(this.root, sections, t(this.emptyText(calendar !== undefined)), (path) => noteName(this.app, path), this.handlers);
+		renderAgenda(this.root, sections, t(this.emptyText(calendar !== undefined)), (path) => noteName(this.app, path), this.handlers, filter);
 	}
 
 	private emptyText(calendarOpen: boolean): TranslationKey {
